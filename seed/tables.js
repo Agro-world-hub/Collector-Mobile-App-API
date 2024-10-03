@@ -296,6 +296,8 @@ const createCollectionOfficer = () => {
       image VARCHAR(255) NOT NULL,
       nic VARCHAR(255) NOT NULL,
       email VARCHAR(255) NOT NULL,
+      password VARCHAR(255) NOT NULL,
+      passwordUpdated  VARCHAR(255) NOT NULL,
       houseNumber VARCHAR(255) NOT NULL,
       streetName VARCHAR(255) NOT NULL,
       district VARCHAR(255) NOT NULL,
@@ -410,9 +412,9 @@ const createUserBankDetails = () => {
       userId INT,
       address VARCHAR(255) NOT NULL,
       accNumber VARCHAR(255) NOT NULL,
-      accHolderName DECIMAL(20, 2) NOT NULL,
-      bankName DECIMAL(20, 2) NOT NULL,
-      branchName DECIMAL(20, 2) NOT NULL,
+      accHolderName VARCHAR(255) NOT NULL,
+      bankName VARCHAR(255) NOT NULL,
+      branchName VARCHAR(255) NOT NULL,
       createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (userId) REFERENCES users(id)
         ON DELETE SET NULL

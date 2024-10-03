@@ -1,26 +1,28 @@
 const express = require('express');
 const db = require('./startup/database'); 
 const cors = require('cors');
-// const routes = require('./routes/Admin');
+const collectionOfficerRoutes = require('./routes/userroutes'); // Import the routes
+const addCropDetails = require('./routes/unregisteredcropfarmer');
+const farmerRoutes = require('./routes/farmerrutes');
+const bodyParser = require('body-parser');
+const getUserdata = require('./routes/QRroutes')
+
 require('dotenv').config();
- 
 
 const app = express();
-const port = process.env.PORT || 3000;
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cors({origin:"*"}));
 
-db.connect(err => {
-  if (err) {
-    console.error('Error connecting to the database in index.js:', err);
-    return;
-  }
-  console.log('Connected to the MySQL database in server.js.');
-});
+// Middleware
+app.use(cors({origin:'*'}));
+app.use(bodyParser.json());
 
-// app.use(process.env.AUTHOR, routes);
 
-app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
-});
+// Routes
+app.use('/api/collection-officer', collectionOfficerRoutes);
+app.use('/api/farmer', farmerRoutes);
+app.use('/api/unregisteredfarmercrop', addCropDetails);
+app.use('/api/getUserData', getUserdata);
+
+
+// Start server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
