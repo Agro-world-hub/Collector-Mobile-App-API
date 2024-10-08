@@ -6,6 +6,7 @@ const addCropDetails = require('./routes/unregisteredcropfarmer');
 const farmerRoutes = require('./routes/farmerrutes');
 const bodyParser = require('body-parser');
 const getUserdata = require('./routes/QRroutes')
+const searchRoutes = require('./routes/search.routes')
 
 require('dotenv').config();
 
@@ -21,6 +22,8 @@ app.use('/api/collection-officer', collectionOfficerRoutes);
 app.use('/api/farmer', farmerRoutes);
 app.use('/api/unregisteredfarmercrop', addCropDetails);
 app.use('/api/getUserData', getUserdata);
+app.use('/api/auth',searchRoutes);
+
 
 
 // Start server
