@@ -1,18 +1,20 @@
-const db = require('../startup/database');
+const QRCode = require('qrcode');
+const fs = require('fs');
+const path = require('path');
+const db = require('../startup/database'); // Ensure that this uses mysql2/promise
 
-// Controller to handle both user details and payment details
-const addUserAndPaymentDetails = (req, res) => {
-
+// Controller to handle both user details, payment details, and QR code generation
+const addUserAndPaymentDetails = async (req, res) => {
   const { 
     firstName, 
     lastName, 
     NICnumber, 
     phoneNumber, 
-    address,
+    address, 
     accNumber, 
     accHolderName, 
     bankName, 
-    branchName
+    branchName 
   } = req.body;
 
   // Validation: Check if all fields are filled
@@ -20,58 +22,80 @@ const addUserAndPaymentDetails = (req, res) => {
     return res.status(400).json({ error: "All fields are required" });
   }
 
-  // Start a transaction
-  db.beginTransaction((transactionError) => {
-    if (transactionError) {
-      return res.status(500).json({ error: "Transaction failed to start" });
-    }
+  const connection = await db.promise();
+
+  try {
+    // Start a transaction
+    await connection.beginTransaction();
 
     // Insert into the 'users' table
     const userSql = `
       INSERT INTO users (firstName, lastName, NICnumber, phoneNumber)
       VALUES (?, ?, ?, ?)
     `;
+    const [userResult] = await connection.query(userSql, [firstName, lastName, NICnumber, phoneNumber]);
 
-    db.query(userSql, [firstName, lastName, NICnumber, phoneNumber], (userError, userResult) => {
-      if (userError) {
-        return db.rollback(() => {
-          res.status(500).json({ error: userError.message });
-        });
-      }
-      
-      console.log(userResult.insertId);
-      
-      const userId = userResult.insertId;
+    const userId = userResult.insertId;
 
-      // Insert into the 'userbankdetails' table
-      const paymentSql = `
-        INSERT INTO userbankdetails (userId, address, accNumber, accHolderName, bankName, branchName)
-        VALUES (?, ?, ?, ?, ?, ?)
-      `;
+    // Insert into the 'userbankdetails' table
+    const paymentSql = `
+      INSERT INTO userbankdetails (userId, address, accNumber, accHolderName, bankName, branchName)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `;
+    const [paymentResult] = await connection.query(paymentSql, [userId, address, accNumber, accHolderName, bankName, branchName]);
 
-      db.query(paymentSql, [userId, address, accNumber, accHolderName, bankName, branchName], (paymentError, paymentResult) => {
-        if (paymentError) {
-          return db.rollback(() => {
-            res.status(500).json({ error: paymentError.message });
-          });
-        }
+    const paymentId = paymentResult.insertId;
 
-        // Commit the transaction
-        db.commit((commitError) => {
-          if (commitError) {
-            return db.rollback(() => {
-              res.status(500).json({ error: "Transaction commit failed" });
-            });
-          }
-          res.status(201).json({ 
-            message: "User and bank details added successfully", 
-            userId: userId, 
-            paymentId: paymentResult.insertId 
-          });
-        });
-      });
+    // Step 1: Generate QR Code data with user and bank details
+    const qrData = `
+      User Info:
+      Name: ${firstName} ${lastName}
+      NIC: ${NICnumber}
+      Phone: ${phoneNumber}
+
+      Bank Info:
+      Account Holder: ${accHolderName}
+      Account Number: ${accNumber}
+      Bank: ${bankName}
+      Branch: ${branchName}
+    `;
+
+    // Define the directory path for QR codes
+    const qrDirPath = path.join(__dirname, `../public/qrcodes`);
+    
+    // Step 2: Ensure the directory exists
+    if (!fs.existsSync(qrDirPath)) {
+      fs.mkdirSync(qrDirPath, { recursive: true }); // Create directory if it doesn't exist
+    }
+
+    // Generate QR Code as PNG and save it
+    const qrFilePath = path.join(qrDirPath, `user_${userId}.png`);
+    await QRCode.toFile(qrFilePath, qrData, { type: 'png' });
+
+    // Step 3: Update the 'users' table with the QR code file path
+    const updateQrSql = `
+      UPDATE users SET farmerQr = ? WHERE id = ?
+    `;
+    await connection.query(updateQrSql, [qrFilePath, userId]);
+
+    // Step 4: Commit the transaction
+    await connection.commit();
+
+    // Success response
+    res.status(201).json({ 
+      message: "User, bank details, and QR code added successfully", 
+      userId: userId, 
+      paymentId: paymentId, 
+      qrCodePath: qrFilePath 
     });
-  });
+    
+  } catch (error) {
+    // Rollback the transaction in case of any error
+    await connection.rollback();
+    res.status(500).json({ error: "Transaction failed: " + error.message });
+  } finally {
+    await connection.end();
+  }
 };
 
 module.exports = { addUserAndPaymentDetails };
