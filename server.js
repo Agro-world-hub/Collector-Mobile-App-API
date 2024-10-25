@@ -1,5 +1,5 @@
 const express = require('express');
-const db = require('./startup/database'); 
+const db = require('./startup/database');
 const cors = require('cors');
 const collectionOfficerRoutes = require('./routes/userroutes'); // Import the routes
 const addCropDetails = require('./routes/unregisteredcropfarmer');
@@ -7,13 +7,14 @@ const farmerRoutes = require('./routes/farmerrutes');
 const bodyParser = require('body-parser');
 const getUserdata = require('./routes/QRroutes')
 const searchRoutes = require('./routes/search.routes')
+const complainRoutes = require('./routes/complains.routes')
 
 require('dotenv').config();
 
 const app = express();
 
 // Middleware
-app.use(cors({origin:'*'}));
+app.use(cors({ origin: '*' }));
 app.use(bodyParser.json());
 
 
@@ -22,7 +23,8 @@ app.use('/api/collection-officer', collectionOfficerRoutes);
 app.use('/api/farmer', farmerRoutes);
 app.use('/api/unregisteredfarmercrop', addCropDetails);
 app.use('/api/getUserData', getUserdata);
-app.use('/api/auth',searchRoutes);
+app.use('/api/auth', searchRoutes);
+app.use('/api/auth', complainRoutes);
 
 
 

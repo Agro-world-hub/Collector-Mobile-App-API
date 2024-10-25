@@ -63,6 +63,7 @@ const addUserAndPaymentDetails = asyncHandler(async(req, res) => {
         // Generate QR Code data with user and bank details
         const qrData = `
             User Info:
+            ID: ${userId}
             Name: ${firstName} ${lastName}
             NIC: ${NICnumber}
             Phone: ${phoneNumber}
@@ -138,7 +139,7 @@ const getRegisteredFarmerDetails = asyncHandler(async(req, res) => {
 
     try {
         const userSql = `
-            SELECT firstName, lastName, NICnumber, farmerQr 
+            SELECT firstName, lastName, NICnumber, farmerQr , phoneNumber
             FROM users 
             WHERE id = ?
         `;
@@ -166,7 +167,8 @@ const getRegisteredFarmerDetails = asyncHandler(async(req, res) => {
             firstName: user.firstName,
             lastName: user.lastName,
             NICnumber: user.NICnumber,
-            qrCode: qrCodeBase64, // Base64 string
+            qrCode: qrCodeBase64,
+            phoneNumber: user.phoneNumber // Base64 string
         };
 
         res.status(200).json(response);
