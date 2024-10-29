@@ -35,7 +35,7 @@ const login = (req, res) => {
         };
 
         // Generate the JWT token
-        const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '1h' });
+        const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '10h' });
 
         // Check if the user needs to update the password
         if (!officer.passwordUpdated) {
@@ -152,9 +152,95 @@ const getProfile = (req, res) => {
     });
 };
 
+const getUserDetails = async(req, res) => {
+    try {
+        const userId = req.user.id;
+
+        const sql = `
+        SELECT 
+          co.firstNameEnglish AS firstName,
+          co.lastNameEnglish AS lastName,
+          co.phoneNumber01 AS phoneNumber,
+          co.nic AS nicNumber,
+          CONCAT(co.houseNumber, ', ', co.streetName, ', ', co.city) AS address,
+          cod.companyNameEnglish AS companyName,
+          cod.jobRole AS jobRole,
+          cod.assignedDistrict AS regcode
+        FROM collectionofficer AS co
+        LEFT JOIN collectionofficercompanydetails AS cod ON cod.collectionOfficerId = co.id
+        WHERE co.id = ?
+      `;
+
+        db.query(sql, [userId], (err, result) => {
+            if (err) {
+                console.error('Error fetching user details:', err);
+                return res.status(500).json({ message: 'Server error' });
+            }
+
+            if (result.length === 0) {
+                return res.status(404).json({ message: 'User not found' });
+            }
+
+            const user = result[0];
+            res.status(200).json({
+                firstName: user.firstName,
+                lastName: user.lastName,
+                companyName: user.companyName,
+                regcode: user.regcode,
+                jobRole: user.jobRole,
+                nicNumber: user.nicNumber,
+                address: user.address,
+                phoneNumber: user.phoneNumber,
+            });
+        });
+    } catch (error) {
+        console.error('Error in getUserDetails controller:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+
+// Update phone number controller
+const updatePhoneNumber = async(req, res) => {
+    const userId = req.user.id; // Assuming req.user is set by your authentication middleware
+    const { phoneNumber } = req.body;
+    console.log(phoneNumber);
+
+    // Input validation
+    if (!phoneNumber || typeof phoneNumber !== 'string' || phoneNumber.length !== 11) {
+        return res.status(400).json({ message: 'Invalid phone number. It must be 11 characters long.' });
+    }
+
+    // Add the + prefix to the phone number
+    const formattedPhoneNumber = `+${phoneNumber}`;
+
+    // SQL query to update the phone number
+    const query = 'UPDATE collectionofficer SET phoneNumber01 = ? WHERE id = ?';
+
+    try {
+        db.query(query, [formattedPhoneNumber, userId], (error, results) => {
+            if (error) {
+                console.error('Error updating phone number:', error);
+                return res.status(500).json({ message: 'Failed to update phone number' });
+            }
+
+            if (results.affectedRows === 0) {
+                return res.status(404).json({ message: 'User not found' });
+            }
+
+            return res.status(200).json({ message: 'Phone number updated successfully' });
+        });
+    } catch (error) {
+        console.error('Database query error:', error);
+        return res.status(500).json({ message: 'An error occurred while updating the phone number' });
+    }
+};
+
 
 module.exports = {
     login,
     updatePassword,
-    getProfile
+    getProfile,
+    getUserDetails,
+    updatePhoneNumber
 };

@@ -2,8 +2,6 @@ const db = require('../startup/database'); // Import the database connection
 const asyncHandler = require("express-async-handler");
 
 
-
-
 // Get all users from the users table
 const getAllUsers = asyncHandler(async(req, res) => {
     try {
