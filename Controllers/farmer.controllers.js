@@ -177,4 +177,39 @@ const getRegisteredFarmerDetails = asyncHandler(async(req, res) => {
     }
 });
 
-module.exports = { addUserAndPaymentDetails, getRegisteredFarmerDetails };
+
+//controller to get report user and bank details
+const getUserWithBankDetails = asyncHandler(async(req, res) => {
+    const userId = req.params.id;
+
+    // Query to get user details along with bank details
+    const query = `
+        SELECT 
+            u.id AS userId,
+            u.firstName,
+            u.lastName,
+            u.phoneNumber,
+            u.NICnumber,
+            u.profileImage,
+            u.farmerQr,
+            b.address,
+            b.accNumber,
+            b.accHolderName,
+            b.bankName,
+            b.branchName,
+            b.createdAt
+        FROM users u
+        LEFT JOIN userbankdetails b ON u.id = b.userId
+        WHERE u.id = ?;
+    `;
+
+    const [rows] = await db.promise().query(query, [userId]);
+
+    if (rows.length === 0) {
+        return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json(rows[0]);
+});
+
+module.exports = { addUserAndPaymentDetails, getRegisteredFarmerDetails, getUserWithBankDetails };

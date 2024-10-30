@@ -57,6 +57,53 @@ const addCropDetails = (req, res) => {
   });
 };
 
+// Controller to fetch all crop names
+const getAllCropNames = (req, res) => {
+  const query = 'SELECT id, cropName FROM cropcalender';
+
+  db.query(query, (error, results) => {
+      if (error) {
+          return res.status(500).json({ error: 'Database query failed' });
+      }
+      res.status(200).json(results);
+  });
+};
+
+// Controller to fetch varieties based on selected crop name
+const getVarietiesByCropName = (req, res) => {
+  const { cropName } = req.params; // Expecting cropName to be sent in the URL
+
+  // Update query to select both id and variety
+  const query = 'SELECT id, variety FROM cropcalender WHERE cropName = ?';
+
+  db.query(query, [cropName], (error, results) => {
+      if (error) {
+          return res.status(500).json({ error: 'Database query failed' });
+      }
+      
+      // Send back the results containing both id and variety
+      res.status(200).json(results);
+  });
+};
+
+// Controller to fetch unit prices by crop ID
+const getUnitPricesByCropId = (req, res) => {
+  const { cropId } = req.params; // Expecting cropId to be sent in the URL
+
+  const query = `
+      SELECT grade, price
+      FROM marketprice
+      WHERE cropId = ?
+  `;
+
+  db.query(query, [cropId], (error, results) => {
+      if (error) {
+          return res.status(500).json({ error: 'Database query failed' });
+      }
+      res.status(200).json(results);
+  });
+};
+
 module.exports = {
-  addCropDetails,
+  addCropDetails,getAllCropNames,getVarietiesByCropName,getUnitPricesByCropId 
 };
