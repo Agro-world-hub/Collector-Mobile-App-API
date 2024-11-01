@@ -178,7 +178,7 @@ const getRegisteredFarmerDetails = asyncHandler(async(req, res) => {
 });
 
 
-//controller to get report user and bank details
+// Controller to get report user and bank details with QR code in Base64
 const getUserWithBankDetails = asyncHandler(async(req, res) => {
     const userId = req.params.id;
 
@@ -203,13 +203,43 @@ const getUserWithBankDetails = asyncHandler(async(req, res) => {
         WHERE u.id = ?;
     `;
 
-    const [rows] = await db.promise().query(query, [userId]);
+    try {
+        const [rows] = await db.promise().query(query, [userId]);
 
-    if (rows.length === 0) {
-        return res.status(404).json({ message: 'User not found' });
+        if (rows.length === 0) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const user = rows[0];
+
+        // Convert QR code file path to Base64 if it exists
+        let qrCodeBase64 = '';
+        if (user.farmerQr) {
+            const qrCodeData = fs.readFileSync(user.farmerQr); // Read the QR code file
+            qrCodeBase64 = `data:image/png;base64,${qrCodeData.toString('base64')}`; // Convert to Base64
+        }
+
+        // Add the Base64 QR code to the user data
+        const response = {
+            userId: user.userId,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            phoneNumber: user.phoneNumber,
+            NICnumber: user.NICnumber,
+            profileImage: user.profileImage,
+            qrCode: qrCodeBase64,
+            address: user.address,
+            accNumber: user.accNumber,
+            accHolderName: user.accHolderName,
+            bankName: user.bankName,
+            branchName: user.branchName,
+            createdAt: user.createdAt
+        };
+
+        res.json(response);
+    } catch (error) {
+        res.status(500).json({ error: "Failed to fetch user with bank details: " + error.message });
     }
-
-    res.json(rows[0]);
 });
 
 module.exports = { addUserAndPaymentDetails, getRegisteredFarmerDetails, getUserWithBankDetails };
