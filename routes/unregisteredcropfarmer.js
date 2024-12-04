@@ -1,12 +1,12 @@
 const express = require('express');
-const { addCropDetails, getAllCropNames, getVarietiesByCropName, getUnitPricesByCropId, getTodayCropDetailsByUserId } = require('../Controllers/unregisteredcropfarmer.controllers'); // Path to your controller
+const { addCropDetails, getAllCropNames, getVarietiesByCropId, getUnitPricesByCropId, getTodayCropDetailsByUserId } = require('../Controllers/unregisteredcropfarmer.controllers'); // Path to your controller
 const auth = require('../Middlewares/auth.middleware');
 const router = express.Router();
 
 router.post('/add-crops', auth, addCropDetails);
 router.get('/get-crop-names', getAllCropNames);
 // Route to get varieties by crop name
-router.get('/crops/varieties/:cropName', getVarietiesByCropName);
+router.get('/crops/varieties/:id', getVarietiesByCropId);
 
 // Route to get unit prices by crop ID
 router.get('/unitPrices/:cropId', getUnitPricesByCropId);

@@ -60,20 +60,21 @@ const addUserAndPaymentDetails = asyncHandler(async(req, res) => {
 
         const paymentId = paymentResult.insertId;
 
-        // Generate QR Code data with user and bank details
-        const qrData = `
-            User Info:
-            ID: ${userId}
-            Name: ${firstName} ${lastName}
-            NIC: ${NICnumber}
-            Phone: ${phoneNumber}
-
-            Bank Info:
-            Account Holder: ${accHolderName}
-            Account Number: ${accNumber}
-            Bank: ${bankName}
-            Branch: ${branchName}
-        `;
+        // Define the JSON structure for QR code data
+        const qrData = {
+            userInfo: {
+                id: userId,
+                name: `${firstName} ${lastName}`,
+                NIC: NICnumber,
+                phone: phoneNumber
+            },
+            bankInfo: {
+                accountHolder: accHolderName,
+                accountNumber: accNumber,
+                bank: bankName,
+                branch: branchName
+            }
+        };
 
         // Define the directory path for QR codes
         const qrDirPath = path.join(__dirname, `../public/qrcodes`);
@@ -85,7 +86,7 @@ const addUserAndPaymentDetails = asyncHandler(async(req, res) => {
 
         // Generate QR Code as PNG and save it
         const qrFilePath = path.join(qrDirPath, `user_${userId}.png`);
-        await QRCode.toFile(qrFilePath, qrData, { type: 'png' });
+        await QRCode.toFile(qrFilePath, JSON.stringify(qrData), { type: 'png' }); // Convert JSON to string
 
         // Update the 'users' table with the QR code file path
         const updateQrSql = `
@@ -128,6 +129,7 @@ const addUserAndPaymentDetails = asyncHandler(async(req, res) => {
         res.status(500).json({ error: "Transaction failed: " + error.message });
     }
 });
+
 
 // Controller to fetch registered farmer details
 const getRegisteredFarmerDetails = asyncHandler(async(req, res) => {
