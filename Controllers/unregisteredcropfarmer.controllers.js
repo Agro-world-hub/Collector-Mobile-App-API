@@ -110,19 +110,38 @@ const addCropDetails = (req, res) => {
 
 
 // controller that fetches crop details registered for the current date
-const getTodayCropDetailsByUserId = (req, res) => {
-    const { userId } = req.params; // Get userId from request parameters
-
-    // Get the current date in 'YYYY-MM-DD' format
-    const today = new Date().toISOString().split('T')[0];
+const getCropDetailsByUserId = (req, res) => {
+    const { userId } = req.params; // Extract userId from request parameters
 
     const query = `
-        SELECT id, cropName, variety, unitPriceA, weightA, unitPriceB, weightB, unitPriceC, weightC, total
-        FROM registeredfarmerpayments
-        WHERE userId = ? AND DATE(createdAt) = ?
+        SELECT 
+            fpc.id AS id, 
+            cg.cropNameEnglish AS cropName,
+            cv.varietyNameEnglish AS variety,
+            fpc.gradeAprice AS unitPriceA,
+            fpc.gradeAquan AS weightA,
+            fpc.gradeBprice AS unitPriceB,
+            fpc.gradeBquan AS weightB,
+            fpc.gradeCprice AS unitPriceC,
+            fpc.gradeCquan AS weightC,
+            (COALESCE(fpc.gradeAprice * fpc.gradeAquan, 0) +
+             COALESCE(fpc.gradeBprice * fpc.gradeBquan, 0) +
+             COALESCE(fpc.gradeCprice * fpc.gradeCquan, 0)) AS total
+        FROM 
+            farmerpaymentscrops fpc
+        INNER JOIN 
+            cropvariety cv ON fpc.cropId = cv.id
+        INNER JOIN 
+            cropgroup cg ON cv.cropGroupId = cg.id
+        INNER JOIN 
+            registeredfarmerpayments rfp ON fpc.registerFarmerId = rfp.id
+        WHERE 
+            rfp.userId = ?
+        ORDER BY 
+            fpc.createdAt DESC
     `;
 
-    db.query(query, [userId, today], (error, results) => {
+    db.query(query, [userId], (error, results) => {
         if (error) {
             console.error('Error fetching crop details:', error);
             return res.status(500).json({ error: 'Database query failed' });
@@ -130,6 +149,8 @@ const getTodayCropDetailsByUserId = (req, res) => {
         res.status(200).json(results);
     });
 };
+
+
 
 
 // Controller to fetch all crop names
@@ -196,5 +217,5 @@ module.exports = {
     getAllCropNames,
     getVarietiesByCropId,
     getUnitPricesByCropId,
-    getTodayCropDetailsByUserId
+    getCropDetailsByUserId
 };

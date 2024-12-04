@@ -236,11 +236,47 @@ const updatePhoneNumber = async(req, res) => {
     }
 };
 
+const getOfficerQRCode = (req, res) => {
+    const officerId = req.user.id; // Extract officer ID from the authenticated user
+
+    const query = `
+        SELECT QRcode 
+        FROM collectionofficer
+        WHERE id = ?
+    `;
+
+    db.query(query, [officerId], (error, results) => {
+        if (error) {
+            console.error('Error fetching officer QR code:', error);
+            return res.status(500).json({ error: 'Database query failed' });
+        }
+
+        if (results.length === 0) {
+            return res.status(404).json({ error: 'Officer not found' });
+        }
+
+        const { QRcode } = results[0];
+        if (!QRcode) {
+            return res.status(404).json({ error: 'QR code not available for this officer' });
+        }
+
+        // Convert QRcode binary data to base64
+        const qrCodeBase64 = QRcode.toString('base64');
+
+        res.status(200).json({
+            message: 'Officer QR code retrieved successfully',
+            QRcode: `data:image/png;base64,${qrCodeBase64}` // Return as a base64-encoded image
+        });
+    });
+};
+
+
 
 module.exports = {
     login,
     updatePassword,
     getProfile,
     getUserDetails,
-    updatePhoneNumber
+    updatePhoneNumber,
+    getOfficerQRCode
 };
