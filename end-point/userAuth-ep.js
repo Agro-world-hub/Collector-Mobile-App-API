@@ -8,11 +8,14 @@ exports.loginUser = async (req, res) => {
 
     // Validate the request body
 
-    const { email, password } = req.body;
-    console.log("Attempting login for email:", email);
-
+    const { empid, password } = req.body;
+    console.log("Attempting login for email:", empid);
+    const collectionOfficerIdResult = await userAuthDao.getOfficerEmployeeId(empid);
+    const collectionOfficerId = collectionOfficerIdResult[0]?.collectionOfficerId;
+    
+    console.log("Collection Officer ID:", collectionOfficerId);
     // Fetch user details from the database
-    const users = await userAuthDao.getOfficerByEmailAndPassword(email, password);
+    const users = await userAuthDao.getOfficerPasswordBy(collectionOfficerId, password);
 
     if (!users || users.length === 0) {
       return res.status(404).json({
@@ -49,6 +52,7 @@ exports.loginUser = async (req, res) => {
       officer: payload,
       passwordUpdateRequired,
       token,
+      userid:officer.id
     };
 
     res.status(200).json(response);
@@ -70,3 +74,35 @@ exports.loginUser = async (req, res) => {
     });
   }
 };
+
+exports.updatePassword = async (req, res) => {
+
+    const { empid, currentPassword, newPassword } = req.body;
+    console.log("Attempting to update password for empid:",  empid);
+    // Validate inputs
+    if (! empid|| !currentPassword || !newPassword) {
+        return res.status(400).json({ message: 'All fields are required' });
+    }
+    const collectionOfficerIdResult = await userAuthDao.getOfficerEmployeeId(empid);
+    const collectionOfficerId = collectionOfficerIdResult[0]?.collectionOfficerId;
+    console.log("Collection Officer ID:", collectionOfficerId);
+
+    try {
+        // Update the password in the database
+        await userAuthDao.updatePasswordInDatabase( collectionOfficerId, newPassword);
+
+        // Send success response
+        res.status(200).json({ message: 'Password updated successfully' });
+    } catch (error) {
+        // Specific error handling based on the error type or message
+        if (error === 'Database error') {
+            return res.status(500).json({ message: 'Database error occurred while updating the password' });
+        } else if (error === 'Current password is incorrect') {
+            return res.status(401).json({ message: 'Current password is incorrect' });
+        } else {
+            // General error handling
+            return res.status(500).json({ message: 'An error occurred while updating the password' });
+        }
+    }
+};
+

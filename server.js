@@ -34,7 +34,7 @@ app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
 
 
 // Routes
-const collectionOfficerRoutes = require('./routes/userroutes'); // Import the routes
+const collectionOfficerRoutes = require('./routes/userRoutes')
 app.use('/api/collection-officer', collectionOfficerRoutes);
 
 app.use('/api/farmer', farmerRoutes);

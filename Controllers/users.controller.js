@@ -5,92 +5,8 @@ require('dotenv').config();
 const JWT_SECRET = 'Tl';
 // Function to handle login
 
-const login = (req, res) => {
-    const { email, password } = req.body;
-
-    // Validate inputs
-    if (!email || !password) {
-        return res.status(400).json({ message: 'Email and password are required' });
-    }
-
-    // Update the SQL query to select phoneNumber01
-    const sql = 'SELECT * FROM collectionofficer WHERE email = ? AND password = ?';
-    db.query(sql, [email, password], (err, results) => {
-        if (err) {
-            return res.status(500).json({ message: 'Database error' });
-        }
-        if (results.length === 0) {
-            return res.status(401).json({ message: 'Invalid email or password' });
-        }
-
-        const officer = results[0];
-
-        // Create a JWT token payload, including phoneNumber01
-        const payload = {
-            id: officer.id,
-            email: officer.email,
-            firstNameEnglish: officer.firstNameEnglish,
-            lastNameEnglish: officer.lastNameEnglish,
-            phoneNumber01: officer.phoneNumber01 // Include phone number
-        };
-
-        // Generate the JWT token
-        const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '10h' });
-
-        // Check if the user needs to update the password
-        if (!officer.passwordUpdated) {
-            return res.status(200).json({
-                message: 'Login successful, but password update is required',
-                officer: payload, // Send the payload instead of the entire officer object
-                passwordUpdateRequired: true,
-                token: token // Include the JWT token
-            });
-        }
-
-        res.status(200).json({
-            message: 'Login successful',
-            officer: payload, // Send the payload instead of the entire officer object
-            passwordUpdateRequired: false,
-            token: token // Include the JWT token
-        });
-    });
-};
 
 
-
-// Function to update the password
-const updatePassword = (req, res) => {
-    const { email, currentPassword, newPassword } = req.body;
-
-    // Validate inputs
-    if (!email || !currentPassword || !newPassword) {
-        return res.status(400).json({ message: 'All fields are required' });
-    }
-
-    // Check if the current password is correct
-    const checkPasswordSql = 'SELECT * FROM collectionofficer WHERE email = ? AND password = ?';
-    db.query(checkPasswordSql, [email, currentPassword], (err, results) => {
-        if (err) {
-            return res.status(500).json({ message: 'Database error' });
-        }
-        if (results.length === 0) {
-            return res.status(401).json({ message: 'Current password is incorrect' });
-        }
-
-        // Update the password and set passwordUpdated to true
-        const updatePasswordSql = `
-            UPDATE collectionofficer
-            SET password = ?, passwordUpdated = TRUE
-            WHERE email = ?
-        `;
-        db.query(updatePasswordSql, [newPassword, email], (err, result) => {
-            if (err) {
-                return res.status(500).json({ message: 'Database error while updating password' });
-            }
-            res.status(200).json({ message: 'Password updated successfully' });
-        });
-    });
-};
 
 //get profice section
 const getProfile = (req, res) => {
@@ -238,8 +154,6 @@ const updatePhoneNumber = async(req, res) => {
 
 
 module.exports = {
-    login,
-    updatePassword,
     getProfile,
     getUserDetails,
     updatePhoneNumber
