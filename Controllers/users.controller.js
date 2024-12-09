@@ -189,8 +189,5 @@ const getOfficerQRCode = (req, res) => {
 
 
 module.exports = {
-    getProfile,
-    getUserDetails,
-    updatePhoneNumber,
-    getOfficerQRCode
+
 };
