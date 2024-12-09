@@ -1,14 +1,13 @@
 const jwt = require('jsonwebtoken');
 const db = require('../startup/database');
 
-// Controller to add crop details as payment records
 const addCropDetails = (req, res) => {
     const { crops } = req.body;
-    const userId = req.user.id; // Get the collection officer ID from req.user
+    const userId = req.user.id; 
     const farmerId = req.body.farmerId;
 
     console.log(farmerId);
-    console.log(crops); // Farmer ID passed in request body
+    console.log(crops); 
 
     if (!Array.isArray(crops) || crops.length === 0) {
         return res.status(400).json({ error: 'Crops data is required and must be an array' });
@@ -21,7 +20,6 @@ const addCropDetails = (req, res) => {
             return res.status(500).json({ error: 'Internal Server Error' });
         }
 
-        // Insert into `registeredfarmerpayments`
         const paymentQuery = `
             INSERT INTO registeredfarmerpayments (userId, collectionOfficerId) 
             VALUES (?, ?)

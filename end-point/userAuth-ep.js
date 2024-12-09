@@ -1,5 +1,4 @@
 const jwt = require("jsonwebtoken");
-const asyncHandler = require("express-async-handler");
 const userAuthDao = require("../dao/userAuth-dao");
 
 exports.loginUser = async (req, res) => {
@@ -10,12 +9,18 @@ exports.loginUser = async (req, res) => {
 
     const { empid, password } = req.body;
     console.log("Attempting login for email:", empid);
-    const collectionOfficerIdResult = await userAuthDao.getOfficerEmployeeId(empid);
-    const collectionOfficerId = collectionOfficerIdResult[0]?.collectionOfficerId;
-    
+    const collectionOfficerIdResult = await userAuthDao.getOfficerEmployeeId(
+      empid
+    );
+    const collectionOfficerId =
+      collectionOfficerIdResult[0]?.collectionOfficerId;
+
     console.log("Collection Officer ID:", collectionOfficerId);
     // Fetch user details from the database
-    const users = await userAuthDao.getOfficerPasswordBy(collectionOfficerId, password);
+    const users = await userAuthDao.getOfficerPasswordBy(
+      collectionOfficerId,
+      password
+    );
 
     if (!users || users.length === 0) {
       return res.status(404).json({
@@ -52,7 +57,7 @@ exports.loginUser = async (req, res) => {
       officer: payload,
       passwordUpdateRequired,
       token,
-      userid:officer.id
+      userid: officer.id,
     };
 
     res.status(200).json(response);
@@ -76,33 +81,146 @@ exports.loginUser = async (req, res) => {
 };
 
 exports.updatePassword = async (req, res) => {
+  const { empid, currentPassword, newPassword } = req.body;
+  console.log("Attempting to update password for empid:", empid);
+  // Validate inputs
+  if (!empid || !currentPassword || !newPassword) {
+    return res.status(400).json({ message: "All fields are required" });
+  }
+  const collectionOfficerIdResult = await userAuthDao.getOfficerEmployeeId(
+    empid
+  );
+  const collectionOfficerId = collectionOfficerIdResult[0]?.collectionOfficerId;
+  console.log("Collection Officer ID:", collectionOfficerId);
 
-    const { empid, currentPassword, newPassword } = req.body;
-    console.log("Attempting to update password for empid:",  empid);
-    // Validate inputs
-    if (! empid|| !currentPassword || !newPassword) {
-        return res.status(400).json({ message: 'All fields are required' });
+  try {
+    // Update the password in the database
+    await userAuthDao.updatePasswordInDatabase(
+      collectionOfficerId,
+      newPassword
+    );
+
+    // Send success response
+    res.status(200).json({ message: "Password updated successfully" });
+  } catch (error) {
+    // Specific error handling based on the error type or message
+    if (error === "Database error") {
+      return res
+        .status(500)
+        .json({
+          message: "Database error occurred while updating the password",
+        });
+    } else if (error === "Current password is incorrect") {
+      return res.status(401).json({ message: "Current password is incorrect" });
+    } else {
+      // General error handling
+      return res
+        .status(500)
+        .json({ message: "An error occurred while updating the password" });
     }
-    const collectionOfficerIdResult = await userAuthDao.getOfficerEmployeeId(empid);
-    const collectionOfficerId = collectionOfficerIdResult[0]?.collectionOfficerId;
-    console.log("Collection Officer ID:", collectionOfficerId);
-
-    try {
-        // Update the password in the database
-        await userAuthDao.updatePasswordInDatabase( collectionOfficerId, newPassword);
-
-        // Send success response
-        res.status(200).json({ message: 'Password updated successfully' });
-    } catch (error) {
-        // Specific error handling based on the error type or message
-        if (error === 'Database error') {
-            return res.status(500).json({ message: 'Database error occurred while updating the password' });
-        } else if (error === 'Current password is incorrect') {
-            return res.status(401).json({ message: 'Current password is incorrect' });
-        } else {
-            // General error handling
-            return res.status(500).json({ message: 'An error occurred while updating the password' });
-        }
-    }
+  }
 };
 
+exports.getProfile = async (req, res) => {
+  const userId = req.user.id;
+
+  try {
+    const user = await userAuthDao.getProfileById(userId);
+
+    res.status(200).json({
+      status: "success",
+      user: {
+        firstNameEnglish: user.firstNameEnglish,
+        firstNameSinhala: user.firstNameSinhala,
+        firstNameTamil: user.firstNameTamil,
+        lastNameEnglish: user.lastNameEnglish,
+        lastNameSinhala: user.lastNameSinhala,
+        lastNameTamil: user.lastNameTamil,
+        phoneNumber01: user.phoneNumber01,
+        phoneNumber02: user.phoneNumber02,
+        image: user.image,
+        nic: user.nic,
+        email: user.email,
+        address: {
+          houseNumber: user.houseNumber,
+          streetName: user.streetName,
+          city: user.city,
+          district: user.district,
+          province: user.province,
+          country: user.country,
+        },
+        languages: user.languages,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: error.message,
+    });
+  }
+};
+
+exports.getUserDetails = async (req, res) => {
+  try {
+      const userId = req.user.id;
+
+      const user = await userAuthDao.getUserDetailsById(userId);
+      
+      res.status(200).json({
+          firstName: user.firstName,
+          lastName: user.lastName,
+          companyName: user.companyName,
+          regcode: user.regcode,
+          jobRole: user.jobRole,
+          nicNumber: user.nicNumber,
+          address: user.address,
+          phoneNumber: user.phoneNumber,
+          empid: user.empid,
+      });
+  } catch (error) {
+      console.error('Error in getUserDetails controller:', error);
+      res.status(500).json({ message: error.message });
+  }
+};
+
+exports.updatePhoneNumber = async (req, res) => {
+  const userId = req.user.id; // Assuming req.user is set by your authentication middleware
+  const { phoneNumber } = req.body;
+
+  // Input validation
+  if (!phoneNumber || typeof phoneNumber !== 'string' || phoneNumber.length !== 11) {
+      return res.status(400).json({ message: 'Invalid phone number. It must be 11 characters long.' });
+  }
+
+  // Add the + prefix to the phone number
+  const formattedPhoneNumber = `+${phoneNumber}`;
+
+  try {
+      const results = await userAuthDao.updatePhoneNumberById(userId, formattedPhoneNumber);
+
+      if (results.affectedRows === 0) {
+          return res.status(404).json({ message: 'User not found' });
+      }
+
+      res.status(200).json({ message: 'Phone number updated successfully' });
+  } catch (error) {
+      console.error('Error updating phone number:', error);
+      res.status(500).json({ message: 'An error occurred while updating the phone number' });
+  }
+};
+
+exports.getOfficerQRCode = async (officerId) => {
+  const results = await userAuthDao.getQRCodeByOfficerId(officerId);
+
+  if (!results || results.length === 0) {
+      throw new Error('Officer not found');
+  }
+
+  const { QRcode } = results[0];
+  if (!QRcode) {
+      throw new Error('QR code not available for this officer');
+  }
+
+  // Convert QRcode binary data to Base64
+  return `data:image/png;base64,${Buffer.from(QRcode, 'binary').toString('base64')}`;
+};

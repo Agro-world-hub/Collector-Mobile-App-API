@@ -5,7 +5,7 @@ const addCropDetails = require('./routes/unregisteredcropfarmer');
 const farmerRoutes = require('./routes/farmerrutes');
 const bodyParser = require('body-parser');
 const getUserdata = require('./routes/QRroutes')
-const searchRoutes = require('./routes/search.routes')
+
 const complainRoutes = require('./routes/complains.routes')
 
 require('dotenv').config();
@@ -34,13 +34,16 @@ app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
 
 
 // Routes
-const collectionOfficerRoutes = require('./routes/userRoutes')
+const collectionOfficerRoutes = require('./routes/userroutes')
 app.use('/api/collection-officer', collectionOfficerRoutes);
 
 app.use('/api/farmer', farmerRoutes);
 app.use('/api/unregisteredfarmercrop', addCropDetails);
 app.use('/api/getUserData', getUserdata);
+
+const searchRoutes = require('./routes/search.routes')
 app.use('/api/auth', searchRoutes);
+
 app.use('/api/auth', complainRoutes);
 
 
