@@ -8,6 +8,7 @@ const bodyParser = require('body-parser');
 const getUserdata = require('./routes/QRroutes')
 const searchRoutes = require('./routes/search.routes')
 const complainRoutes = require('./routes/complains.routes')
+const priceUpdatesRoutes = require('./routes/price.routes')
 
 require('dotenv').config();
 
@@ -27,6 +28,7 @@ app.use('/api/unregisteredfarmercrop', addCropDetails);
 app.use('/api/getUserData', getUserdata);
 app.use('/api/auth', searchRoutes);
 app.use('/api/auth', complainRoutes);
+app.use('/api/auth', priceUpdatesRoutes);
 
 
 

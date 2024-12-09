@@ -185,7 +185,9 @@ const getVarietiesByCropId = (req, res) => {
 
 // Controller to fetch unit prices by crop ID
 const getUnitPricesByCropId = (req, res) => {
-    const { cropId } = req.params; // Extract cropId from the URL parameters
+    const { cropId } = req.params;
+    console.log(cropId)
+        // Extract cropId from the URL parameters
 
     console.log("Received cropId:", cropId); // Log to verify the cropId
 
