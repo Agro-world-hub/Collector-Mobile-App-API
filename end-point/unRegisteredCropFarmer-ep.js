@@ -1,8 +1,10 @@
 
 const jwt = require("jsonwebtoken");
 const cropDetailsDao = require('../dao/unRegisteredCropFarmer-dao');
+const db = require('../startup/database');
 
 exports.addCropDetails = async (req, res) => {
+    console.log("Request body:", req.body.crops);
     const { crops, farmerId } = req.body;
     const userId = req.user.id;
 

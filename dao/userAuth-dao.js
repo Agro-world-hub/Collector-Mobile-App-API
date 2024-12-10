@@ -131,10 +131,11 @@ exports.getQRCodeByOfficerId = (officerId) => {
         `;
 
         db.query(query, [officerId], (error, results) => {
-            if (error) {
-                return reject(error);
-            }
-            resolve(results);
-        });
+          if (error) {
+              console.error('Error fetching officer QR code from DB:', error);
+              return reject(new Error('Database query failed'));
+          }
+          resolve(results);
+      });
     });
 };

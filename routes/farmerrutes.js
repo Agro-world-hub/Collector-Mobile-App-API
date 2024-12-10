@@ -8,6 +8,6 @@ const farmerEp = require('../end-point/farmer-ep');
 router.post('/register-farmer', farmerEp.addUserAndPaymentDetails);
 router.get('/register-farmer/:userId',farmerEp.getRegisteredFarmerDetails);
 
-router.get('/report-user-details/:id', farmerEp.getUserWithBankDetails);
+router.get('/report-user-details/:id', getUserWithBankDetails);
 
 module.exports = router;

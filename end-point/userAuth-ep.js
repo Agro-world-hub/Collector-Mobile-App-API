@@ -209,18 +209,30 @@ exports.updatePhoneNumber = async (req, res) => {
   }
 };
 
-exports.getOfficerQRCode = async (officerId) => {
-  const results = await userAuthDao.getQRCodeByOfficerId(officerId);
+exports.getOfficerQRCode = async (req, res) => {
+  const officerId = req.user.id;
 
-  if (!results || results.length === 0) {
-      throw new Error('Officer not found');
-  }
+  try {
+    const results = await userAuthDao.getQRCodeByOfficerId(officerId);
 
-  const { QRcode } = results[0];
-  if (!QRcode) {
-      throw new Error('QR code not available for this officer');
-  }
+    if (results.length === 0) {
+        return res.status(404).json({ error: 'Officer not found' });
+    }
 
-  // Convert QRcode binary data to Base64
-  return `data:image/png;base64,${Buffer.from(QRcode, 'binary').toString('base64')}`;
+    const { QRcode } = results[0];
+    if (!QRcode) {
+        return res.status(404).json({ error: 'QR code not available for this officer' });
+    }
+
+    // Convert QRcode binary data to base64
+    const qrCodeBase64 = QRcode.toString('base64');
+
+    res.status(200).json({
+        message: 'Officer QR code retrieved successfully',
+        QRcode: `data:image/png;base64,${qrCodeBase64}`, // Return as a base64-encoded image
+    });
+} catch (error) {
+    console.error('Error fetching officer QR code:', error.message);
+    res.status(500).json({ error: 'Failed to fetch officer QR code' });
+}
 };

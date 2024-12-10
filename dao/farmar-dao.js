@@ -43,6 +43,7 @@ exports.updateQrCodePath = (userId, qrFilePath) => {
 
 
 exports.getFarmerDetailsById = async (userId) => {
+
     const userSql = `
         SELECT firstName, lastName, NICnumber, farmerQr, phoneNumber
         FROM users 
@@ -53,6 +54,7 @@ exports.getFarmerDetailsById = async (userId) => {
         db.query(userSql, [userId], (err, result) => {
             if (err) return reject(err);
             resolve(result);
+        
         });
     });
 };

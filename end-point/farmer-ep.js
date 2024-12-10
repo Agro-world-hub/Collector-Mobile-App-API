@@ -113,21 +113,36 @@ exports.getRegisteredFarmerDetails = async (req, res) => {
 
     try {
         // Fetch the raw farmer data from the DAO layer
-        const rows = await getFarmerDetailsById(userId);
-
+        const rows = await farmerDao.getFarmerDetailsById(userId);
+        console.log('rows', rows);
         // If no user found, return a 404 response
         if (rows.length === 0) {
             return res.status(404).json({ error: "User not found" });
         }
 
         const user = rows[0];
+        console.log('user', user);
 
         // Convert QR code file path to Base64 if it exists
         let qrCodeBase64 = '';
         if (user.farmerQr) {
-            const qrCodeData = fs.readFileSync(user.farmerQr); // Read the QR code file
-            qrCodeBase64 = `data:image/png;base64,${qrCodeData.toString('base64')}`; // Convert to Base64
+            const qrCodePath = user.farmerQr.toString();
+            console.log('QR Code Path:', qrCodePath);
+        
+            try {
+                if (fs.existsSync(qrCodePath)) {
+                    const qrCodeData = fs.readFileSync(qrCodePath);
+                    qrCodeBase64 = `data:image/png;base64,${qrCodeData.toString('base64')}`;
+                    console.log('QR Code Base64:', qrCodeBase64);
+                } else {
+                    console.warn('QR code file not found at:', qrCodePath);
+                }
+            } catch (err) {
+                console.error('Error processing QR code file:', err.message);
+            }
         }
+        
+
 
         // Prepare the response data
         const response = {
@@ -137,6 +152,7 @@ exports.getRegisteredFarmerDetails = async (req, res) => {
             qrCode: qrCodeBase64,
             phoneNumber: user.phoneNumber
         };
+        console.log(response);
 
         // Send the response
         res.status(200).json(response);
@@ -154,7 +170,7 @@ exports.getUserWithBankDetails = async (req, res) => {
 
     try {
         // Fetch the raw user data with bank details from the DAO layer
-        const rows = await getUserWithBankDetailsById(userId);
+        const rows = await farmerDao.getUserWithBankDetailsById(userId);
 
         // If no user found, return a 404 response
         if (rows.length === 0) {
@@ -166,9 +182,22 @@ exports.getUserWithBankDetails = async (req, res) => {
         // Convert QR code file path to Base64 if it exists
         let qrCodeBase64 = '';
         if (user.farmerQr) {
-            const qrCodeData = fs.readFileSync(user.farmerQr); // Read the QR code file
-            qrCodeBase64 = `data:image/png;base64,${qrCodeData.toString('base64')}`; // Convert to Base64
+            const qrCodePath = user.farmerQr.toString();
+            console.log('QR Code Path:', qrCodePath);
+        
+            try {
+                if (fs.existsSync(qrCodePath)) {
+                    const qrCodeData = fs.readFileSync(qrCodePath);
+                    qrCodeBase64 = `data:image/png;base64,${qrCodeData.toString('base64')}`;
+                    console.log('QR Code Base64:', qrCodeBase64);
+                } else {
+                    console.warn('QR code file not found at:', qrCodePath);
+                }
+            } catch (err) {
+                console.error('Error processing QR code file:', err.message);
+            }
         }
+        
 
         // Prepare the response data
         const response = {
