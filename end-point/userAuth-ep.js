@@ -15,8 +15,18 @@ exports.loginUser = async (req, res) => {
     const collectionOfficerId =
       collectionOfficerIdResult[0]?.collectionOfficerId;
 
+    const collectionOfficerIdResult = await userAuthDao.getOfficerEmployeeId(
+      empid
+    );
+    const collectionOfficerId =
+      collectionOfficerIdResult[0]?.collectionOfficerId;
+
     console.log("Collection Officer ID:", collectionOfficerId);
     // Fetch user details from the database
+    const users = await userAuthDao.getOfficerPasswordBy(
+      collectionOfficerId,
+      password
+    );
     const users = await userAuthDao.getOfficerPasswordBy(
       collectionOfficerId,
       password
@@ -58,6 +68,7 @@ exports.loginUser = async (req, res) => {
       passwordUpdateRequired,
       token,
       userid: officer.id,
+      userid: officer.id,
     };
 
     res.status(200).json(response);
@@ -92,7 +103,24 @@ exports.updatePassword = async (req, res) => {
   );
   const collectionOfficerId = collectionOfficerIdResult[0]?.collectionOfficerId;
   console.log("Collection Officer ID:", collectionOfficerId);
+  const { empid, currentPassword, newPassword } = req.body;
+  console.log("Attempting to update password for empid:", empid);
+  // Validate inputs
+  if (!empid || !currentPassword || !newPassword) {
+    return res.status(400).json({ message: "All fields are required" });
+  }
+  const collectionOfficerIdResult = await userAuthDao.getOfficerEmployeeId(
+    empid
+  );
+  const collectionOfficerId = collectionOfficerIdResult[0]?.collectionOfficerId;
+  console.log("Collection Officer ID:", collectionOfficerId);
 
+  try {
+    // Update the password in the database
+    await userAuthDao.updatePasswordInDatabase(
+      collectionOfficerId,
+      newPassword
+    );
   try {
     // Update the password in the database
     await userAuthDao.updatePasswordInDatabase(
