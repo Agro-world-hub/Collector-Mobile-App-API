@@ -15,18 +15,9 @@ exports.loginUser = async (req, res) => {
     const collectionOfficerId =
       collectionOfficerIdResult[0]?.collectionOfficerId;
 
-    const collectionOfficerIdResult = await userAuthDao.getOfficerEmployeeId(
-      empid
-    );
-    const collectionOfficerId =
-      collectionOfficerIdResult[0]?.collectionOfficerId;
-
     console.log("Collection Officer ID:", collectionOfficerId);
     // Fetch user details from the database
-    const users = await userAuthDao.getOfficerPasswordBy(
-      collectionOfficerId,
-      password
-    );
+
     const users = await userAuthDao.getOfficerPasswordBy(
       collectionOfficerId,
       password
@@ -103,17 +94,6 @@ exports.updatePassword = async (req, res) => {
   );
   const collectionOfficerId = collectionOfficerIdResult[0]?.collectionOfficerId;
   console.log("Collection Officer ID:", collectionOfficerId);
-  const { empid, currentPassword, newPassword } = req.body;
-  console.log("Attempting to update password for empid:", empid);
-  // Validate inputs
-  if (!empid || !currentPassword || !newPassword) {
-    return res.status(400).json({ message: "All fields are required" });
-  }
-  const collectionOfficerIdResult = await userAuthDao.getOfficerEmployeeId(
-    empid
-  );
-  const collectionOfficerId = collectionOfficerIdResult[0]?.collectionOfficerId;
-  console.log("Collection Officer ID:", collectionOfficerId);
 
   try {
     // Update the password in the database
@@ -147,7 +127,10 @@ exports.updatePassword = async (req, res) => {
         .json({ message: "An error occurred while updating the password" });
     }
   }
-};
+  } catch (error) {
+    console.error("Error updating password:", error);
+    res.status(500).json({ message: "An error occurred while updating the password" });
+  }}
 
 exports.getProfile = async (req, res) => {
   const userId = req.user.id;
