@@ -5,6 +5,7 @@ const router = express.Router();
 const unRegisterdcropfamerEp = require('../end-point/unRegisteredCropFarmer-ep');
 
 router.post('/add-crops', auth, unRegisterdcropfamerEp.addCropDetails);
+router.post('/add-crops2', auth, unRegisterdcropfamerEp.addCropDetails2); 
 router.get('/get-crop-names', unRegisterdcropfamerEp.getAllCropNames);
 // Route to get varieties by crop name
 router.get('/crops/varieties/:id',unRegisterdcropfamerEp.getVarietiesByCropId);

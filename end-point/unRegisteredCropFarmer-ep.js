@@ -4,7 +4,7 @@ const cropDetailsDao = require('../dao/unRegisteredCropFarmer-dao');
 const db = require('../startup/database');
 
 exports.addCropDetails = async (req, res) => {
-    console.log("Request body:", req.body.crops);
+    console.log("Request body:", req.body);
     const { crops, farmerId } = req.body;
     const userId = req.user.id;
 
@@ -36,6 +36,30 @@ exports.addCropDetails = async (req, res) => {
         res.status(500).json({ error: 'Internal Server Error' });
     }
 };
+
+exports.addCropDetails2 = async (req, res) => {
+    console.log("Request body:", req.body.crops);
+    const { crops, farmerId } = req.body;
+    const userId = req.user.id;
+
+    if (!crops || typeof crops !== 'object') {
+        return res.status(400).json({ error: 'Crops data is required and must be an object' });
+    }
+
+    try {
+        const registeredFarmerId = await cropDetailsDao.insertFarmerPayment(farmerId, userId);
+        await cropDetailsDao.insertCropDetails(registeredFarmerId, crops);
+
+        res.status(201).json({
+            message: 'Crop payment records added successfully',
+            registeredFarmerId
+        });
+    } catch (err) {
+        console.error('Error processing request:', err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+};
+
 
 exports.getCropDetailsByUserId = async (req, res) => {
     const { userId } = req.params;
