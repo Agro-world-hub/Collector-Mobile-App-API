@@ -7,6 +7,7 @@ const bodyParser = require('body-parser');
 const getUserdata = require('./routes/QRroutes')
 
 const complainRoutes = require('./routes/complains.routes')
+const priceUpdatesRoutes = require('./routes/price.routes')
 
 require('dotenv').config();
 
@@ -45,6 +46,7 @@ const searchRoutes = require('./routes/search.routes')
 app.use('/api/auth', searchRoutes);
 
 app.use('/api/auth', complainRoutes);
+app.use('/api/auth', priceUpdatesRoutes);
 
 
 
