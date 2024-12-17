@@ -3,23 +3,23 @@ const db = require("../startup/database");
 exports.getOfficerEmployeeId = (empid) => {
   return new Promise((resolve, reject) => {
     const sql =
-      "SELECT collectionOfficerId FROM collectionofficercompanydetails WHERE empid = ? ";
+      "SELECT collectionOfficerId, jobRole FROM collectionofficercompanydetails WHERE empid = ? ";
     db.query(sql, [empid], (err, results) => {
       if (err) {
         return reject(new Error("Database error")); // Reject with an error object
       }
       if (results.length === 0) {
-        return reject(new Error("Invalid email or password")); // Reject for no results
+        return reject(new Error("Invalid Employee ID")); // Reject for no results
       }
       resolve(results); // Resolve with the query results
     });
   });
 };
 
-exports.getOfficerPasswordBy = (collectionOfficerId, password) => {
+exports.getOfficerPasswordBy = (collectionOfficerId) => {
   return new Promise((resolve, reject) => {
-    const sql = "SELECT * FROM collectionofficer WHERE id = ? AND password = ?";
-    db.query(sql, [collectionOfficerId, password], (err, results) => {
+    const sql = "SELECT * FROM collectionofficer WHERE id = ? ";
+    db.query(sql, [collectionOfficerId], (err, results) => {
       if (err) {
         return reject(new Error("Database error")); // Reject with an error object
       }
@@ -31,7 +31,7 @@ exports.getOfficerPasswordBy = (collectionOfficerId, password) => {
   });
 };
 
-exports.updatePasswordInDatabase = (collectionOfficerId, newPassword) => {
+exports.updatePasswordInDatabase = (collectionOfficerId, hashedPassword) => {
   return new Promise((resolve, reject) => {
     const updatePasswordSql = `
             UPDATE collectionofficer
@@ -40,7 +40,7 @@ exports.updatePasswordInDatabase = (collectionOfficerId, newPassword) => {
         `;
     db.query(
       updatePasswordSql,
-      [newPassword, collectionOfficerId],
+      [hashedPassword, collectionOfficerId],
       (err, result) => {
         if (err) {
           return reject("Database error while updating password");
