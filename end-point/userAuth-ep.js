@@ -1,11 +1,24 @@
 const jwt = require("jsonwebtoken");
 const userAuthDao = require("../dao/userAuth-dao");
 const bcrypt = require("bcrypt");
-
+const { loginSchema } = require('../Validations/Auth-validations');
 
 exports.loginUser = async (req, res) => {
   try {
-    const { empid, password } = req.body;
+   
+       // Step 1: Validate the request body using Joi
+       const { error } = loginSchema.validate(req.body);
+
+       // If validation fails, return a 400 error with the validation message
+       if (error) {
+         return res.status(400).json({
+           status: 'error',
+           message: error.details[0].message,
+         });
+       }
+
+       const { empid, password } = req.body;
+
     let collectionOfficerIdResult;
     try {
       collectionOfficerIdResult = await userAuthDao.getOfficerEmployeeId(empid);
