@@ -27,3 +27,38 @@ exports.checkIfUserExists = (userId) => {
         });
     });
 };
+
+exports.createOfficerComplaint = (coId, language, complain, category, status) => {
+    return new Promise((resolve, reject) => {
+        const sql = 
+           "INSERT INTO farmercomplains (coId,  language, complain, complainCategory, status) VALUES (?, ?, ?, ?, ?)";
+        
+        const values = [ coId,language,complain, category, status];
+
+        db.query(sql, values, (err, result) => {
+            if (err) {
+                return reject(err);
+            }
+            resolve(result);
+        });
+    });
+};
+
+exports.getAllComplaintsByUserId = async(userId) => {
+    return new Promise((resolve, reject) => {
+        const query = `
+        SELECT id, language, complain, status, createdAt, complainCategory , reply
+        FROM farmercomplains 
+        WHERE coId = ?
+        ORDER BY createdAt DESC
+      `;
+        db.query(query, [userId], (error, results) => {
+            if (error) {
+                console.error("Error fetching complaints:", error);
+                reject(error);
+            } else {
+                resolve(results);
+            }
+        });
+    });
+};
