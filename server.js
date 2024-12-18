@@ -8,6 +8,7 @@ const getUserdata = require('./routes/QRroutes')
 
 const complainRoutes = require('./routes/complains.routes')
 const priceUpdatesRoutes = require('./routes/price.routes')
+const managerRoutes = require('./routes/manager.routes')
 
 require('dotenv').config();
 
@@ -47,6 +48,7 @@ app.use('/api/auth', searchRoutes);
 
 app.use('/api/auth', complainRoutes);
 app.use('/api/auth', priceUpdatesRoutes);
+app.use('/api/collection-manager',managerRoutes);
 
 
 
