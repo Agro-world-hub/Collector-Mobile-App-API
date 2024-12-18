@@ -21,14 +21,14 @@ exports.createFarmerComplaint = async (req, res) => {
         }
         farmerId = userExists.id;
         // Extract officer details from the request user
-        const { firstNameEnglish, lastNameEnglish, phoneNumber01 } = req.user;
+        // const { firstNameEnglish, lastNameEnglish, phoneNumber01 } = req.user;
 
         // Construct officerName and officerPhone from payload
-        const officerName = `${firstNameEnglish} ${lastNameEnglish}`;
-        const officerPhone = phoneNumber01;
+        // const officerName = `${firstNameEnglish} ${lastNameEnglish}`;
+        // const officerPhone = phoneNumber01;
 
         // Generate a unique reference number based on a pattern
-        const refNo = `COMP-${uuidv4().slice(0, 8)}`; // Example pattern: COMP-xxxxxx
+        // const refNo = `COMP-${uuidv4().slice(0, 8)}`; // Example pattern: COMP-xxxxxx
 
         // Default status
         const status = 'Opened';

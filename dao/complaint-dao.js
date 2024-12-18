@@ -1,6 +1,6 @@
 const db = require('../startup/database');
 
-exports.createComplaint = (status,complain, language, farmerId, category) => {
+exports.createComplaint = (complain, language, farmerId, category, status) => {
     return new Promise((resolve, reject) => {
         const sql = 
            "INSERT INTO farmercomplains (farmerId,  language, complain, complainCategory, status) VALUES (?, ?, ?, ?, ?)";
