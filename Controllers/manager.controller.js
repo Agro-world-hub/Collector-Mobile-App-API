@@ -41,7 +41,7 @@ exports.getCollectionOfficers = async (req, res) => {
 };
 
 
-const Joi = require('joi'); // Make sure to install Joi: npm install joi
+const Joi = require('joi'); 
 
 exports.getFarmerPaymentsSummary = async (req, res) => {
   // Define the Joi schema
@@ -126,70 +126,7 @@ exports.getFarmerPaymentsSummary = async (req, res) => {
 };
 
 
-// exports.getFarmerPaymentsSummary = async (req, res) => {
-//   const getDailyReport = (collectionOfficerId, fromDate, toDate) => {
-//     return new Promise((resolve, reject) => {
-//       const query = `
-//         SELECT 
-//           fpc.registerFarmerId, 
-//           DATE(fpc.createdAt) AS date, 
-//           SUM(gradeAquan) + SUM(gradeBquan) + SUM(gradeCquan) AS total, 
-//           COUNT(fpc.registerFarmerId) AS TCount
-//         FROM 
-//           registeredfarmerpayments rfp
-//         JOIN 
-//           farmerpaymentscrops fpc ON rfp.id = fpc.registerFarmerId
-//         WHERE 
-//           rfp.collectionOfficerId = ? 
-//           AND fpc.createdAt BETWEEN ? AND ?
-//         GROUP BY 
-//           DATE(fpc.createdAt), fpc.registerFarmerId
-//       `;
 
-//       const params = [parseInt(collectionOfficerId), fromDate, toDate];
-
-//       db.query(query, params, (err, results) => {
-//         if (err) {
-//           console.error('Query Error:', err);
-//           return reject(err);
-//         }
-
-//         console.log('Query Results:', results);
-
-//         // Map the results to format the output as needed
-//         const formattedResults = results.map((row) => ({
-//           farmerId: row.registerFarmerId,
-//           date: row.date,
-//           total: row.total,
-//           paymentCount: row.TCount,
-//         }));
-
-//         resolve(formattedResults);
-//       });
-//     });
-//   };
-
-//   try {
-//     const { collectionOfficerId, fromDate, toDate } = req.query;
-
-//     if (!collectionOfficerId || !fromDate || !toDate) {
-//       return res.status(400).json({ message: 'Missing required parameters' });
-//     }
-
-//     const dailyReport = await getDailyReport(collectionOfficerId, fromDate, toDate);
-
-//     res.status(200).json({
-//       success: true,
-//       data: dailyReport,
-//     });
-//   } catch (error) {
-//     console.error('Error in getFarmerPaymentsSummary:', error);
-//     res.status(500).json({
-//       success: false,
-//       message: 'Server Error',
-//     });
-//   }
-// };
 
 
 exports.getOfficerDetailsForReport = async (req, res) => {
