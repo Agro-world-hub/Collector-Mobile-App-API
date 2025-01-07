@@ -7,7 +7,7 @@ exports.createComplaint = (complain, language, farmerId, category, status) => {
         
         const values = [ farmerId,language,complain, category, status];
 
-        db.query(sql, values, (err, result) => {
+        db.collectionofficer.query(sql, values, (err, result) => {
             if (err) {
                 return reject(err);
             }
@@ -19,7 +19,7 @@ exports.createComplaint = (complain, language, farmerId, category, status) => {
 exports.checkIfUserExists = (userId) => {
     return new Promise((resolve, reject) => {
         const sql = "SELECT id FROM users WHERE id = ?";
-        db.query(sql, [userId], (err, result) => {
+        db.plantcare.query(sql, [userId], (err, result) => {
             if (err) {
                 return reject(err);
             }
@@ -35,7 +35,7 @@ exports.createOfficerComplaint = (coId, language, complain, category, status) =>
         
         const values = [ coId,language,complain, category, status];
 
-        db.query(sql, values, (err, result) => {
+        db.collectionofficer.query(sql, values, (err, result) => {
             if (err) {
                 return reject(err);
             }
@@ -52,7 +52,7 @@ exports.getAllComplaintsByUserId = async(userId) => {
         WHERE coId = ?
         ORDER BY createdAt DESC
       `;
-        db.query(query, [userId], (error, results) => {
+        db.collectionofficer.query(query, [userId], (error, results) => {
             if (error) {
                 console.error("Error fetching complaints:", error);
                 reject(error);

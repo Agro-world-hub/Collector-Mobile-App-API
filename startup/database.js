@@ -1,22 +1,40 @@
-const mysql = require('mysql2'); // Use the promise version
+const mysql = require('mysql2');
 require('dotenv').config();
 
-const db = mysql.createConnection({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME
+
+const plantcare = mysql.createConnection({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME_PC,
+  charset: 'utf8mb4'
 });
 
-const connectToDatabase = async() => {
-    try {
-        await db.connect();
-        console.log('Connected to the MySQL database.');
-    } catch (err) {
-        console.error('Error connecting to the database:', err);
-    }
-};
 
-connectToDatabase();
+const collectionofficer = mysql.createConnection({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME_CO,
+  charset: 'utf8mb4'
+});
 
-module.exports = db;
+const marketPlace = mysql.createConnection({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME_MP,
+  charset: 'utf8mb4'
+});
+
+
+const dash = mysql.createConnection({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME_DS,
+  charset: 'utf8mb4'
+});
+
+
+module.exports = {plantcare, collectionofficer, marketPlace, dash};

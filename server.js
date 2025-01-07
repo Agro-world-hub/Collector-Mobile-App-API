@@ -1,5 +1,5 @@
 const express = require('express');
-const db = require('./startup/database');
+
 const cors = require('cors');
 const addCropDetails = require('./routes/unregisteredcropfarmer');
 const farmerRoutes = require('./routes/farmerrutes');
@@ -9,6 +9,7 @@ const getUserdata = require('./routes/QRroutes')
 const complainRoutes = require('./routes/complains.routes')
 const priceUpdatesRoutes = require('./routes/price.routes')
 const managerRoutes = require('./routes/manager.routes')
+const {  plantcare, collectionofficer, marketPlace, dash } = require('./startup/database');
 
 require('dotenv').config();
 
@@ -33,6 +34,39 @@ app.options(
 // Increase the payload limit
 app.use(bodyParser.json({ limit: '10mb' })); // Adjust the limit as necessary
 app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
+
+
+plantcare.connect(err => {
+    if (err) {
+      console.error('Error connecting to the database in index.js (plantcare):', err);
+      return;
+    }
+    console.log('Connected to the MySQL database in server.js.(plantcare)');
+  });
+  
+  collectionofficer.connect(err => {
+    if (err) {
+      console.error('Error connecting to the database in index.js (collectionofficer):', err);
+      return;
+    }
+    console.log('Connected to the MySQL database in server.js.(collectionofficer)');
+  });
+  
+  marketPlace.connect(err => {
+    if (err) {
+      console.error('Error connecting to the database in index.js (marketPlace):', err);
+      return;
+    }
+    console.log('Connected to the MySQL database in server.js.(marketPlace)');
+  });
+  
+  dash.connect(err => {
+    if (err) {
+      console.error('Error connecting to the database in index.js (dash):', err);
+      return;
+    }
+    console.log('Connected to the MySQL database in server.js.(dash)');
+  });
 
 
 // Routes

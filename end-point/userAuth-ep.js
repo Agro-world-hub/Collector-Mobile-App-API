@@ -3,55 +3,67 @@ const userAuthDao = require("../dao/userAuth-dao");
 const bcrypt = require("bcrypt");
 const { loginSchema } = require('../Validations/Auth-validations');
 
+
 exports.loginUser = async (req, res) => {
   try {
-   
-       // Step 1: Validate the request body using Joi
-       const { error } = loginSchema.validate(req.body);
+    // Step 1: Validate the request body using Joi
+    console.log("Request Body:", req.body);
+    const { error } = loginSchema.validate(req.body);
+    console.log("Validation Error:", error);
 
-       // If validation fails, return a 400 error with the validation message
-       if (error) {
-         return res.status(400).json({
-           status: 'error',
-           message: error.details[0].message,
-         });
-       }
+    if (error) {
+      return res.status(400).json({
+        status: "error",
+        message: error.details[0].message,
+      });
+    }
 
-       const { empid, password } = req.body;
+    const { empId, password } = req.body;
 
-    let collectionOfficerIdResult;
+    console.log("Employee ID:", empId);
+    console.log("Password Provided:", password);
+
+    let collectionOfficerResult;
     try {
-      collectionOfficerIdResult = await userAuthDao.getOfficerEmployeeId(empid);
+      collectionOfficerResult = await userAuthDao.getOfficerByEmpId(empId);
     } catch (error) {
       console.error("Error fetching Employee ID:", error.message);
       return res.status(404).json({
         status: "error",
-        message: error.message, 
+        message: error.message,
       });
     }
-    
-    const collectionOfficerId =
-      collectionOfficerIdResult[0]?.collectionOfficerId;
-      const jobRole = collectionOfficerIdResult[0]?.jobRole
 
-      if (!collectionOfficerId) {
-        return res.status(404).json({
-          status: "error",
-          message: "Invalid Employee ID",
-        });
-      }
-    
-    const users = await userAuthDao.getOfficerPasswordBy(
-      collectionOfficerId
-    );
+    const collectionOfficerId = collectionOfficerResult[0]?.id;
+    const jobRole = collectionOfficerResult[0]?.jobRole;
+
+    if (!collectionOfficerId) {
+      return res.status(404).json({
+        status: "error",
+        message: "Invalid Employee ID",
+      });
+    }
+
+    const users = await userAuthDao.getOfficerPasswordById(collectionOfficerId);
 
     if (!users || users.length === 0) {
       return res.status(404).json({ status: "error", message: "User not found" });
     }
 
     const officer = users[0];
+    console.log("Hashed Password from Database:", officer.password);
 
+    // Check if the officer's status is "Approved"
+    if (officer.status !== "Approved") {
+      return res.status(403).json({
+        status: "error",
+        message: `Access denied. Your account status is "${officer.status}". Please contact the admin for assistance.`,
+      });
+    }
+
+    // Compare the provided password with the hashed password in the database
     const isPasswordValid = await bcrypt.compare(password, officer.password);
+    console.log("Password Match Result:", isPasswordValid);
 
     if (!isPasswordValid) {
       return res.status(401).json({
@@ -60,6 +72,7 @@ exports.loginUser = async (req, res) => {
       });
     }
 
+    // If password is valid, generate a JWT token
     const payload = {
       id: officer.id,
       email: officer.email,
@@ -68,8 +81,7 @@ exports.loginUser = async (req, res) => {
       phoneNumber01: officer.phoneNumber01,
     };
 
-
-    const token = jwt.sign(payload, process.env.JWT_SECRET || T1, {
+    const token = jwt.sign(payload, process.env.JWT_SECRET || "T1", {
       expiresIn: "10h",
     });
 
@@ -83,8 +95,8 @@ exports.loginUser = async (req, res) => {
       officer: payload,
       passwordUpdateRequired,
       token,
-      userid: officer.id,
-      jobRole:jobRole
+      userId: officer.id,
+      jobRole: jobRole,
     };
 
     res.status(200).json(response);
@@ -97,6 +109,7 @@ exports.loginUser = async (req, res) => {
         message: err.details[0].message,
       });
     }
+
     res.status(500).json({
       status: "error",
       message: "An error occurred during login.",
@@ -104,19 +117,20 @@ exports.loginUser = async (req, res) => {
   }
 };
 
+
 exports.updatePassword = async (req, res) => {
-  const { empid, currentPassword, newPassword } = req.body;
-  console.log("Attempting to update password for empid:", empid);
-  if (!empid || !currentPassword || !newPassword) {
+  const { empId, currentPassword, newPassword } = req.body;
+  console.log("Attempting to update password for empid:", empId);
+  if (!empId || !currentPassword || !newPassword) {
     return res.status(400).json({ message: "All fields are required" });
   }
-  const collectionOfficerIdResult = await userAuthDao.getOfficerEmployeeId(
-    empid
+  const collectionOfficerIdResult = await userAuthDao.getOfficerByEmpId(
+    empId
   );
-  const collectionOfficerId = collectionOfficerIdResult[0]?.collectionOfficerId;
+  const collectionOfficerId = collectionOfficerIdResult[0]?.id;
   console.log("Collection Officer ID:", collectionOfficerId);
 
-  const users = await userAuthDao.getOfficerPasswordBy(
+  const users = await userAuthDao.getOfficerPasswordById(
     collectionOfficerId
   );
   const officer = users[0];
@@ -164,41 +178,70 @@ exports.updatePassword = async (req, res) => {
   }
 };
 
-exports.getProfile = async (req, res) => {
-  const userId = req.user.id;
+// exports.getProfile = async (req, res) => {
+//   const userId = req.user.id;
 
+//   try {
+//     const user = await userAuthDao.getProfileById(userId);
+
+//     res.status(200).json({
+//       status: "success",
+//       user: {
+//         firstNameEnglish: user.firstNameEnglish,
+//         firstNameSinhala: user.firstNameSinhala,
+//         firstNameTamil: user.firstNameTamil,
+//         lastNameEnglish: user.lastNameEnglish,
+//         lastNameSinhala: user.lastNameSinhala,
+//         lastNameTamil: user.lastNameTamil,
+//         phoneNumber01: user.phoneNumber01,
+//         phoneNumber02: user.phoneNumber02,
+//         image: user.image,
+//         nic: user.nic,
+//         email: user.email,
+//         address: {
+//           houseNumber: user.houseNumber,
+//           streetName: user.streetName,
+//           city: user.city,
+//           district: user.district,
+//           province: user.province,
+//           country: user.country,
+//         },
+//         languages: user.languages,
+//       },
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       status: "error",
+//       message: error.message,
+//     });
+//   }
+// };
+
+exports.getProfile = async (req, res) => {
   try {
-    const user = await userAuthDao.getProfileById(userId);
+    const officerId = req.user.id; // Assuming req.user.id is set after authentication
+    console.log("Fetching details for Officer ID:", officerId);
+
+    if (!officerId) {
+      return res.status(400).json({ status: "error", message: "Officer ID is required" });
+    }
+
+    const officerDetails = await userAuthDao.getOfficerDetailsById(officerId);
 
     res.status(200).json({
       status: "success",
-      user: {
-        firstNameEnglish: user.firstNameEnglish,
-        firstNameSinhala: user.firstNameSinhala,
-        firstNameTamil: user.firstNameTamil,
-        lastNameEnglish: user.lastNameEnglish,
-        lastNameSinhala: user.lastNameSinhala,
-        lastNameTamil: user.lastNameTamil,
-        phoneNumber01: user.phoneNumber01,
-        phoneNumber02: user.phoneNumber02,
-        image: user.image,
-        nic: user.nic,
-        email: user.email,
-        address: {
-          houseNumber: user.houseNumber,
-          streetName: user.streetName,
-          city: user.city,
-          district: user.district,
-          province: user.province,
-          country: user.country,
-        },
-        languages: user.languages,
-      },
+      data: officerDetails,
     });
   } catch (error) {
+    console.error("Error fetching officer details:", error.message);
+
+    if (error.message === "Officer not found") {
+      return res.status(404).json({ status: "error", message: "Officer not found" });
+    }
+
     res.status(500).json({
       status: "error",
-      message: error.message,
+      message: "An error occurred while fetching officer details",
     });
   }
 };

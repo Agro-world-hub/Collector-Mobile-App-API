@@ -10,7 +10,7 @@ exports.insertFarmerPayment = (farmerId, userId) => {
         `;
         const paymentValues = [farmerId, userId];
 
-        db.query(paymentQuery, paymentValues, (err, result) => {
+        db.collectionofficer.query(paymentQuery, paymentValues, (err, result) => {
             if (err) {
                 return reject(err);
             }
@@ -52,7 +52,7 @@ exports.insertCropDetails = (registeredFarmerId, crop) => {
             image ? Buffer.from(image, 'base64') : null
         ];
 
-        db.query(cropQuery, cropValues, (err, result) => {
+        db.collectionofficer.query(cropQuery, cropValues, (err, result) => {
             if (err) {
                 return reject(err);
             }
@@ -81,9 +81,9 @@ exports.getCropDetailsByUserId = (userId) => {
             FROM 
                 farmerpaymentscrops fpc
             INNER JOIN 
-                cropvariety cv ON fpc.cropId = cv.id
+                plant_care.cropvariety cv ON fpc.cropId = cv.id
             INNER JOIN 
-                cropgroup cg ON cv.cropGroupId = cg.id
+                plant_care.cropgroup cg ON cv.cropGroupId = cg.id
             INNER JOIN 
                 registeredfarmerpayments rfp ON fpc.registerFarmerId = rfp.id
             WHERE 
@@ -92,7 +92,7 @@ exports.getCropDetailsByUserId = (userId) => {
                 fpc.createdAt DESC
         `;
 
-        db.query(query, [userId], (error, results) => {
+        db.collectionofficer.query(query, [userId], (error, results) => {
             if (error) {
                 return reject(error);
             }
@@ -101,11 +101,12 @@ exports.getCropDetailsByUserId = (userId) => {
     });
 };
 
+
 exports.getAllCropNames = () => {
     return new Promise((resolve, reject) => {
         const query = 'SELECT id, cropNameEnglish FROM cropgroup';
         
-        db.query(query, (error, results) => {
+        db.plantcare.query(query, (error, results) => {
             if (error) {
                 return reject(error);  // Rejecting the promise with the error
             }
@@ -117,7 +118,7 @@ exports.getAllCropNames = () => {
 exports.getVarietiesByCropId = (cropId) => {
     return new Promise((resolve, reject) => {
         const query = 'SELECT id, varietyNameEnglish FROM cropvariety WHERE cropGroupId = ?';
-        db.query(query, [cropId], (error, results) => {
+        db.plantcare.query(query, [cropId], (error, results) => {
             if (error) {
                 return reject(error);  // Reject with error for controller to handle
             }
@@ -129,7 +130,7 @@ exports.getVarietiesByCropId = (cropId) => {
 exports.getMarketPricesByVarietyId = (varietyId) => {
     return new Promise((resolve, reject) => {
         const query = 'SELECT grade, price FROM marketprice WHERE varietyId = ?';
-        db.query(query, [varietyId], (error, results) => {
+        db.collectionofficer.query(query, [varietyId], (error, results) => {
             if (error) {
                 return reject(error);  // Reject with error to be handled in the controller
             }

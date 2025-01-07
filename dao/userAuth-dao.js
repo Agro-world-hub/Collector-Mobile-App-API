@@ -1,35 +1,39 @@
 const db = require("../startup/database");
 
-exports.getOfficerEmployeeId = (empid) => {
+// DAO for fetching officer details by empId
+exports.getOfficerByEmpId = (empId) => {
   return new Promise((resolve, reject) => {
     const sql =
-      "SELECT collectionOfficerId, jobRole FROM collectionofficercompanydetails WHERE empid = ? ";
-    db.query(sql, [empid], (err, results) => {
+      "SELECT id, jobRole FROM collectionofficer WHERE empId = ?";
+    db.collectionofficer.query(sql, [empId], (err, results) => {
       if (err) {
-        return reject(new Error("Database error")); // Reject with an error object
+        return reject(new Error("Database error"));
       }
       if (results.length === 0) {
-        return reject(new Error("Invalid Employee ID")); // Reject for no results
+        return reject(new Error("Invalid Employee ID"));
       }
-      resolve(results); // Resolve with the query results
+      resolve(results);
+      console.log("Results:", results);
     });
   });
 };
 
-exports.getOfficerPasswordBy = (collectionOfficerId) => {
+// DAO for fetching officer details by ID
+exports.getOfficerPasswordById = (id) => {
   return new Promise((resolve, reject) => {
-    const sql = "SELECT * FROM collectionofficer WHERE id = ? ";
-    db.query(sql, [collectionOfficerId], (err, results) => {
+    const sql = "SELECT * FROM collectionofficer WHERE id = ?";
+    db.collectionofficer.query(sql, [id], (err, results) => {
       if (err) {
-        return reject(new Error("Database error")); // Reject with an error object
+        return reject(new Error("Database error"));
       }
       if (results.length === 0) {
-        return reject(new Error("Invalid email or password")); // Reject for no results
+        return reject(new Error("Invalid email or password"));
       }
-      resolve(results); // Resolve with the query results
+      resolve(results);
     });
   });
 };
+
 
 exports.updatePasswordInDatabase = (collectionOfficerId, hashedPassword) => {
   return new Promise((resolve, reject) => {
@@ -38,7 +42,7 @@ exports.updatePasswordInDatabase = (collectionOfficerId, hashedPassword) => {
             SET password = ? , passwordUpdated = 1
             WHERE id = ?
         `;
-    db.query(
+    db.collectionofficer.query(
       updatePasswordSql,
       [hashedPassword, collectionOfficerId],
       (err, result) => {
@@ -64,7 +68,7 @@ exports.getProfileById = (userId) => {
             WHERE id = ?
         `;
 
-        db.query(sql, [userId], (err, results) => {
+        db.collectionofficer.query(sql, [userId], (err, results) => {
             if (err) {
                 return reject(new Error('Database error: ' + err));
             }
@@ -131,7 +135,7 @@ exports.getQRCodeByOfficerId = (officerId) => {
             WHERE id = ?
         `;
 
-        db.query(query, [officerId], (error, results) => {
+        db.collectionofficer.query(query, [officerId], (error, results) => {
           if (error) {
               console.error('Error fetching officer QR code from DB:', error);
               return reject(new Error('Database query failed'));
@@ -139,4 +143,48 @@ exports.getQRCodeByOfficerId = (officerId) => {
           resolve(results);
       });
     });
+};
+
+
+// ------------created below codes after the collection officer update ------------- 
+
+exports.getOfficerDetailsById = (officerId) => {
+  return new Promise((resolve, reject) => {
+    const sql = `
+      SELECT 
+        co.*, 
+        cc.centerName AS collectionCenterName,
+        cc.contact01 AS centerContact01,
+        cc.contact02 AS centerContact02,
+        cc.buildingNumber AS centerBuildingNumber,
+        cc.street AS centerStreet,
+        cc.district AS centerDistrict,
+        cc.province AS centerProvince,
+        com.companyNameEnglish AS companyName,
+        com.email AS companyEmail,
+        com.oicName AS companyOICName,
+        com.oicEmail AS companyOICEmail
+      FROM 
+        collectionofficer co
+      JOIN 
+        collectioncenter cc ON co.centerId = cc.id
+      JOIN 
+        company com ON co.companyId = com.id
+      WHERE 
+        co.id = ?;
+    `;
+
+    db.collectionofficer.query(sql, [officerId], (err, results) => {
+      if (err) {
+        console.error("Database error:", err.message);
+        return reject(new Error("Database error"));
+      }
+
+      if (results.length === 0) {
+        return reject(new Error("Officer not found"));
+      }
+
+      resolve(results[0]); // Return the first result as the officer details
+    });
+  });
 };

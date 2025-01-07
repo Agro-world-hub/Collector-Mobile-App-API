@@ -7,7 +7,7 @@ exports.createUser = (firstName, lastName, NICnumber, phoneNumber) => {
             INSERT INTO users (firstName, lastName, NICnumber, phoneNumber)
             VALUES (?, ?, ?, ?)
         `;
-        db.query(sql, [firstName, lastName, NICnumber, phoneNumber], (err, result) => {
+        db.plantcare.query(sql, [firstName, lastName, NICnumber, phoneNumber], (err, result) => {
             if (err) return reject(err);
             resolve(result);
         });
@@ -21,7 +21,7 @@ exports.createPaymentDetails = (userId, address, accNumber, accHolderName, bankN
             INSERT INTO userbankdetails (userId, address, accNumber, accHolderName, bankName, branchName)
             VALUES (?, ?, ?, ?, ?, ?)
         `;
-        db.query(sql, [userId, address, accNumber, accHolderName, bankName, branchName], (err, result) => {
+        db.plantcare.query(sql, [userId, address, accNumber, accHolderName, bankName, branchName], (err, result) => {
             if (err) return reject(err);
             resolve(result);
         });
@@ -34,7 +34,7 @@ exports.updateQrCodePath = (userId, qrFilePath) => {
         const sql = `
             UPDATE users SET farmerQr = ? WHERE id = ?
         `;
-        db.query(sql, [qrFilePath, userId], (err) => {
+        db.plantcare.query(sql, [qrFilePath, userId], (err) => {
             if (err) return reject(err);
             resolve();
         });
@@ -51,7 +51,7 @@ exports.getFarmerDetailsById = async (userId) => {
     `;
     
     return new Promise((resolve, reject) => {
-        db.query(userSql, [userId], (err, result) => {
+        db.plantcare.query(userSql, [userId], (err, result) => {
             if (err) return reject(err);
             resolve(result);
         
@@ -82,7 +82,7 @@ exports.getUserWithBankDetailsById = async (userId) => {
     `;
     
     return new Promise((resolve, reject) => {
-        db.query(query, [userId], (err, result) => {
+        db.plantcare.query(query, [userId], (err, result) => {
             if (err) return reject(err);
             resolve(result);
         });

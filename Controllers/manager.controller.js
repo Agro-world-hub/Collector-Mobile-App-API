@@ -1,25 +1,24 @@
 const db = require('../startup/database');
 
 exports.getCollectionOfficers = async (req, res) => {
-  const managerId = req.user.id;
+  const managerId = req.user.id; // Manager ID from the authenticated user
 
   const sql = `
     SELECT 
-      cod.empId AS empId, 
-      CONCAT(co.firstNameEnglish, ' ', co.lastNameEnglish) AS fullName,
-      co.phoneNumber01 AS phoneNumber1,
-      co.phoneNumber02 AS phoneNumber2,
-      co.id AS collectionOfficerId
-    FROM collectionofficer AS co
-    JOIN collectionofficercompanydetails AS cod 
-      ON cod.collectionOfficerId = co.id
-    WHERE cod.collectionManagerId = ? 
-      AND cod.jobRole = 'Collection Officer'
+      empId, 
+      CONCAT(firstNameEnglish, ' ', lastNameEnglish) AS fullName,
+      phoneNumber01 AS phoneNumber1,
+      phoneNumber02 AS phoneNumber2,
+      id AS collectionOfficerId
+    FROM collectionofficer
+    WHERE jobRole = 'Collection Officer' AND irmId = ?
   `;
 
   try {
-    const [rows] = await db.promise().query(sql, [managerId]);
+    // Execute the query with the manager ID as the `irmId` filter
+    const [rows] = await db.collectionofficer.promise().query(sql, [managerId]);
 
+    // Check if no collection officers are found
     if (rows.length === 0) {
       return res.status(404).json({
         status: 'error',
@@ -27,6 +26,7 @@ exports.getCollectionOfficers = async (req, res) => {
       });
     }
 
+    // Return the list of collection officers
     res.status(200).json({
       status: 'success',
       data: rows,
@@ -39,6 +39,7 @@ exports.getCollectionOfficers = async (req, res) => {
     });
   }
 };
+
 
 
 const Joi = require('joi'); 
