@@ -1,10 +1,10 @@
 const collectionofficerDao =require('../dao/manager-dao')
-const QRCode = require('qrcode');
 
 exports.createCollectionOfficer = async (req, res) => {
   try {
     const { id: irmId } = req.user;
 
+    // Get IRM details
     const irmDetails = await collectionofficerDao.getIrmDetails(irmId);
     if (!irmDetails) {
       return res.status(404).json({ error: "IRM details not found" });
@@ -12,18 +12,36 @@ exports.createCollectionOfficer = async (req, res) => {
 
     const { companyId, centerId } = irmDetails;
 
+    // Validate NIC
+    console.log("NIC:", req.body.nicNumber);
+    const nicExists = await collectionofficerDao.checkNICExist(req.body.nicNumber);
+    if (nicExists) {
+      return res.status(400).json({ error: "NIC already exists." });
+    }
+
+    // Validate Email
+    console.log("Email:", req.body.email);
+    const emailExists = await collectionofficerDao.checkEmailExist(req.body.email);
+    if (emailExists) {
+      return res.status(400).json({ error: "Email already exists." });
+    }
+
+    // Map request body fields
     const officerData = {
       ...req.body,
       empId: req.body.userId, // Map userId to empId
       phoneNumber01: req.body.phoneNumber1, // Map phoneNumber1 to phoneNumber01
       phoneNumber02: req.body.phoneNumber2 || null, // Map phoneNumber2 to phoneNumber02
       nic: req.body.nicNumber,
-      accHolderName:req.body.accountHolderName,
-      accNumber:req.body.accountNumber,
+      accHolderName: req.body.accountHolderName,
+      accNumber: req.body.accountNumber,
+      phoneCode01: req.body.phoneCode1,
+      phoneCode02: req.body.phoneCode2 || null,
     };
 
     console.log("Mapped Officer Data:", officerData);
 
+    // Create the collection officer
     const resultsPersonal = await collectionofficerDao.createCollectionOfficerPersonal(
       officerData,
       centerId,
@@ -46,6 +64,7 @@ exports.createCollectionOfficer = async (req, res) => {
 };
 
 
+
 exports.getForCreateId = async (req, res) => {
   try {
     const { role } = req.params; 
@@ -65,5 +84,28 @@ exports.getForCreateId = async (req, res) => {
   } catch (err) {
     console.error("Error executing query:", err);
     res.status(500).send("An error occurred while fetching data.");
+  }
+};
+
+
+//transaction details
+exports.getFarmerListByCollectionOfficerAndDate = async (req, res) => {
+  const { collectionOfficerId, date } = req.query;
+
+  if (!collectionOfficerId || !date) {
+      return res.status(400).json({
+          error: 'Both collectionOfficerId and date are required.',
+      });
+  }
+
+  try {
+      const farmers = await collectionofficerDao.getFarmerListByCollectionOfficerAndDate(
+          collectionOfficerId,
+          date
+      );
+      res.status(200).json(farmers);
+  } catch (error) {
+      console.error('Error fetching farmer list:', error);
+      res.status(500).json({ error: 'An error occurred while fetching the farmer list' });
   }
 };

@@ -81,9 +81,9 @@ exports.getCropDetailsByUserId = (userId) => {
             FROM 
                 farmerpaymentscrops fpc
             INNER JOIN 
-                plant_care.cropvariety cv ON fpc.cropId = cv.id
+                \`plant-care\`.\`cropvariety\` cv ON fpc.cropId = cv.id
             INNER JOIN 
-                plant_care.cropgroup cg ON cv.cropGroupId = cg.id
+                \`plant-care\`.\`cropgroup\` cg ON cv.cropGroupId = cg.id
             INNER JOIN 
                 registeredfarmerpayments rfp ON fpc.registerFarmerId = rfp.id
             WHERE 
@@ -112,6 +112,7 @@ exports.getAllCropNames = () => {
             }
             resolve(results);  // Resolving the promise with the results
         });
+        
     });
 };
 
@@ -124,6 +125,7 @@ exports.getVarietiesByCropId = (cropId) => {
             }
             resolve(results);  // Resolve with results
         });
+        
     });
 };
 

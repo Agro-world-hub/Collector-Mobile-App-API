@@ -22,4 +22,8 @@ router.get('/employee/:empId',getOfficerDetailsForReport );
 //route to generate empId
 router.get('/generate-empId/:role',managerEp.getForCreateId);
 
+
+// Define the route for fetching farmer transaction list
+router.get('/transaction-list', managerEp.getFarmerListByCollectionOfficerAndDate);
+
 module.exports = router;
