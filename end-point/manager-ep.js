@@ -109,3 +109,21 @@ exports.getFarmerListByCollectionOfficerAndDate = async (req, res) => {
       res.status(500).json({ error: 'An error occurred while fetching the farmer list' });
   }
 };
+
+
+//GET farmer details for the managers report
+exports.GetFarmerReportDetails = async (req, res) => {
+  const { userId, createdAt, farmerId } = req.params; // Extract userId, createdAt, and farmerId from params
+
+  try {
+      if (!userId || !createdAt || !farmerId) {
+          return res.status(400).json({ error: 'userId, createdAt, and farmerId parameters are required.' });
+      }
+
+      const cropDetails = await collectionofficerDao.GetFarmerReportDetailsDao(userId, createdAt, farmerId);
+      res.status(200).json(cropDetails);
+  } catch (error) {
+      console.error('Error fetching crop details:', error);
+      res.status(500).json({ error: 'An error occurred while fetching crop details' });
+  }
+};

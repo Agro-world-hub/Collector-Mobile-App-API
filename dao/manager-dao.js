@@ -193,17 +193,30 @@ exports.getFarmerListByCollectionOfficerAndDate = (collectionOfficerId, date) =>
               U.id AS userId, 
               U.firstName, 
               U.lastName, 
+              U.phoneNumber, 
+              CONCAT_WS(', ', U.houseNo, U.streetName, U.city, U.district) AS address,
               U.NICnumber, 
               SUM(FPC.gradeAprice * FPC.gradeAquan) +
               SUM(FPC.gradeBprice * FPC.gradeBquan) +
-              SUM(FPC.gradeCprice * FPC.gradeCquan) AS totalAmount
+              SUM(FPC.gradeCprice * FPC.gradeCquan) AS totalAmount,
+              UB.address AS bankAddress,
+              UB.accNumber AS accountNumber,
+              UB.accHolderName AS accountHolderName,
+              UB.bankName AS bankName,
+              UB.branchName AS branchName
           FROM farmerpaymentscrops FPC
           INNER JOIN registeredfarmerpayments RFP ON FPC.registerFarmerId = RFP.id
           INNER JOIN \`plant-care\`.users U ON RFP.userId = U.id
+          LEFT JOIN \`plant-care\`.userbankdetails UB ON U.id = UB.userId
           WHERE RFP.collectionOfficerId = ?
             AND DATE(RFP.createdAt) = ?
-          GROUP BY RFP.id, U.id, U.firstName, U.lastName, U.NICnumber
+          GROUP BY 
+              RFP.id, U.id, U.firstName, U.lastName, U.phoneNumber, 
+              CONCAT_WS(', ', U.houseNo, U.streetName, U.city, U.district), 
+              U.NICnumber, 
+              UB.address, UB.accNumber, UB.accHolderName, UB.bankName, UB.branchName
       `;
+
       db.collectionofficer.query(query, [collectionOfficerId, date], (error, results) => {
           if (error) {
               return reject(error); // Reject with error to be handled in the controller
@@ -212,3 +225,48 @@ exports.getFarmerListByCollectionOfficerAndDate = (collectionOfficerId, date) =>
       });
   });
 };
+
+
+
+//GET farmer details for the managers report
+exports.GetFarmerReportDetailsDao = (userId, createdAtDate, farmerId) => {
+  return new Promise((resolve, reject) => {
+      const query = `
+          SELECT 
+              fpc.id AS id, 
+              cg.cropNameEnglish AS cropName,
+              cv.varietyNameEnglish AS variety,
+              fpc.gradeAprice AS unitPriceA,
+              fpc.gradeAquan AS weightA,
+              fpc.gradeBprice AS unitPriceB,
+              fpc.gradeBquan AS weightB,
+              fpc.gradeCprice AS unitPriceC,
+              fpc.gradeCquan AS weightC,
+              (COALESCE(fpc.gradeAprice * fpc.gradeAquan, 0) +
+               COALESCE(fpc.gradeBprice * fpc.gradeBquan, 0) +
+               COALESCE(fpc.gradeCprice * fpc.gradeCquan, 0)) AS total
+          FROM 
+              farmerpaymentscrops fpc
+          INNER JOIN 
+              \`plant-care\`.\`cropvariety\` cv ON fpc.cropId = cv.id
+          INNER JOIN 
+              \`plant-care\`.\`cropgroup\` cg ON cv.cropGroupId = cg.id
+          INNER JOIN 
+              registeredfarmerpayments rfp ON fpc.registerFarmerId = rfp.id
+          WHERE 
+              rfp.userId = ? 
+              AND DATE(fpc.createdAt) = ? 
+              AND fpc.registerFarmerId = ?
+          ORDER BY 
+              fpc.createdAt DESC
+      `;
+
+      db.collectionofficer.query(query, [userId, createdAtDate, farmerId], (error, results) => {
+          if (error) {
+              return reject(error);
+          }
+          resolve(results);
+      });
+  });
+};
+

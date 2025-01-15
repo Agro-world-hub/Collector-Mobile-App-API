@@ -99,7 +99,7 @@ exports.getFarmerPaymentsSummary = async (req, res) => {
         `;
         const params = [parseInt(collectionOfficerId), fromDate, toDate];
 
-        db.query(query, params, (err, results) => {
+        db.collectionofficer.query(query, params, (err, results) => {
           if (err) {
             return reject(err);
           }
@@ -155,7 +155,7 @@ exports.getOfficerDetailsForReport = async (req, res) => {
         cocd.empId = ?;
     `;
 
-    const [results] = await db.promise().query(query, [empId]);
+    const [results] = await db.collectionofficer.promise().query(query, [empId]);
 
     if (results.length === 0) {
       return res.status(404).json({
