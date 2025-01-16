@@ -14,6 +14,6 @@ router.get('/crops/varieties/:id',unRegisterdcropfamerEp.getVarietiesByCropId);
 router.get('/unitPrices/:cropId',unRegisterdcropfamerEp.getUnitPricesByCropId);
 
 // Route to get today's crop details by userId
-router.get('/user-crops/today/:userId',unRegisterdcropfamerEp.getCropDetailsByUserId);
+router.get('/user-crops/today/:userId/:registeredFarmerId',unRegisterdcropfamerEp.getCropDetailsByUserId);
 
 module.exports = router;

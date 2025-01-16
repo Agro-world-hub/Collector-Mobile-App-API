@@ -144,15 +144,13 @@ exports.getOfficerDetailsForReport = async (req, res) => {
   try {
     const query = `
       SELECT 
-        co.firstNameEnglish AS firstName, 
-        co.lastNameEnglish AS lastName, 
-        cocd.jobRole 
+        firstNameEnglish AS firstName, 
+        lastNameEnglish AS lastName, 
+        jobRole 
       FROM 
-        collectionofficer co
-      JOIN 
-        collectionofficercompanydetails cocd ON co.id = cocd.collectionOfficerId
+        collectionofficer
       WHERE 
-        cocd.empId = ?;
+        empId = ?;
     `;
 
     const [results] = await db.collectionofficer.promise().query(query, [empId]);

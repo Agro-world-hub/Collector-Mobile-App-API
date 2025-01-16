@@ -1,11 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const { getCollectionOfficers,getFarmerPaymentsSummary,getOfficerDetailsForReport } = require('../Controllers/manager.controller')
 const authenticate = require('../Middlewares/auth.middleware');
 const managerEp = require('../end-point/manager-ep');
 
 // Route to get collection officers under a specific manager
-router.get('/collection-officers', authenticate, getCollectionOfficers);
+router.get('/collection-officers', authenticate, managerEp.getCollectionOfficers);
 
 //Route to add a collection officer
 router.post('/collection-officer/add', authenticate, managerEp.createCollectionOfficer);
@@ -13,11 +12,11 @@ router.post('/collection-officer/add', authenticate, managerEp.createCollectionO
 // Route to fetch farmer payments summary
 router.get(
   '/farmer-payments-summary',
-  getFarmerPaymentsSummary // Controller function
+  managerEp.getFarmerPaymentsSummary // Controller function
 );
 
 // Route to get employee details by empId
-router.get('/employee/:empId',getOfficerDetailsForReport );
+router.get('/employee/:empId',managerEp.getOfficerDetailsForReport );
 
 //route to generate empId
 router.get('/generate-empId/:role',managerEp.getForCreateId);

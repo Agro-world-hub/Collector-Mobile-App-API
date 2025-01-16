@@ -270,3 +270,55 @@ exports.GetFarmerReportDetailsDao = (userId, createdAtDate, farmerId) => {
   });
 };
 
+
+//get the collection officer list for the manager and the daos for the monthly report of a collection officer
+exports.getCollectionOfficers = async (managerId) => {
+  const sql = `
+    SELECT 
+      empId, 
+      CONCAT(firstNameEnglish, ' ', lastNameEnglish) AS fullName,
+      phoneNumber01 AS phoneNumber1,
+      phoneNumber02 AS phoneNumber2,
+      id AS collectionOfficerId
+    FROM collectionofficer
+    WHERE jobRole = 'Collection Officer' AND irmId = ?
+  `;
+  return db.collectionofficer.promise().query(sql, [managerId]);
+};
+
+
+
+exports.getOfficerDetails = async (empId) => {
+  const sql = `
+    SELECT 
+      firstNameEnglish AS firstName, 
+      lastNameEnglish AS lastName, 
+      jobRole 
+    FROM 
+      collectionofficer
+    WHERE 
+      empId = ?;
+  `;
+  return db.collectionofficer.promise().query(sql, [empId]);
+};
+
+
+
+exports.getFarmerPaymentsSummary = async ({ collectionOfficerId, fromDate, toDate }) => {
+  const sql = `
+    SELECT 
+      DATE(CONVERT_TZ(fpc.createdAt, '+00:00', '+05:30')) AS date, 
+      SUM(gradeAquan) + SUM(gradeBquan) + SUM(gradeCquan) AS total, 
+      COUNT(fpc.registerFarmerId) AS TCount
+    FROM 
+      registeredfarmerpayments rfp
+    JOIN 
+      farmerpaymentscrops fpc ON rfp.id = fpc.registerFarmerId
+    WHERE 
+      rfp.collectionOfficerId = ? 
+      AND DATE(CONVERT_TZ(fpc.createdAt, '+00:00', '+05:30')) BETWEEN ? AND ?
+    GROUP BY 
+      DATE(CONVERT_TZ(fpc.createdAt, '+00:00', '+05:30'));
+  `;
+  return db.collectionofficer.promise().query(sql, [collectionOfficerId, fromDate, toDate]);
+};
