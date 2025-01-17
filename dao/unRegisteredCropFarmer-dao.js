@@ -62,7 +62,7 @@ exports.insertCropDetails = (registeredFarmerId, crop) => {
 };
 
 
-exports.getCropDetailsByUserId = (userId) => {
+exports.getCropDetailsByUserAndFarmerId = (userId, registeredFarmerId) => {
     return new Promise((resolve, reject) => {
         const query = `
             SELECT 
@@ -87,12 +87,12 @@ exports.getCropDetailsByUserId = (userId) => {
             INNER JOIN 
                 registeredfarmerpayments rfp ON fpc.registerFarmerId = rfp.id
             WHERE 
-                rfp.userId = ?
+                  rfp.userId = ? AND fpc.registerFarmerId = ?
             ORDER BY 
                 fpc.createdAt DESC
         `;
 
-        db.collectionofficer.query(query, [userId], (error, results) => {
+        db.collectionofficer.query(query, [userId, registeredFarmerId], (error, results) => {
             if (error) {
                 return reject(error);
             }

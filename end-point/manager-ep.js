@@ -1,4 +1,5 @@
 const collectionofficerDao =require('../dao/manager-dao')
+const Joi = require('joi');
 
 exports.createCollectionOfficer = async (req, res) => {
   try {
@@ -16,7 +17,7 @@ exports.createCollectionOfficer = async (req, res) => {
     console.log("NIC:", req.body.nicNumber);
     const nicExists = await collectionofficerDao.checkNICExist(req.body.nicNumber);
     if (nicExists) {
-      return res.status(400).json({ error: "NIC already exists." });
+      return res.status(400).json({ error: "NIC or Email already exists" });
     }
 
     // Validate Email
@@ -71,7 +72,7 @@ exports.getForCreateId = async (req, res) => {
     console.log("Role:", role);
     let rolePrefix
     if(role === 'Collection Officer'){
-      rolePrefix = 'CCO'
+      rolePrefix = 'COO'
     }
 
     const results = await collectionofficerDao.getForCreateId(rolePrefix);
@@ -107,5 +108,131 @@ exports.getFarmerListByCollectionOfficerAndDate = async (req, res) => {
   } catch (error) {
       console.error('Error fetching farmer list:', error);
       res.status(500).json({ error: 'An error occurred while fetching the farmer list' });
+  }
+};
+
+
+//GET farmer details for the managers purchase report
+exports.GetFarmerReportDetails = async (req, res) => {
+  const { userId, createdAt, farmerId } = req.params; // Extract userId, createdAt, and farmerId from params
+
+  try {
+      if (!userId || !createdAt || !farmerId) {
+          return res.status(400).json({ error: 'userId, createdAt, and farmerId parameters are required.' });
+      }
+
+      const cropDetails = await collectionofficerDao.GetFarmerReportDetailsDao(userId, createdAt, farmerId);
+      res.status(200).json(cropDetails);
+  } catch (error) {
+      console.error('Error fetching crop details:', error);
+      res.status(500).json({ error: 'An error occurred while fetching crop details' });
+  }
+};
+
+
+
+
+//get the collection officer list for the manager and the end-points for the monthly report of a collection officer
+exports.getCollectionOfficers = async (req, res) => {
+  try {
+    const managerId = req.user.id;
+    const [rows] = await collectionofficerDao.getCollectionOfficers(managerId);
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'No collection officers found for the given manager ID.',
+      });
+    }
+
+    res.status(200).json({
+      status: 'success',
+      data: rows,
+    });
+  } catch (error) {
+    console.error('Error fetching collection officers:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'An error occurred while fetching collection officers.',
+    });
+  }
+};
+
+exports.getFarmerPaymentsSummary = async (req, res) => {
+  const schema = Joi.object({
+    collectionOfficerId: Joi.number().integer().required(),
+    fromDate: Joi.date().iso().required(),
+    toDate: Joi.date().iso().required().min(Joi.ref('fromDate')).messages({
+      'date.min': '"toDate" must be the same as or after "fromDate".',
+    }),
+  });
+
+  try {
+    const { collectionOfficerId, fromDate, toDate } = req.query;
+    const { error } = schema.validate({ collectionOfficerId, fromDate, toDate });
+
+    if (error) {
+      return res.status(400).json({
+        status: 'error',
+        message: error.details[0].message,
+      });
+    }
+
+    const [rows] = await collectionofficerDao.getFarmerPaymentsSummary({
+      collectionOfficerId,
+      fromDate,
+      toDate,
+    });
+
+    const reportData = rows.map(row => ({
+      date: new Date(row.date).toLocaleDateString('en-US', { timeZone: 'Asia/Colombo' }),
+      TCount: row.TCount,
+      total: row.total ? parseFloat(row.total) : 0,
+    }));
+
+    res.status(200).json({
+      status: 'success',
+      data: reportData,
+    });
+  } catch (error) {
+    console.error('Error fetching daily report:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'An error occurred while fetching the report.',
+    });
+  }
+};
+
+
+exports.getOfficerDetailsForReport = async (req, res) => {
+  const { empId } = req.params;
+
+  if (!empId) {
+    return res.status(400).json({
+      status: 'error',
+      message: 'Employee ID is required.',
+    });
+  }
+
+  try {
+    const [rows] = await collectionofficerDao.getOfficerDetails(empId);
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'No employee found with the provided empId.',
+      });
+    }
+
+    res.status(200).json({
+      status: 'success',
+      data: rows[0],
+    });
+  } catch (error) {
+    console.error('Error fetching employee details:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'An error occurred while fetching employee details.',
+    });
   }
 };
