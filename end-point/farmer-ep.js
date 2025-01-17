@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const farmerDao = require('../dao/farmar-dao');
 const asyncHandler = require('express-async-handler');
+const uploadFileToS3 = require('../Middlewares/s3upload');
 
 // Controller to handle user and payment details and QR code generation
 // exports.addUserAndPaymentDetails = asyncHandler(async (req, res) => {
@@ -108,64 +109,84 @@ exports.addUserAndPaymentDetails = asyncHandler(async (req, res) => {
         lastName,
         NICnumber,
         phoneNumber,
-        address,
+        district,
         accNumber,
         accHolderName,
         bankName,
-        branchName
+        branchName,
     } = req.body;
 
+
     // Validation: Check if all fields are filled
-    if (!firstName || !lastName || !NICnumber || !phoneNumber || !address || !accNumber || !accHolderName || !bankName || !branchName) {
+    if (!firstName || !lastName || !NICnumber || !phoneNumber || !district || !accNumber || !accHolderName || !bankName || !branchName) {
         return res.status(400).json({ error: "All fields are required" });
     }
 
-    try {
-        // Start a transaction
+    const formattedPhoneNumber = `+${String(phoneNumber).replace(/^\+/, "")}`;
 
-        // Insert into the 'users' table
-        const userResult = await farmerDao.createUser(firstName, lastName, NICnumber, phoneNumber);
+
+    console.log('Formatted Phone Number:', formattedPhoneNumber);
+
+    try {
+        const userResult = await farmerDao.createUser(firstName, lastName, NICnumber, formattedPhoneNumber, district);
         const userId = userResult.insertId;
 
         // Insert into the 'userbankdetails' table
-        const paymentResult = await farmerDao.createPaymentDetails(userId, address, accNumber, accHolderName, bankName, branchName);
+        const paymentResult = await farmerDao.createPaymentDetails(userId, accNumber, accHolderName, bankName, branchName);
         const paymentId = paymentResult.insertId;
 
-        // Define the JSON structure for QR code data
-        const qrData = {
-            userInfo: {
-                id: userId,
-                name: `${firstName} ${lastName}`,
-                NIC: NICnumber,
-                phone: phoneNumber
-            },
-            bankInfo: {
-                accountHolder: accHolderName,
-                accountNumber: accNumber,
-                bank: bankName,
-                branch: branchName
-            }
-        };
-
-        // Generate the QR code as Base64 string
-        const qrCodeBase64 = await QRCode.toDataURL(JSON.stringify(qrData), { type: 'png' });
-
-        // Update the 'users' table with the QR code Base64 string
-        await farmerDao.updateQrCodePath(userId, qrCodeBase64);
-
+        // Generate and update QR code for the user
+        const qrUrl = await exports.createQrCode(userId);
         // Success response
-        res.status(201).json({
+        res.status(200).json({
             message: "User, bank details, and QR code added successfully",
             userId: userId,
             paymentId: paymentId,
-            qrCodeBase64: qrCodeBase64
-        });
+            qrCodeUrl: qrUrl,
+            NICnumber: NICnumber,
 
+        });
     } catch (error) {
-        res.status(500).json({ error: "Transaction failed: " + error.message });
+        // Check for specific errors
+        if (error.code === 'ER_DUP_ENTRY') {
+            // Handle duplicate entry error from database
+            return res.status(409).json({ error: "Duplicate entry error: " + error.message });
+        }
+
+        // Generic error response
+        console.error("Error during user creation:", error);
+        res.status(500).json({ error: "An unexpected error occurred: " + error.message });
     }
 });
 
+
+
+exports.createQrCode = async (userId, callback) => {
+    try {
+        const qrData = {
+            userInfo: {
+                id: userId,
+            },
+        };
+        console.log('QR Data:', qrData);
+        const qrCodeBase64 = await QRCode.toDataURL(JSON.stringify(qrData));
+        console.log('QR Code Base64:', qrCodeBase64);
+
+        const qrCodeBuffer = Buffer.from(
+            qrCodeBase64.replace(/^data:image\/png;base64,/, ""),
+            'base64'
+        );
+        const fileName =  `qrCode_${userId}.png`;
+        const qrUrl = await uploadFileToS3(qrCodeBuffer, fileName, "users/farmerQr");
+        
+        await farmerDao.updateQrCodePath(userId, qrUrl);
+
+        // Return QR code details
+        return  qrUrl;
+    } catch (err) {
+        return callback(err); 
+    }
+};
 
 
 // exports.getRegisteredFarmerDetails = async (req, res) => {
@@ -236,52 +257,36 @@ exports.getRegisteredFarmerDetails = async (req, res) => {
         // Fetch the raw farmer data from the DAO layer
         const rows = await farmerDao.getFarmerDetailsById(userId);
 
-        console.log('rows', rows);
+        console.log('rows:', rows);
+
         // If no user found, return a 404 response
-        if (rows.length === 0) {
+        if (!rows || rows.length === 0) {
             return res.status(404).json({ error: "User not found" });
         }
 
+        // Extract the first user
         const user = rows[0];
-        console.log('user', user);
-
-        // Convert the BLOB data (QR code) to Base64
-        let qrCodeBase64 = '';
-        if (user.farmerQr) {
-            // Convert the BLOB to Base64 string
-            qrCodeBase64 = `data:image/png;base64,${user.farmerQr.toString('base64')}`;
-            const qrCodePath = user.farmerQr.toString();
-            console.log('QR Code Path:', qrCodePath);
-        
-            try {
-                if (fs.existsSync(qrCodePath)) {
-                    const qrCodeData = fs.readFileSync(qrCodePath);
-                    qrCodeBase64 = `data:image/png;base64,${qrCodeData.toString('base64')}`;
-                    console.log('QR Code Base64:', qrCodeBase64);
-                } else {
-                    console.warn('QR code file not found at:', qrCodePath);
-                }
-            } catch (err) {
-                console.error('Error processing QR code file:', err.message);
-            }
-        }
+        console.log('user:', user);
 
         // Prepare the response data
         const response = {
             firstName: user.firstName,
             lastName: user.lastName,
             NICnumber: user.NICnumber,
-            qrCode: qrCodeBase64,  // Send Base64 encoded QR code
-            phoneNumber: user.phoneNumber
+            qrCode: user.farmerQr, // Send raw QR code (no Base64 conversion)
+            phoneNumber: user.phoneNumber,
         };
-        console.log(response);
+
+        console.log('response:', response);
 
         // Send the response
         res.status(200).json(response);
     } catch (error) {
+        console.error('Error fetching farmer details:', error.message);
         res.status(500).json({ error: "Failed to fetch farmer details: " + error.message });
     }
 };
+
 
 // exports.getUserWithBankDetails = async (req, res) => {
 //     const userId = req.params.id;
@@ -406,5 +411,54 @@ exports.getUserWithBankDetails = async (req, res) => {
         res.status(200).json(response);
     } catch (error) {
         res.status(500).json({ error: "Failed to fetch user with bank details: " + error.message });
+    }
+};
+
+
+
+exports.signupChecker = async(req, res) => {
+    console.log("signupChecker");
+    try {
+        const { phoneNumber, NICnumber } =req.body;
+        console.log("phoneNumber", phoneNumber);
+
+        const results = await farmerDao.checkSignupDetails(phoneNumber, NICnumber);
+
+        let phoneNumberExists = false;
+        let NICnumberExists = false;
+
+        results.forEach((user) => {
+            if (user.phoneNumber === `+${String(phoneNumber).replace(/^\+/, "")}`) {
+                phoneNumberExists = true;
+            }
+            if (user.NICnumber === NICnumber) {
+                NICnumberExists = true;
+            }
+        });
+
+        if (phoneNumberExists && NICnumberExists) {
+            return res
+                .status(200)
+                .json({ message: "This Phone Number and NIC already exist." });
+        } else if (phoneNumberExists) {
+            return res
+                .status(200)
+                .json({ message: "This Phone Number already exists." });
+        } else if (NICnumberExists) {
+            return res.status(200).json({ message: "This NIC already exists." });
+        }
+
+        res.status(200).json({ message: "Both fields are available!" });
+    } catch (err) {
+        console.error("Error in signupChecker:", err);
+
+        if (err.isJoi) {
+            return res.status(400).json({
+                status: "error",
+                message: err.details[0].message,
+            });
+        }
+
+        res.status(500).json({ message: "Internal Server Error!" });
     }
 };

@@ -9,5 +9,7 @@ router.post('/register-farmer', farmerEp.addUserAndPaymentDetails);
 router.get('/register-farmer/:userId',farmerEp.getRegisteredFarmerDetails);
 
 router.get('/report-user-details/:id', farmerEp.getUserWithBankDetails);
+router.post('/farmer-register-checker', farmerEp.signupChecker);
+
 
 module.exports = router;

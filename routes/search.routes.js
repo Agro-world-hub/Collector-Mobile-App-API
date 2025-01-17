@@ -8,5 +8,8 @@ const serachFarmerEp = require('../end-point/searchFarmer-ep');
 
 // Search for user by NICnumber
 router.get('/getall', serachFarmerEp.getAllUsers);
+router.get('/get-users/:NICnumber', serachFarmerEp.getUsers);
+
+
 
 module.exports = router;
