@@ -1,0 +1,464 @@
+const QRCode = require('qrcode');
+const fs = require('fs');
+const path = require('path');
+const farmerDao = require('../dao/farmar-dao');
+const asyncHandler = require('express-async-handler');
+const uploadFileToS3 = require('../Middlewares/s3upload');
+
+// Controller to handle user and payment details and QR code generation
+// exports.addUserAndPaymentDetails = asyncHandler(async (req, res) => {
+//     const {
+//         firstName,
+//         lastName,
+//         NICnumber,
+//         phoneNumber,
+//         address,
+//         accNumber,
+//         accHolderName,
+//         bankName,
+//         branchName
+//     } = req.body;
+
+//     // Validation: Check if all fields are filled
+//     if (!firstName || !lastName || !NICnumber || !phoneNumber || !address || !accNumber || !accHolderName || !bankName || !branchName) {
+//         return res.status(400).json({ error: "All fields are required" });
+//     }
+
+//     try {
+//         // Start a transaction
+//         await new Promise((resolve, reject) => {
+//             db.beginTransaction(err => {
+//                 if (err) return reject(err);
+//                 resolve();
+//             });
+//         });
+
+//         // Insert into the 'users' table
+//         const userResult = await farmerDao.createUser(firstName, lastName, NICnumber, phoneNumber);
+//         const userId = userResult.insertId;
+
+//         // Insert into the 'userbankdetails' table
+//         const paymentResult = await farmerDao.createPaymentDetails(userId, address, accNumber, accHolderName, bankName, branchName);
+//         const paymentId = paymentResult.insertId;
+
+//         // Define the JSON structure for QR code data
+//         const qrData = {
+//             userInfo: {
+//                 id: userId,
+//                 name: `${firstName} ${lastName}`,
+//                 NIC: NICnumber,
+//                 phone: phoneNumber
+//             },
+//             bankInfo: {
+//                 accountHolder: accHolderName,
+//                 accountNumber: accNumber,
+//                 bank: bankName,
+//                 branch: branchName
+//             }
+//         };
+
+//         // Define the directory path for QR codes
+//         const qrDirPath = path.join(__dirname, `../public/qrcodes`);
+
+//         // Ensure the directory exists
+//         if (!fs.existsSync(qrDirPath)) {
+//             fs.mkdirSync(qrDirPath, { recursive: true }); // Create directory if it doesn't exist
+//         }
+
+//         // Generate QR Code as PNG and save it
+//         const qrFilePath = path.join(qrDirPath, `user_${userId}.png`);
+//         await QRCode.toFile(qrFilePath, JSON.stringify(qrData), { type: 'png' });
+
+//         // Update the 'users' table with the QR code file path
+//         await farmerDao.updateQrCodePath(userId, qrFilePath);
+
+//         // Commit the transaction
+//         await new Promise((resolve, reject) => {
+//             db.commit(err => {
+//                 if (err) return reject(err);
+//                 resolve();
+//             });
+//         });
+
+//         // Success response
+//         res.status(201).json({
+//             message: "User, bank details, and QR code added successfully",
+//             userId: userId,
+//             paymentId: paymentId,
+//             qrCodePath: qrFilePath
+//         });
+
+//     } catch (error) {
+//         // Rollback the transaction in case of any error
+//         try {
+//             await new Promise((resolve) => {
+//                 db.rollback(() => {
+//                     resolve();
+//                 });
+//             });
+//         } catch (rollbackError) {
+//             console.error("Rollback failed:", rollbackError);
+//         }
+//         res.status(500).json({ error: "Transaction failed: " + error.message });
+//     }
+// });
+
+exports.addUserAndPaymentDetails = asyncHandler(async (req, res) => {
+    const {
+        firstName,
+        lastName,
+        NICnumber,
+        phoneNumber,
+        district,
+        accNumber,
+        accHolderName,
+        bankName,
+        branchName,
+    } = req.body;
+
+
+    // Validation: Check if all fields are filled
+    if (!firstName || !lastName || !NICnumber || !phoneNumber || !district || !accNumber || !accHolderName || !bankName || !branchName) {
+        return res.status(400).json({ error: "All fields are required" });
+    }
+
+    const formattedPhoneNumber = `+${String(phoneNumber).replace(/^\+/, "")}`;
+
+
+    console.log('Formatted Phone Number:', formattedPhoneNumber);
+
+    try {
+        const userResult = await farmerDao.createUser(firstName, lastName, NICnumber, formattedPhoneNumber, district);
+        const userId = userResult.insertId;
+
+        // Insert into the 'userbankdetails' table
+        const paymentResult = await farmerDao.createPaymentDetails(userId, accNumber, accHolderName, bankName, branchName);
+        const paymentId = paymentResult.insertId;
+
+        // Generate and update QR code for the user
+        const qrUrl = await exports.createQrCode(userId);
+        // Success response
+        res.status(200).json({
+            message: "User, bank details, and QR code added successfully",
+            userId: userId,
+            paymentId: paymentId,
+            qrCodeUrl: qrUrl,
+            NICnumber: NICnumber,
+
+        });
+    } catch (error) {
+        // Check for specific errors
+        if (error.code === 'ER_DUP_ENTRY') {
+            // Handle duplicate entry error from database
+            return res.status(409).json({ error: "Duplicate entry error: " + error.message });
+        }
+
+        // Generic error response
+        console.error("Error during user creation:", error);
+        res.status(500).json({ error: "An unexpected error occurred: " + error.message });
+    }
+});
+
+
+
+exports.createQrCode = async (userId, callback) => {
+    try {
+        const qrData = {
+            userInfo: {
+                id: userId,
+            },
+        };
+        console.log('QR Data:', qrData);
+        const qrCodeBase64 = await QRCode.toDataURL(JSON.stringify(qrData));
+        console.log('QR Code Base64:', qrCodeBase64);
+
+        const qrCodeBuffer = Buffer.from(
+            qrCodeBase64.replace(/^data:image\/png;base64,/, ""),
+            'base64'
+        );
+        const fileName =  `qrCode_${userId}.png`;
+        const qrUrl = await uploadFileToS3(qrCodeBuffer, fileName, "users/farmerQr");
+        
+        await farmerDao.updateQrCodePath(userId, qrUrl);
+
+        // Return QR code details
+        return  qrUrl;
+    } catch (err) {
+        return callback(err); 
+    }
+};
+
+
+// exports.getRegisteredFarmerDetails = async (req, res) => {
+//     const { userId } = req.params;
+
+//     if (!userId) {
+//         return res.status(400).json({ error: "User ID is required" });
+//     }
+
+//     try {
+//         // Fetch the raw farmer data from the DAO layer
+//         const rows = await farmerDao.getFarmerDetailsById(userId);
+//         console.log('rows', rows);
+//         // If no user found, return a 404 response
+//         if (rows.length === 0) {
+//             return res.status(404).json({ error: "User not found" });
+//         }
+
+//         const user = rows[0];
+//         console.log('user', user);
+
+//         // Convert QR code file path to Base64 if it exists
+//         let qrCodeBase64 = '';
+//         if (user.farmerQr) {
+//             const qrCodePath = user.farmerQr.toString();
+//             console.log('QR Code Path:', qrCodePath);
+        
+//             try {
+//                 if (fs.existsSync(qrCodePath)) {
+//                     const qrCodeData = fs.readFileSync(qrCodePath);
+//                     qrCodeBase64 = `data:image/png;base64,${qrCodeData.toString('base64')}`;
+//                     console.log('QR Code Base64:', qrCodeBase64);
+//                 } else {
+//                     console.warn('QR code file not found at:', qrCodePath);
+//                 }
+//             } catch (err) {
+//                 console.error('Error processing QR code file:', err.message);
+//             }
+//         }
+        
+
+
+//         // Prepare the response data
+//         const response = {
+//             firstName: user.firstName,
+//             lastName: user.lastName,
+//             NICnumber: user.NICnumber,
+//             qrCode: qrCodeBase64,
+//             phoneNumber: user.phoneNumber
+//         };
+//         console.log(response);
+
+//         // Send the response
+//         res.status(200).json(response);
+//     } catch (error) {
+//         res.status(500).json({ error: "Failed to fetch farmer details: " + error.message });
+//     }
+// };
+
+exports.getRegisteredFarmerDetails = async (req, res) => {
+    const { userId } = req.params;
+
+    if (!userId) {
+        return res.status(400).json({ error: "User ID is required" });
+    }
+
+    try {
+        // Fetch the raw farmer data from the DAO layer
+        const rows = await farmerDao.getFarmerDetailsById(userId);
+
+        console.log('rows:', rows);
+
+        // If no user found, return a 404 response
+        if (!rows || rows.length === 0) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        // Extract the first user
+        const user = rows[0];
+        console.log('user:', user);
+
+        // Prepare the response data
+        const response = {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            NICnumber: user.NICnumber,
+            qrCode: user.farmerQr, // Send raw QR code (no Base64 conversion)
+            phoneNumber: user.phoneNumber,
+        };
+
+        console.log('response:', response);
+
+        // Send the response
+        res.status(200).json(response);
+    } catch (error) {
+        console.error('Error fetching farmer details:', error.message);
+        res.status(500).json({ error: "Failed to fetch farmer details: " + error.message });
+    }
+};
+
+
+// exports.getUserWithBankDetails = async (req, res) => {
+//     const userId = req.params.id;
+
+//     if (!userId) {
+//         return res.status(400).json({ error: "User ID is required" });
+//     }
+
+//     try {
+//         // Fetch the raw user data with bank details from the DAO layer
+//         const rows = await farmerDao.getUserWithBankDetailsById(userId);
+
+//         // If no user found, return a 404 response
+//         if (rows.length === 0) {
+//             return res.status(404).json({ message: 'User not found' });
+//         }
+
+//         const user = rows[0];
+
+//         // Convert QR code file path to Base64 if it exists
+//         let qrCodeBase64 = '';
+//         if (user.farmerQr) {
+//             const qrCodePath = user.farmerQr.toString();
+//             console.log('QR Code Path:', qrCodePath);
+        
+//             try {
+//                 if (fs.existsSync(qrCodePath)) {
+//                     const qrCodeData = fs.readFileSync(qrCodePath);
+//                     qrCodeBase64 = `data:image/png;base64,${qrCodeData.toString('base64')}`;
+//                     console.log('QR Code Base64:', qrCodeBase64);
+//                 } else {
+//                     console.warn('QR code file not found at:', qrCodePath);
+//                 }
+//             } catch (err) {
+//                 console.error('Error processing QR code file:', err.message);
+//             }
+//         }
+        
+
+//         // Prepare the response data
+//         const response = {
+//             userId: user.userId,
+//             firstName: user.firstName,
+//             lastName: user.lastName,
+//             phoneNumber: user.phoneNumber,
+//             NICnumber: user.NICnumber,
+//             profileImage: user.profileImage,
+//             qrCode: qrCodeBase64,
+//             address: user.address,
+//             accNumber: user.accNumber,
+//             accHolderName: user.accHolderName,
+//             bankName: user.bankName,
+//             branchName: user.branchName,
+//             createdAt: user.createdAt
+//         };
+
+//         // Send the response
+//         res.status(200).json(response);
+//     } catch (error) {
+//         res.status(500).json({ error: "Failed to fetch user with bank details: " + error.message });
+//     }
+// };
+
+exports.getUserWithBankDetails = async (req, res) => {
+    const userId = req.params.id;
+
+    if (!userId) {
+        return res.status(400).json({ error: "User ID is required" });
+    }
+
+    try {
+        // Fetch the raw user data with bank details from the DAO layer
+        const rows = await farmerDao.getUserWithBankDetailsById(userId);
+
+        // If no user found, return a 404 response
+        if (rows.length === 0) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const user = rows[0];
+
+        // Convert the QR code from binary data (BLOB) to Base64
+        let qrCodeBase64 = '';
+        if (user.farmerQr) {
+            // Convert the binary BLOB data directly to Base64 using `toString('base64')`
+            qrCodeBase64 = `data:image/png;base64,${user.farmerQr.toString('base64')}`;
+            const qrCodePath = user.farmerQr.toString();
+            console.log('QR Code Path:', qrCodePath);
+        
+            try {
+                if (fs.existsSync(qrCodePath)) {
+                    const qrCodeData = fs.readFileSync(qrCodePath);
+                    qrCodeBase64 = `data:image/png;base64,${qrCodeData.toString('base64')}`;
+                    console.log('QR Code Base64:', qrCodeBase64);
+                } else {
+                    console.warn('QR code file not found at:', qrCodePath);
+                }
+            } catch (err) {
+                console.error('Error processing QR code file:', err.message);
+            }
+        }
+        
+
+        // Prepare the response data
+        const response = {
+            userId: user.userId,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            phoneNumber: user.phoneNumber,
+            NICnumber: user.NICnumber,
+            profileImage: user.profileImage,
+            qrCode: qrCodeBase64,  // Base64 QR code image
+            address: user.address,
+            accNumber: user.accNumber,
+            accHolderName: user.accHolderName,
+            bankName: user.bankName,
+            branchName: user.branchName,
+            createdAt: user.createdAt
+        };
+
+        // Send the response
+        res.status(200).json(response);
+    } catch (error) {
+        res.status(500).json({ error: "Failed to fetch user with bank details: " + error.message });
+    }
+};
+
+
+
+exports.signupChecker = async(req, res) => {
+    console.log("signupChecker");
+    try {
+        const { phoneNumber, NICnumber } =req.body;
+        console.log("phoneNumber", phoneNumber);
+
+        const results = await farmerDao.checkSignupDetails(phoneNumber, NICnumber);
+
+        let phoneNumberExists = false;
+        let NICnumberExists = false;
+
+        results.forEach((user) => {
+            if (user.phoneNumber === `+${String(phoneNumber).replace(/^\+/, "")}`) {
+                phoneNumberExists = true;
+            }
+            if (user.NICnumber === NICnumber) {
+                NICnumberExists = true;
+            }
+        });
+
+        if (phoneNumberExists && NICnumberExists) {
+            return res
+                .status(200)
+                .json({ message: "This Phone Number and NIC already exist." });
+        } else if (phoneNumberExists) {
+            return res
+                .status(200)
+                .json({ message: "This Phone Number already exists." });
+        } else if (NICnumberExists) {
+            return res.status(200).json({ message: "This NIC already exists." });
+        }
+
+        res.status(200).json({ message: "Both fields are available!" });
+    } catch (err) {
+        console.error("Error in signupChecker:", err);
+
+        if (err.isJoi) {
+            return res.status(400).json({
+                status: "error",
+                message: err.details[0].message,
+            });
+        }
+
+        res.status(500).json({ message: "Internal Server Error!" });
+    }
+};

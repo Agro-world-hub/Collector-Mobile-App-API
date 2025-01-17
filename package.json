@@ -6,17 +6,27 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "nodemon server.js",
-    "seed": "node seed/seed.js"
+    "seed": "node seed/mainseed.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "aws-sdk": "^2.1692.0",
+    "base64-arraybuffer": "^1.0.2",
+    "bcrypt": "^5.1.1",
+    "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
+    "expo-screen-capture": "^6.0.1",
     "express": "^4.19.2",
+    "express-async-handler": "^1.2.0",
+    "joi": "^17.13.3",
     "jsonwebtoken": "^9.0.2",
+    "moment": "^2.30.1",
     "mysql2": "^3.11.0",
-    "nodemon": "^3.1.4"
+    "nodemon": "^3.1.4",
+    "qrcode": "^1.5.4",
+    "uuid": "^10.0.0"
   }
 }

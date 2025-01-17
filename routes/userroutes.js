@@ -1,15 +1,20 @@
 const express = require('express');
 const router = express.Router();
-const { login, updatePassword,getProfile } = require('../Controllers/users.controller');
+const { getOfficerQRCode  } = require('../Controllers/users.controller');
 const auth = require('../Middlewares/auth.middleware');
 
-// Route for login
-router.post('/login', login);
+const userAuthEp = require('../end-point/userAuth-ep');
 
-// Route to change password
-router.post('/change-password', updatePassword);
+router.post('/login', userAuthEp.loginUser);
+router.post('/change-password', userAuthEp.updatePassword);
 
-//User profile routes
-router.get('/user-profile', auth, getProfile);
+router.get('/user-profile', auth, userAuthEp.getProfile);
+
+router.get('/profile-details', auth, userAuthEp.getUserDetails);
+
+router.put('/update-phone', auth, userAuthEp.updatePhoneNumber);
+
+router.get('/get-officer-Qr', auth, userAuthEp.getOfficerQRCode);
+
 
 module.exports = router;
