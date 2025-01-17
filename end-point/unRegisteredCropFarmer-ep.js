@@ -144,7 +144,7 @@ exports.addCropDetails = async (req, res) => {
 
     try {
         // Step 2: Start a transaction
-        await new Promise((resolve, reject) => db.beginTransaction(err => (err ? reject(err) : resolve())));
+        await new Promise((resolve, reject) => db.collectionofficer.beginTransaction(err => (err ? reject(err) : resolve())));
 
         // Step 3: Insert registered farmer payment
         const registeredFarmerId = await cropDetailsDao.insertFarmerPayment(farmerId, userId);
@@ -154,7 +154,7 @@ exports.addCropDetails = async (req, res) => {
         await Promise.all(cropPromises);
 
         // Step 5: Commit the transaction
-        await new Promise((resolve, reject) => db.commit(err => (err ? reject(err) : resolve())));
+        await new Promise((resolve, reject) => db.collectionofficer.commit(err => (err ? reject(err) : resolve())));
 
         res.status(201).json({
             message: 'Crop payment records added successfully',
@@ -191,11 +191,11 @@ exports.addCropDetails2 = async (req, res) => {
 };
 
 
-exports.getCropDetailsByUserId = async (req, res) => {
-    const { userId } = req.params;
+exports.getCropDetailsByUserId= async (req, res) => {
+    const { userId, registeredFarmerId } = req.params;
 
     try {
-        const cropDetails = await cropDetailsDao.getCropDetailsByUserId(userId);
+        const cropDetails = await cropDetailsDao.getCropDetailsByUserAndFarmerId(userId, registeredFarmerId);
         res.status(200).json(cropDetails);
     } catch (error) {
         console.error('Error fetching crop details:', error);

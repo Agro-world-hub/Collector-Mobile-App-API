@@ -79,6 +79,8 @@ exports.loginUser = async (req, res) => {
       firstNameEnglish: officer.firstNameEnglish,
       lastNameEnglish: officer.lastNameEnglish,
       phoneNumber01: officer.phoneNumber01,
+      centerId: officer.centerId,
+      companyName: officer.companyName,
     };
 
     const token = jwt.sign(payload, process.env.JWT_SECRET || "T1", {

@@ -62,7 +62,7 @@ exports.insertCropDetails = (registeredFarmerId, crop) => {
 };
 
 
-exports.getCropDetailsByUserId = (userId) => {
+exports.getCropDetailsByUserAndFarmerId = (userId, registeredFarmerId) => {
     return new Promise((resolve, reject) => {
         const query = `
             SELECT 
@@ -81,18 +81,18 @@ exports.getCropDetailsByUserId = (userId) => {
             FROM 
                 farmerpaymentscrops fpc
             INNER JOIN 
-                plant_care.cropvariety cv ON fpc.cropId = cv.id
+                \`plant-care\`.\`cropvariety\` cv ON fpc.cropId = cv.id
             INNER JOIN 
-                plant_care.cropgroup cg ON cv.cropGroupId = cg.id
+                \`plant-care\`.\`cropgroup\` cg ON cv.cropGroupId = cg.id
             INNER JOIN 
                 registeredfarmerpayments rfp ON fpc.registerFarmerId = rfp.id
             WHERE 
-                rfp.userId = ?
+                  rfp.userId = ? AND fpc.registerFarmerId = ?
             ORDER BY 
                 fpc.createdAt DESC
         `;
 
-        db.collectionofficer.query(query, [userId], (error, results) => {
+        db.collectionofficer.query(query, [userId, registeredFarmerId], (error, results) => {
             if (error) {
                 return reject(error);
             }
@@ -112,6 +112,7 @@ exports.getAllCropNames = () => {
             }
             resolve(results);  // Resolving the promise with the results
         });
+        
     });
 };
 
@@ -124,6 +125,7 @@ exports.getVarietiesByCropId = (cropId) => {
             }
             resolve(results);  // Resolve with results
         });
+        
     });
 };
 
