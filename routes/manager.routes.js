@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const authenticate = require('../Middlewares/auth.middleware');
 const managerEp = require('../end-point/manager-ep');
+const TargetEP = require('../end-point/Target-ep')
 
 // Route to get collection officers under a specific manager
 router.get('/collection-officers', authenticate, managerEp.getCollectionOfficers);
@@ -27,6 +28,35 @@ router.get('/transaction-list', managerEp.getFarmerListByCollectionOfficerAndDat
 
 //Route for the farmers transcation details for the manager report
 router.get('/transaction-details/:userId/:createdAt/:farmerId', managerEp.GetFarmerReportDetails);
+
+
+
+//target routes 
+
+router.get(
+    '/get-crop-category',
+    TargetEP.getAllCropCatogory
+)
+
+router.post(
+    "/create-daily-target",
+    authenticate,
+    TargetEP.addDailyTarget
+)
+
+router.get(
+    "/get-daily-target",
+    authenticate,
+    TargetEP.getAllDailyTarget
+)
+
+router.get(
+    "/download-daily-target",
+    authenticate,
+    TargetEP.downloadDailyTarget
+)
+
+router.get("/targets", TargetEP.getAllTargets);
 
 
 module.exports = router;

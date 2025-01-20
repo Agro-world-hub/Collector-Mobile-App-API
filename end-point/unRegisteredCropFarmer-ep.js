@@ -215,6 +215,8 @@ exports.getAllCropNames = async (req, res) => {
 
 exports.getVarietiesByCropId = async (req, res) => {
     const cropId = req.params.id;  // Extract cropId from request parameters
+    console.log(cropId);
+    
 
     try {
         const varieties = await cropDetailsDao.getVarietiesByCropId(cropId);
