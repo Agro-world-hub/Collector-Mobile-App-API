@@ -77,6 +77,8 @@ exports.loginUser = async (req, res) => {
       firstNameEnglish: officer.firstNameEnglish,
       lastNameEnglish: officer.lastNameEnglish,
       phoneNumber01: officer.phoneNumber01,
+      centerId: officer.centerId,
+      companyId: officer.companyId
     };
 
     const token = jwt.sign(payload, process.env.JWT_SECRET || "T1", {
@@ -269,26 +271,25 @@ exports.getUserDetails = async (req, res) => {
 
 exports.updatePhoneNumber = async (req, res) => {
   const userId = req.user.id; // Assuming req.user is set by your authentication middleware
-  const { phoneNumber } = req.body;
+  const { phoneNumber, phoneNumber2 } = req.body;
 
-  // Input validation
-  if (
-    !phoneNumber ||
-    typeof phoneNumber !== "string" ||
-    phoneNumber.length !== 11
-  ) {
+  console.log("Updating phone number ", phoneNumber, phoneNumber2);
+
+  const validatePhoneNumber = (number) =>
+    number && typeof number === "string" && number.length === 12;
+
+  // Ensure at least one phone number is valid
+  if (!validatePhoneNumber(phoneNumber) && !validatePhoneNumber(phoneNumber2)) {
     return res.status(400).json({
-      message: "Invalid phone number. It must be 11 characters long.",
+      message: "Invalid phone numbers. At least one valid 11-character phone number is required.",
     });
   }
-
-  // Add the + prefix to the phone number
-  const formattedPhoneNumber = `+${phoneNumber}`;
 
   try {
     const results = await userAuthDao.updatePhoneNumberById(
       userId,
-      formattedPhoneNumber
+      phoneNumber,
+      phoneNumber2
     );
 
     if (results.affectedRows === 0) {

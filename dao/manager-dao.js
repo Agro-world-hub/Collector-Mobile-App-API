@@ -212,3 +212,75 @@ exports.getFarmerListByCollectionOfficerAndDate = (collectionOfficerId, date) =>
       });
   });
 };
+
+
+exports.getClaimOfficer = (empID, jobRole) => {
+  return new Promise((resolve, reject) => {
+    const sql = `
+      SELECT 
+        c.*, 
+        comp.companyNameEnglish,
+        comp.companyNameSinhala,
+        comp.companyNameTamil
+      FROM 
+        collectionofficer c 
+      INNER JOIN 
+        company comp 
+      ON 
+        c.companyId = comp.id 
+      WHERE 
+        c.empId = ? 
+        AND c.jobRole = ? 
+        AND c.centerId IS NULL 
+        AND c.irmId IS NULL
+    `;
+
+    db.collectionofficer.query(sql, [empID, jobRole], (err, results) => {
+      if (err) {
+        return reject(err);
+      }
+      resolve(results);
+    });
+  });
+};
+
+exports.createClaimOfficer = ( officerId, irmId, centerId) => {
+  return new Promise((resolve, reject) => {
+    const sql = `
+      UPDATE collectionofficer 
+      SET 
+        irmId = ?,
+        centerId = ?
+      WHERE 
+        id = ?
+    `;
+
+    db.collectionofficer.query(sql, [irmId, centerId, officerId], (err, results) => {
+      if (err) {
+        return reject(err);
+      }
+      resolve(results);
+    });
+  });
+}
+
+exports.disclaimOfficer = ( collectionOfficerId) => {
+  console.log("DAO: disclaimOfficer", collectionOfficerId);
+  return new Promise((resolve, reject) => {
+    const sql = `
+      UPDATE collectionofficer 
+      SET 
+        irmId = NULL,
+        centerId = NULL
+      WHERE 
+        id = ?
+    `;
+
+    db.collectionofficer.query(sql, [ collectionOfficerId], (err, results) => {
+      if (err) {
+        return reject(err);
+      }
+      resolve(results);
+    });
+  });
+}

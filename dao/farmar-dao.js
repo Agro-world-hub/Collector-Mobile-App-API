@@ -98,7 +98,6 @@ exports.getUserWithBankDetailsById = async (userId) => {
             u.NICnumber,
             u.profileImage,
             u.farmerQr,
-            b.address,
             b.accNumber,
             b.accHolderName,
             b.bankName,
@@ -113,6 +112,7 @@ exports.getUserWithBankDetailsById = async (userId) => {
         db.plantcare.query(query, [userId], (err, result) => {
             if (err) return reject(err);
             resolve(result);
+            console.log(result)
         });
     });
 };

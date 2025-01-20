@@ -1,5 +1,5 @@
 const collectionofficerDao =require('../dao/manager-dao')
-
+const jwt = require('jsonwebtoken');
 exports.createCollectionOfficer = async (req, res) => {
   try {
     const { id: irmId } = req.user;
@@ -107,5 +107,67 @@ exports.getFarmerListByCollectionOfficerAndDate = async (req, res) => {
   } catch (error) {
       console.error('Error fetching farmer list:', error);
       res.status(500).json({ error: 'An error occurred while fetching the farmer list' });
+  }
+};
+
+exports.getClaimOfficer = async (req, res) => {
+
+  const {empID, jobRole} = req.body;
+  try {
+    const results = await collectionofficerDao.getClaimOfficer(empID, jobRole);
+    res.status(200).json({ result: results, status: true });
+  } catch (err) {
+    console.error("Error executing query:", err);
+    res.status(500).send("An error occurred while fetching data.");
+  }
+}
+
+exports.createClaimOfficer = async (req, res) => {
+  const { officerId } = req.body;
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) {
+    return res.status(401).json({ message: "Authorization token is missing" });
+  }
+
+  const decoded = jwt.verify(token, process.env.JWT_SECRET);
+  const irmId = decoded.id;
+  const centerId = decoded.centerId;
+
+  try {
+    const results = await collectionofficerDao.createClaimOfficer(officerId, irmId, centerId);
+    res.status(200).json({ result: results, status: true });
+  } catch (err) {
+    console.error("Error executing query:", err);
+    res.status(500).send("An error occurred while fetching data.");
+  }
+}
+
+exports.disclaimOfficer = async (req, res) => {
+  const { collectionOfficerId } = req.body;
+
+  if (!collectionOfficerId) {
+    return res.status(400).json({ status: 'error', message: 'Missing collectionOfficerId in request body.' });
+  }
+
+  try {
+    const results = await collectionofficerDao.disclaimOfficer(collectionOfficerId);
+    if (results.affectedRows > 0) {
+      res.status(200).json({
+        status: 'success',
+        data: results,
+        message: 'Officer disclaimed successfully.',
+      });
+    } else {
+      res.status(404).json({
+        status: 'error',
+        message: 'Officer not found or already disclaimed.',
+      });
+    }
+  } catch (err) {
+    console.error('Error executing query:', err);
+    res.status(500).json({
+      status: 'error',
+      message: 'An error occurred while disclaiming the officer.',
+    });
   }
 };

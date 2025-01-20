@@ -102,7 +102,7 @@ exports.getUserDetailsById = (userId) => {
             WHERE co.id = ?
         `;
 
-        db.query(sql, [userId], (err, results) => {
+        db.collectionofficer.query(sql, [userId], (err, results) => {
             if (err) {
                 return reject(new Error('Database error: ' + err));
             }
@@ -115,17 +115,20 @@ exports.getUserDetailsById = (userId) => {
 };
 
 
-exports.updatePhoneNumberById = (userId, phoneNumber) => {
-    return new Promise((resolve, reject) => {
-        const query = 'UPDATE collectionofficer SET phoneNumber01 = ? WHERE id = ?';
-        db.query(query, [phoneNumber, userId], (error, results) => {
-            if (error) {
-                return reject(new Error('Database error: ' + error));
-            }
-            resolve(results);
-        });
-    });
+exports.updatePhoneNumberById = (userId, phoneNumber, phoneNumber02) => {
+  console.log("DAO: updatePhoneNumberById", phoneNumber02);
+  return new Promise((resolve, reject) => {
+      const query = 'UPDATE collectionofficer SET phoneNumber01 = ?, phoneNumber02 =? WHERE id = ?';
+      db.collectionofficer.query(query, [phoneNumber, phoneNumber02, userId], (error, results) => {
+          if (error) {
+              return reject(new Error('Database error: ' + error));
+          }
+          resolve(results);
+          console.log("DAO: updatePhoneNumberById", results);
+      });
+  });
 };
+
 
 exports.getQRCodeByOfficerId = (officerId) => {
     return new Promise((resolve, reject) => {
