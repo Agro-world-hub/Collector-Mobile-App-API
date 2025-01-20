@@ -81,9 +81,9 @@ exports.getCropDetailsByUserId = (userId) => {
             FROM 
                 farmerpaymentscrops fpc
             INNER JOIN 
-                \`plant-care\`.\`cropvariety\` cv ON fpc.cropId = cv.id
+                plant_care.cropvariety cv ON fpc.cropId = cv.id
             INNER JOIN 
-                \`plant-care\`.\`cropgroup\` cg ON cv.cropGroupId = cg.id
+                plant_care.cropgroup cg ON cv.cropGroupId = cg.id
             INNER JOIN 
                 registeredfarmerpayments rfp ON fpc.registerFarmerId = rfp.id
             WHERE 

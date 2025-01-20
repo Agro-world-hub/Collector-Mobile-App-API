@@ -6,8 +6,6 @@ const { loginSchema } = require('../Validations/Auth-validations');
 
 exports.loginUser = async (req, res) => {
   try {
-    // Step 1: Validate the request body using Joi
-    console.log("Request Body:", req.body);
     const { error } = loginSchema.validate(req.body);
     console.log("Validation Error:", error);
 

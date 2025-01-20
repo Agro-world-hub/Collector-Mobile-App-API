@@ -199,7 +199,7 @@ exports.getFarmerListByCollectionOfficerAndDate = (collectionOfficerId, date) =>
               SUM(FPC.gradeCprice * FPC.gradeCquan) AS totalAmount
           FROM farmerpaymentscrops FPC
           INNER JOIN registeredfarmerpayments RFP ON FPC.registerFarmerId = RFP.id
-          INNER JOIN \`plant-care\`.users U ON RFP.userId = U.id
+          INNER JOIN plant_care.users U ON RFP.userId = U.id
           WHERE RFP.collectionOfficerId = ?
             AND DATE(RFP.createdAt) = ?
           GROUP BY RFP.id, U.id, U.firstName, U.lastName, U.NICnumber
