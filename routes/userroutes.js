@@ -16,5 +16,7 @@ router.put('/update-phone', auth, userAuthEp.updatePhoneNumber);
 
 router.get('/get-officer-Qr', auth, userAuthEp.getOfficerQRCode);
 
+router.get('/get-claim-status', auth, userAuthEp.GetClaimStatus);
+
 
 module.exports = router;
