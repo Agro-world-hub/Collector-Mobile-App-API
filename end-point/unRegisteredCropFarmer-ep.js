@@ -191,11 +191,11 @@ exports.addCropDetails2 = async (req, res) => {
 };
 
 
-exports.getCropDetailsByUserId = async (req, res) => {
-    const { userId } = req.params;
+exports.getCropDetailsByUserId= async (req, res) => {
+    const { userId, registeredFarmerId } = req.params;
 
     try {
-        const cropDetails = await cropDetailsDao.getCropDetailsByUserId(userId);
+        const cropDetails = await cropDetailsDao.getCropDetailsByUserAndFarmerId(userId, registeredFarmerId);
         res.status(200).json(cropDetails);
     } catch (error) {
         console.error('Error fetching crop details:', error);
@@ -215,6 +215,8 @@ exports.getAllCropNames = async (req, res) => {
 
 exports.getVarietiesByCropId = async (req, res) => {
     const cropId = req.params.id;  // Extract cropId from request parameters
+    console.log(cropId);
+    
 
     try {
         const varieties = await cropDetailsDao.getVarietiesByCropId(cropId);

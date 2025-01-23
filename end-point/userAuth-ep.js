@@ -4,6 +4,8 @@ const bcrypt = require("bcrypt");
 const { loginSchema } = require('../Validations/Auth-validations');
 
 
+
+
 exports.loginUser = async (req, res) => {
   try {
     const { error } = loginSchema.validate(req.body);
@@ -51,13 +53,13 @@ exports.loginUser = async (req, res) => {
     const officer = users[0];
     console.log("Hashed Password from Database:", officer.password);
 
-    // Check if the officer's status is "Approved"
-    if (officer.status !== "Approved") {
-      return res.status(403).json({
-        status: "error",
-        message: `Access denied. Your account status is "${officer.status}". Please contact the admin for assistance.`,
-      });
-    }
+    // // Check if the officer's status is "Approved"
+    // if (officer.status !== "Approved") {	
+    //   return res.status(403).json({
+    //     status: "error",
+    //     message: `Access denied.No collection center found. Please contact the admin for assistance.`,
+    //   });
+    // }
 
     // Compare the provided password with the hashed password in the database
     const isPasswordValid = await bcrypt.compare(password, officer.password);
@@ -79,6 +81,9 @@ exports.loginUser = async (req, res) => {
       phoneNumber01: officer.phoneNumber01,
       centerId: officer.centerId,
       companyId: officer.companyId
+      centerId: officer.centerId,
+      companyName: officer.companyName,
+      companyId: officer.companyId,
     };
 
     const token = jwt.sign(payload, process.env.JWT_SECRET || "T1", {
@@ -332,5 +337,29 @@ exports.getOfficerQRCode = async (req, res) => {
   } catch (error) {
     console.error("Error fetching officer QR code:", error.message);
     res.status(500).json({ error: "Failed to fetch officer QR code" });
+  }
+};
+
+
+//claim status for the collection officer
+
+exports.GetClaimStatus = async (req, res) => {
+  const { id: userId } = req.user; // Extract userId from the authenticated user
+
+  try {
+      if (!userId) {
+          return res.status(400).json({ error: 'User ID is missing.' });
+      }
+
+      const claimStatus = await userAuthDao.getClaimStatusByUserId(userId);
+
+      if (claimStatus === null) {
+          return res.status(404).json({ error: 'User not found or claim status unavailable.' });
+      }
+
+      res.status(200).json({ userId, claimStatus });
+  } catch (error) {
+      console.error('Error fetching claim status:', error);
+      res.status(500).json({ error: 'An error occurred while fetching claim status.' });
   }
 };
