@@ -303,3 +303,59 @@ exports.getAllTargets = async (req, res) => {
       res.status(500).json({ error: "Failed to fetch targets" });
   }
 };
+
+
+exports.getTargetsByCompanyId = async (req, res) => {
+  try {
+    const companyId = req.user.companyId; // Fetch companyId from request parameters
+
+    if (!companyId) {
+      return res.status(400).json({ error: "Company ID is required" });
+    }
+
+    const targets = await TargetDAO.getTargetsByCompanyIdDao(companyId);
+
+    if (!targets.length) {
+      return res.status(404).json({ message: "No targets found for this company." });
+    }
+
+    const formattedTargets = targets.flatMap((target) => {
+      return target.itemId
+        ? [
+            ...(parseFloat(target.targetA) > 0 || parseFloat(target.todoQtyA) > 0
+              ? [{
+                  varietyId: target.varietyId,
+                  grade: "A", // Assuming a static grade for simplicity, modify if grade is dynamic
+                  target: target.targetA,
+                  todo: target.todoQtyA,
+                }]
+              : []),
+            ...(parseFloat(target.targetB) > 0 || parseFloat(target.todoQtyB) > 0
+              ? [{
+                  varietyId: target.varietyId,
+                  grade: "B", // Assuming grade B for qtyB
+                  target: target.targetB,
+                  todo: target.todoQtyB,
+                }]
+              : []),
+            ...(parseFloat(target.targetC) > 0 || parseFloat(target.todoQtyC) > 0
+              ? [{
+                  varietyId: target.varietyId,
+                  grade: "C", // Assuming grade C for qtyC
+                  target: target.targetC,
+                  todo: target.todoQtyC,
+                }]
+              : []),
+          ]
+        : [];
+    });
+
+    res.status(200).json(formattedTargets);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to fetch targets" });
+  }
+};
+
+
+

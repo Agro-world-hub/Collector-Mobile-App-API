@@ -273,3 +273,47 @@ exports.getAllTargetsDao = () => {
         });
     });
 };
+
+
+exports.getTargetsByCompanyIdDao = (companyId) => {
+    return new Promise((resolve, reject) => {
+      const sql = `
+        SELECT 
+          dt.id AS targetId, 
+          dt.companyId, 
+          dt.fromDate, 
+          dt.toDate, 
+          dt.fromTime, 
+          dt.toTime, 
+          dt.createdBy, 
+          dt.createdAt,
+          dti.id AS itemId, 
+          dti.varietyId, 
+          (dti.qtyA / COUNT(co.id)) AS targetA,
+          (dti.qtyB / COUNT(co.id)) AS targetB,
+          (dti.qtyC / COUNT(co.id)) AS targetC,
+          dti.complteQtyA, 
+          dti.complteQtyB, 
+          dti.complteQtyC,
+          ((dti.qtyA - dti.complteQtyA) / COUNT(co.id)) AS todoQtyA,
+          ((dti.qtyB - dti.complteQtyB) / COUNT(co.id)) AS todoQtyB,
+          ((dti.qtyC - dti.complteQtyC) / COUNT(co.id)) AS todoQtyC
+        FROM 
+          dailytarget dt
+        LEFT JOIN 
+          dailytargetitems dti ON dt.id = dti.targetId
+        LEFT JOIN 
+          collectionofficer co ON co.companyId = dt.companyId
+        WHERE 
+          dt.companyId = ?
+        GROUP BY 
+          dti.id, dt.id
+      `;
+      collectionofficer.query(sql, [companyId], (err, results) => {
+        if (err) {
+          return reject(err);
+        }
+        resolve(results);
+      });
+    });
+  };

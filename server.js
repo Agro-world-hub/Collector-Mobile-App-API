@@ -85,6 +85,9 @@ app.use('/api/auth', priceUpdatesRoutes);
 app.use('/api/collection-manager',managerRoutes);
 
 
+const targetRoutes = require('./routes/Target')
+app.use('/api/target', targetRoutes);
+
 
 
 // Start server
