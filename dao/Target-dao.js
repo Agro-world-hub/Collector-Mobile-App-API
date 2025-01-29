@@ -275,12 +275,12 @@ exports.getAllTargetsDao = () => {
 };
 
 
-exports.getTargetsByCompanyIdDao = (companyId) => {
+exports.getTargetsByCompanyIdDao = (centerId) => {
     return new Promise((resolve, reject) => {
       const sql = `
         SELECT 
           dt.id AS targetId, 
-          dt.companyId, 
+          dt.centerId, 
           dt.fromDate, 
           dt.toDate, 
           dt.fromTime, 
@@ -289,27 +289,25 @@ exports.getTargetsByCompanyIdDao = (companyId) => {
           dt.createdAt,
           dti.id AS itemId, 
           dti.varietyId, 
-          (dti.qtyA / COUNT(co.id)) AS targetA,
-          (dti.qtyB / COUNT(co.id)) AS targetB,
-          (dti.qtyC / COUNT(co.id)) AS targetC,
+          dti.qtyA AS targetA,
+          dti.qtyB AS targetB,
+          dti.qtyC AS targetC,
           dti.complteQtyA, 
           dti.complteQtyB, 
           dti.complteQtyC,
-          ((dti.qtyA - dti.complteQtyA) / COUNT(co.id)) AS todoQtyA,
-          ((dti.qtyB - dti.complteQtyB) / COUNT(co.id)) AS todoQtyB,
-          ((dti.qtyC - dti.complteQtyC) / COUNT(co.id)) AS todoQtyC
+          (dti.qtyA - dti.complteQtyA) AS todoQtyA,
+          (dti.qtyB - dti.complteQtyB) AS todoQtyB,
+          (dti.qtyC - dti.complteQtyC) AS todoQtyC
         FROM 
           dailytarget dt
         LEFT JOIN 
           dailytargetitems dti ON dt.id = dti.targetId
-        LEFT JOIN 
-          collectionofficer co ON co.companyId = dt.companyId
         WHERE 
-          dt.companyId = ?
+          dt.centerId = ?
         GROUP BY 
           dti.id, dt.id
       `;
-      collectionofficer.query(sql, [companyId], (err, results) => {
+      collectionofficer.query(sql, [centerId], (err, results) => {
         if (err) {
           return reject(err);
         }
@@ -317,3 +315,81 @@ exports.getTargetsByCompanyIdDao = (companyId) => {
       });
     });
   };
+  
+
+  
+  exports.getTargetForOfficerDao = (officerId) => {
+    return new Promise((resolve, reject) => {
+      const sql = `
+        SELECT 
+          odt.varietyId,
+          cv.varietyNameEnglish AS varietyName,
+          odt.grade,
+          odt.target,
+          odt.complete,
+          dt.fromDate,
+          dt.toDate,
+          dt.fromTime,
+          dt.toTime
+        FROM 
+          officerdailytarget odt
+        LEFT JOIN 
+          \`plant-care\`.cropvariety cv ON odt.varietyId = cv.id
+        INNER JOIN
+          dailytarget dt ON odt.dailyTargetId = dt.id
+        WHERE 
+          odt.officerId = ?
+          AND CURDATE() BETWEEN dt.fromDate AND dt.toDate
+          AND CURTIME() BETWEEN dt.fromTime AND dt.toTime
+      `;
+  
+      collectionofficer.query(sql, [officerId], (err, results) => {
+        if (err) {
+          return reject(err);
+        }
+        resolve(results);
+      });
+    });
+  };
+  
+  
+  exports.getCenterTargetDao = async (centerId, varietyId, grade) => {
+    return new Promise((resolve, reject) => {
+        console.log("Received grade parameter:", grade);
+
+        // Map short grade inputs (A, B, C) to actual database columns
+        const gradeMap = {
+            "A": "qtyA",
+            "B": "qtyB",
+            "C": "qtyC",
+            "completedA": "complteQtyA",
+            "completedB": "complteQtyB",
+            "completedC": "complteQtyC"
+        };
+
+        // Convert received grade to the actual column name
+        const columnName = gradeMap[grade.trim()];
+
+        if (!columnName) {
+            return reject(new Error(`Invalid grade parameter: ${grade}`));
+        }
+
+        const query = `
+            SELECT 
+                dt.centerId,
+                dti.varietyId,
+                SUM(dti.${columnName}) AS total_${columnName}
+            FROM dailytargetitems dti
+            JOIN dailytarget dt ON dti.targetId = dt.id
+            WHERE dt.centerId = ? AND dti.varietyId = ?
+            GROUP BY dt.centerId, dti.varietyId;
+        `;
+
+        collectionofficer.query(query, [centerId, varietyId], (error, results) => {
+            if (error) {
+                return reject(error);
+            }
+            resolve(results);
+        });
+    });
+};

@@ -6,13 +6,21 @@ const router = express.Router();
 
 
 router.get(
-    "/get-daily-target",
+    "/get-daily-target-officer",
     authMiddleware,
-    TargetEP.getTargetsByCompanyId
+    TargetEP.getTargetForOfficer
 )
 
 
+router.get(
+    "/get-daily-target-officer/:officerId",
+    TargetEP.getTargetForOfficer
+)
 
+router.get("/get-daily-center-target/:varietyId/:grade/:centerId",authMiddleware,TargetEP.getCenterTargetEp)
+
+router.get('/officer',authMiddleware, TargetEP.getTargetForOfficerManagerView);
+router.get('/officer/:officerId',authMiddleware, TargetEP.getTargetForOfficer);
 
 
 module.exports = router;
