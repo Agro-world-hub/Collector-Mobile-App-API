@@ -557,3 +557,88 @@ exports.getTargetForOfficer = async (req, res) => {
       res.status(500).json({ error: "Failed to fetch target data." });
   }
 };
+
+
+exports.transferTarget = async (req, res) => {
+  const { fromOfficerId, toOfficerId, varietyId, grade, amount } = req.body;
+
+  if (!fromOfficerId || !toOfficerId || !varietyId || !grade || !amount) {
+      return res.status(400).json({ error: "Missing required parameters" });
+  }
+
+  try {
+      const result = await TargetDAO.transferTargetDAO(fromOfficerId, toOfficerId, varietyId, grade, amount);
+      res.status(200).json(result);
+  } catch (error) {
+      res.status(500).json({ error: error.message });
+  }
+};
+
+
+exports.receiveTarget = async (req, res) => {
+  const { fromOfficerId, toOfficerId, varietyId, grade, amount } = req.body;
+
+  if (!fromOfficerId || !toOfficerId || !varietyId || !grade || !amount) {
+      return res.status(400).json({ error: "Missing required parameters" });
+  }
+
+  try {
+      const result = await TargetDAO.receiveTargetDAO(fromOfficerId, toOfficerId, varietyId, grade, amount);
+      res.status(200).json(result);
+  } catch (error) {
+      res.status(500).json({ error: error.message });
+  }
+};
+
+exports.ManagertransferTarget = async (req, res) => {
+  console.log('recieved pass target', req.body);
+  const { toOfficerId, varietyId, grade, amount } = req.body;
+  
+  const fromOfficerId = req.user.id;
+  
+
+  if (!fromOfficerId || !toOfficerId || !varietyId || !grade || !amount) {
+      return res.status(400).json({ error: "Missing required parameters" });
+  }
+
+  try {
+      const result = await TargetDAO.transferTargetDAO(fromOfficerId, toOfficerId, varietyId, grade, amount);
+      res.status(200).json(result);
+  } catch (error) {
+      res.status(500).json({ error: error.message });
+  }
+};
+
+
+exports.ManagereceiveTarget = async (req, res) => {
+  const { fromOfficerId,varietyId, grade, amount } = req.body;
+  const toOfficerId = req.user.id;
+
+  if (!fromOfficerId || !toOfficerId || !varietyId || !grade || !amount) {
+      return res.status(400).json({ error: "Missing required parameters" });
+  }
+
+  try {
+      const result = await TargetDAO.receiveTargetDAO(fromOfficerId, toOfficerId, varietyId, grade, amount);
+      res.status(200).json(result);
+  } catch (error) {
+      res.status(500).json({ error: error.message });
+  }
+};
+
+
+exports.getDailyTarget = async (req, res) => {
+  const { officerId, varietyId,grade } = req.params;
+  console.log('getDailyTarget',req.params);	
+
+  if (!officerId || !varietyId) {
+      return res.status(400).json({ error: "Missing required parameters: officerId and varietyId" });
+  }
+
+  try {
+      const targets = await TargetDAO.getDailyTargetByOfficerAndVariety(officerId, varietyId,grade);
+      res.status(200).json({ status: "success", data: targets });
+  } catch (error) {
+      res.status(500).json({ error: error.message });
+  }
+};

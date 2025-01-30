@@ -393,3 +393,126 @@ exports.getTargetsByCompanyIdDao = (centerId) => {
         });
     });
 };
+
+
+exports.transferTargetDAO = (fromOfficerId, toOfficerId, varietyId, grade, amount) => {
+    return new Promise((resolve, reject) => {
+        const validGrades = ["A", "B", "C"];
+        if (!validGrades.includes(grade)) {
+            return reject(new Error(`Invalid grade: ${grade}`));
+        }
+
+        const decrementSql = `
+            UPDATE officerdailytarget 
+            SET target = target - ?
+            WHERE officerId = ? AND varietyId = ? AND grade = ? AND target >= ?;
+        `;
+
+        const incrementSql = `
+            UPDATE officerdailytarget 
+            SET target = target + ?
+            WHERE officerId = ? AND varietyId = ? AND grade = ?;
+        `;
+
+        collectionofficer.beginTransaction((err) => {
+            if (err) return reject(err);
+
+            // Deduct target from the transferring officer
+            collectionofficer.query(decrementSql, [amount, fromOfficerId, varietyId, grade, amount], (err, result) => {
+                if (err || result.affectedRows === 0) {
+                    return collectionofficer.rollback(() => reject(err || new Error("Insufficient target balance or record not found")));
+                }
+
+                // Increase target for receiving officer
+                collectionofficer.query(incrementSql, [amount, toOfficerId, varietyId, grade], (err, result) => {
+                    if (err || result.affectedRows === 0) {
+                        return collectionofficer.rollback(() => reject(err || new Error("Receiving officer record not found")));
+                    }
+
+                    collectionofficer.commit((err) => {
+                        if (err) {
+                            return collectionofficer.rollback(() => reject(err));
+                        }
+                        resolve({ message: "Target transferred successfully" });
+                    });
+                });
+            });
+        });
+    });
+};
+
+
+exports.receiveTargetDAO = (fromOfficerId, toOfficerId, varietyId, grade, amount) => {
+    return new Promise((resolve, reject) => {
+        const validGrades = ["A", "B", "C"];
+        if (!validGrades.includes(grade)) {
+            return reject(new Error(`Invalid grade: ${grade}`));
+        }
+
+        const decrementSql = `
+            UPDATE officerdailytarget 
+            SET target = target - ?
+            WHERE officerId = ? AND varietyId = ? AND grade = ? AND target >= ?;
+        `;
+
+        const incrementSql = `
+            UPDATE officerdailytarget 
+            SET target = target + ?
+            WHERE officerId = ? AND varietyId = ? AND grade = ?;
+        `;
+
+        collectionofficer.beginTransaction((err) => {
+            if (err) return reject(err);
+
+            // Step 1: Deduct from the sender's target
+            collectionofficer.query(decrementSql, [amount, fromOfficerId, varietyId, grade, amount], (err, result) => {
+                if (err) {
+                    return collectionofficer.rollback(() => reject(err));
+                }
+                if (result.affectedRows === 0) {
+                    return collectionofficer.rollback(() => reject(new Error("Insufficient target balance or sender record not found")));
+                }
+
+                console.log(`✅ Deducted ${amount} from officer ${fromOfficerId}'s target`);
+
+                // Step 2: Increase target for the receiving officer
+                collectionofficer.query(incrementSql, [amount, toOfficerId, varietyId, grade], (err, result) => {
+                    if (err) {
+                        return collectionofficer.rollback(() => reject(err));
+                    }
+                    if (result.affectedRows === 0) {
+                        return collectionofficer.rollback(() => reject(new Error("Receiving officer record not found")));
+                    }
+
+                    console.log(`✅ Added ${amount} to officer ${toOfficerId}'s target`);
+
+                    // Step 3: Commit transaction
+                    collectionofficer.commit((err) => {
+                        if (err) {
+                            return collectionofficer.rollback(() => reject(err));
+                        }
+                        resolve({ message: "Target received successfully" });
+                    });
+                });
+            });
+        });
+    });
+};
+
+
+exports.getDailyTargetByOfficerAndVariety = (officerId, varietyId, grade) => {
+    return new Promise((resolve, reject) => {
+        const sql = `
+            SELECT id, dailyTargetId, varietyId, officerId, grade, target, complete, createdAt
+            FROM officerdailytarget
+            WHERE officerId = ? AND varietyId = ? AND grade = ?;
+        `;
+
+        collectionofficer.query(sql, [officerId, varietyId, grade], (err, results) => {
+            if (err) {
+                return reject(err);
+            }
+            resolve(results);
+        });
+    });
+};

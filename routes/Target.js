@@ -23,4 +23,14 @@ router.get('/officer',authMiddleware, TargetEP.getTargetForOfficerManagerView);
 router.get('/officer/:officerId',authMiddleware, TargetEP.getTargetForOfficer);
 
 
+router.put('/pass-target',TargetEP.transferTarget);
+router.put('/recieve-target',TargetEP.receiveTarget);
+
+router.put('/manager/pass-target',authMiddleware,TargetEP.ManagertransferTarget);
+router.put('/manager/recieve-target',authMiddleware,TargetEP.ManagereceiveTarget);
+
+router.get('/get-daily-todo-byvariety/:officerId/:varietyId/:grade',TargetEP.getDailyTarget);
+
+
+
 module.exports = router;
