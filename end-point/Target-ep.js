@@ -561,6 +561,7 @@ exports.getTargetForOfficer = async (req, res) => {
 
 exports.transferTarget = async (req, res) => {
   const { fromOfficerId, toOfficerId, varietyId, grade, amount } = req.body;
+  console.log('from officer---',fromOfficerId)
 
   if (!fromOfficerId || !toOfficerId || !varietyId || !grade || !amount) {
       return res.status(400).json({ error: "Missing required parameters" });
@@ -577,6 +578,7 @@ exports.transferTarget = async (req, res) => {
 
 exports.receiveTarget = async (req, res) => {
   const { fromOfficerId, toOfficerId, varietyId, grade, amount } = req.body;
+  console.log('from officer---',fromOfficerId)
 
   if (!fromOfficerId || !toOfficerId || !varietyId || !grade || !amount) {
       return res.status(400).json({ error: "Missing required parameters" });
@@ -613,6 +615,8 @@ exports.ManagertransferTarget = async (req, res) => {
 exports.ManagereceiveTarget = async (req, res) => {
   const { fromOfficerId,varietyId, grade, amount } = req.body;
   const toOfficerId = req.user.id;
+  
+  console.log('recieved pass target', req.body);
 
   if (!fromOfficerId || !toOfficerId || !varietyId || !grade || !amount) {
       return res.status(400).json({ error: "Missing required parameters" });
