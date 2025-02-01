@@ -65,5 +65,7 @@ router.get(
 
 router.get("/targets", TargetEP.getAllTargets);
 
+router.post("/get-officer-online", managerEp.getofficeronline);
+
 
 module.exports = router;

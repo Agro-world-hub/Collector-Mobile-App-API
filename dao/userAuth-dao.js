@@ -34,6 +34,19 @@ exports.getOfficerPasswordById = (id) => {
   });
 };
 
+exports.updateLoginStatus = (collectionOfficerId, status) => {
+  return new Promise((resolve, reject) => {
+    const sql = "UPDATE collectionofficer SET OnlineStatus = ? WHERE id = ?";
+    db.collectionofficer.query(sql, [ status, collectionOfficerId], (err, results) => {
+      if (err) {
+        return reject(new Error("Database error"));
+      }
+      resolve(results);
+      console.log(results)
+    })
+  })
+}
+
 
 exports.updatePasswordInDatabase = (collectionOfficerId, hashedPassword) => {
   return new Promise((resolve, reject) => {
@@ -212,3 +225,17 @@ exports.getClaimStatusByUserId = (userId) => {
     });
   });
 };
+
+exports.updateOnlineStatus = ( status, userId) => {
+  return new Promise((resolve, reject) => {
+    const sql = `UPDATE collectionofficer SET OnlineStatus = ? WHERE id = ?`;
+    db.collectionofficer.query(sql, [status, userId], (err, results) => {
+      if (err) {
+        console.error('Error updating online status:', err);
+        reject(new Error('Database query failed'));
+        return;
+      }
+      resolve();
+    });
+  });
+}

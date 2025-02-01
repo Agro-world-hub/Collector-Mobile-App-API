@@ -10,7 +10,7 @@ const complainRoutes = require('./routes/complains.routes')
 const priceUpdatesRoutes = require('./routes/price.routes')
 const managerRoutes = require('./routes/manager.routes')
 const {  plantcare, collectionofficer, marketPlace, dash } = require('./startup/database');
-
+const socketIo = require('socket.io');
 require('dotenv').config();
 
 const app = express();
@@ -31,6 +31,19 @@ app.options(
         credentials: true,
     })
 );
+
+const http = require("http").Server(app);
+const socketIO = require("socket.io")(http, {
+  cors: {
+    origin: "http://1192.168.1.5:3000/",
+  },
+});
+
+socketIO.on("connection", (socket) => {
+  console.log(`${socket.id} user is just connected`);
+
+});
+
 // Increase the payload limit
 app.use(bodyParser.json({ limit: '10mb' })); // Adjust the limit as necessary
 app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
@@ -84,9 +97,10 @@ app.use('/api/auth', complainRoutes);
 app.use('/api/auth', priceUpdatesRoutes);
 app.use('/api/collection-manager',managerRoutes);
 
-
-
-
 // Start server
 const PORT = process.env.PORT || 3000;
+const PORT2 = 3005
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+http.listen(PORT2, () => {
+  console.log(`Server is listeing on ${PORT2}`);
+});

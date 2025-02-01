@@ -2,6 +2,7 @@ const jwt = require("jsonwebtoken");
 const userAuthDao = require("../dao/userAuth-dao");
 const bcrypt = require("bcrypt");
 const { loginSchema } = require('../Validations/Auth-validations');
+const { Socket } = require("socket.io");
 
 
 
@@ -100,6 +101,12 @@ exports.loginUser = async (req, res) => {
       userId: officer.id,
       jobRole: jobRole,
     };
+    
+    const status = 1
+
+    console.log(collectionOfficerId)
+    const resds = await userAuthDao.updateLoginStatus(collectionOfficerId, status );
+    console.log(resds)
 
     res.status(200).json(response);
   } catch (err) {
@@ -360,3 +367,30 @@ exports.GetClaimStatus = async (req, res) => {
       res.status(500).json({ error: 'An error occurred while fetching claim status.' });
   }
 };
+
+exports.updateOnlineStatus = async (req, res) => {
+  console.log('hitttt online')
+  const userId = req.user.id;  // Correctly access the userId
+  const { status } = req.body;  // Extract status from the request body
+
+  try {
+    console.log('userId:', userId);
+    console.log(status)  // Log the userId for debugging
+    const result = await userAuthDao.updateOnlineStatus(status, userId);
+
+    // Check if the update was successful
+    if (result===null) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+    const officer = { id: userId, status }; // Create an object with officer info
+    io.emit('officer_status_update', officer);
+
+    // Respond with success
+    return res.status(200).json({ message: 'Officer status updated successfully.' });
+
+  } catch (error) {
+    console.error('Error updating online status:', error);
+    res.status(500).json({ error: 'An error occurred while updating online status.' });
+  }
+};
+

@@ -299,3 +299,20 @@ exports.getOfficerDetailsForReport = async (req, res) => {
     });
   }
 };
+
+
+exports.getofficeronline = async (req, res) => {
+  console.log('Get online officers request received');
+  const OfficerId = req.body.collectionOfficerId;
+  console.log('Collection Officer ID:', OfficerId);
+
+  try {
+    const result = await collectionofficerDao.getOfficerOnlineStatus(OfficerId);
+    res.status(200).json({ result });
+    console.log('Online officers:', result);
+    io.emit('officer_status_update', { OfficerId, OnlineStatus: result.OnlineStatus });
+  } catch (error) {
+    console.error('Error fetching online officers:', error);
+    res.status(500).json({ error: 'An error occurred while fetching online officers.' });
+  }
+}

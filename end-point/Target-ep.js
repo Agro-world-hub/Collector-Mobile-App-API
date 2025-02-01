@@ -303,3 +303,4 @@ exports.getAllTargets = async (req, res) => {
       res.status(500).json({ error: "Failed to fetch targets" });
   }
 };
+
