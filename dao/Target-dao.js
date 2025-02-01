@@ -273,3 +273,246 @@ exports.getAllTargetsDao = () => {
         });
     });
 };
+
+
+exports.getTargetsByCompanyIdDao = (centerId) => {
+    return new Promise((resolve, reject) => {
+      const sql = `
+        SELECT 
+          dt.id AS targetId, 
+          dt.centerId, 
+          dt.fromDate, 
+          dt.toDate, 
+          dt.fromTime, 
+          dt.toTime, 
+          dt.createdBy, 
+          dt.createdAt,
+          dti.id AS itemId, 
+          dti.varietyId, 
+          dti.qtyA AS targetA,
+          dti.qtyB AS targetB,
+          dti.qtyC AS targetC,
+          dti.complteQtyA, 
+          dti.complteQtyB, 
+          dti.complteQtyC,
+          (dti.qtyA - dti.complteQtyA) AS todoQtyA,
+          (dti.qtyB - dti.complteQtyB) AS todoQtyB,
+          (dti.qtyC - dti.complteQtyC) AS todoQtyC
+        FROM 
+          dailytarget dt
+        LEFT JOIN 
+          dailytargetitems dti ON dt.id = dti.targetId
+        WHERE 
+          dt.centerId = ?
+        GROUP BY 
+          dti.id, dt.id
+      `;
+      collectionofficer.query(sql, [centerId], (err, results) => {
+        if (err) {
+          return reject(err);
+        }
+        resolve(results);
+      });
+    });
+  };
+  
+
+  
+  exports.getTargetForOfficerDao = (officerId) => {
+    return new Promise((resolve, reject) => {
+      const sql = `
+        SELECT 
+          odt.varietyId,
+          cv.varietyNameEnglish AS varietyName,
+          odt.grade,
+          odt.target,
+          odt.complete,
+          dt.fromDate,
+          dt.toDate,
+          dt.fromTime,
+          dt.toTime
+        FROM 
+          officerdailytarget odt
+        LEFT JOIN 
+          \`plant-care\`.cropvariety cv ON odt.varietyId = cv.id
+        INNER JOIN
+          dailytarget dt ON odt.dailyTargetId = dt.id
+        WHERE 
+          odt.officerId = ?
+          AND CURDATE() BETWEEN dt.fromDate AND dt.toDate
+          AND CURTIME() BETWEEN dt.fromTime AND dt.toTime
+      `;
+  
+      collectionofficer.query(sql, [officerId], (err, results) => {
+        if (err) {
+          return reject(err);
+        }
+        resolve(results);
+      });
+    });
+  };
+  
+  
+  exports.getCenterTargetDao = async (centerId, varietyId, grade) => {
+    return new Promise((resolve, reject) => {
+        console.log("Received grade parameter:", grade);
+
+        // Map short grade inputs (A, B, C) to actual database columns
+        const gradeMap = {
+            "A": "qtyA",
+            "B": "qtyB",
+            "C": "qtyC",
+            "completedA": "complteQtyA",
+            "completedB": "complteQtyB",
+            "completedC": "complteQtyC"
+        };
+
+        // Convert received grade to the actual column name
+        const columnName = gradeMap[grade.trim()];
+
+        if (!columnName) {
+            return reject(new Error(`Invalid grade parameter: ${grade}`));
+        }
+
+        const query = `
+            SELECT 
+                dt.centerId,
+                dti.varietyId,
+                SUM(dti.${columnName}) AS total_${columnName}
+            FROM dailytargetitems dti
+            JOIN dailytarget dt ON dti.targetId = dt.id
+            WHERE dt.centerId = ? AND dti.varietyId = ?
+            GROUP BY dt.centerId, dti.varietyId;
+        `;
+
+        collectionofficer.query(query, [centerId, varietyId], (error, results) => {
+            if (error) {
+                return reject(error);
+            }
+            resolve(results);
+        });
+    });
+};
+
+
+exports.transferTargetDAO = (fromOfficerId, toOfficerId, varietyId, grade, amount) => {
+    return new Promise((resolve, reject) => {
+        const validGrades = ["A", "B", "C"];
+        if (!validGrades.includes(grade)) {
+            return reject(new Error(`Invalid grade: ${grade}`));
+        }
+
+        const decrementSql = `
+            UPDATE officerdailytarget 
+            SET target = target - ?
+            WHERE officerId = ? AND varietyId = ? AND grade = ? AND target >= ?;
+        `;
+
+        const incrementSql = `
+            UPDATE officerdailytarget 
+            SET target = target + ?
+            WHERE officerId = ? AND varietyId = ? AND grade = ?;
+        `;
+
+        collectionofficer.beginTransaction((err) => {
+            if (err) return reject(err);
+
+            // Deduct target from the transferring officer
+            collectionofficer.query(decrementSql, [amount, fromOfficerId, varietyId, grade, amount], (err, result) => {
+                if (err || result.affectedRows === 0) {
+                    return collectionofficer.rollback(() => reject(err || new Error("Insufficient target balance or record not found")));
+                }
+
+                // Increase target for receiving officer
+                collectionofficer.query(incrementSql, [amount, toOfficerId, varietyId, grade], (err, result) => {
+                    if (err || result.affectedRows === 0) {
+                        return collectionofficer.rollback(() => reject(err || new Error("Receiving officer record not found")));
+                    }
+
+                    collectionofficer.commit((err) => {
+                        if (err) {
+                            return collectionofficer.rollback(() => reject(err));
+                        }
+                        resolve({ message: "Target transferred successfully" });
+                    });
+                });
+            });
+        });
+    });
+};
+
+
+exports.receiveTargetDAO = (fromOfficerId, toOfficerId, varietyId, grade, amount) => {
+    return new Promise((resolve, reject) => {
+        const validGrades = ["A", "B", "C"];
+        if (!validGrades.includes(grade)) {
+            return reject(new Error(`Invalid grade: ${grade}`));
+        }
+
+        const decrementSql = `
+            UPDATE officerdailytarget 
+            SET target = target - ?
+            WHERE officerId = ? AND varietyId = ? AND grade = ? AND target >= ?;
+        `;
+
+        const incrementSql = `
+            UPDATE officerdailytarget 
+            SET target = target + ?
+            WHERE officerId = ? AND varietyId = ? AND grade = ?;
+        `;
+
+        collectionofficer.beginTransaction((err) => {
+            if (err) return reject(err);
+
+            // Step 1: Deduct from the sender's target
+            collectionofficer.query(decrementSql, [amount, fromOfficerId, varietyId, grade, amount], (err, result) => {
+                if (err) {
+                    return collectionofficer.rollback(() => reject(err));
+                }
+                if (result.affectedRows === 0) {
+                    return collectionofficer.rollback(() => reject(new Error("Insufficient target balance or sender record not found")));
+                }
+
+                console.log(`✅ Deducted ${amount} from officer ${fromOfficerId}'s target`);
+
+                // Step 2: Increase target for the receiving officer
+                collectionofficer.query(incrementSql, [amount, toOfficerId, varietyId, grade], (err, result) => {
+                    if (err) {
+                        return collectionofficer.rollback(() => reject(err));
+                    }
+                    if (result.affectedRows === 0) {
+                        return collectionofficer.rollback(() => reject(new Error("Receiving officer record not found")));
+                    }
+
+                    console.log(`✅ Added ${amount} to officer ${toOfficerId}'s target`);
+
+                    // Step 3: Commit transaction
+                    collectionofficer.commit((err) => {
+                        if (err) {
+                            return collectionofficer.rollback(() => reject(err));
+                        }
+                        resolve({ message: "Target received successfully" });
+                    });
+                });
+            });
+        });
+    });
+};
+
+
+exports.getDailyTargetByOfficerAndVariety = (officerId, varietyId, grade) => {
+    return new Promise((resolve, reject) => {
+        const sql = `
+            SELECT id, dailyTargetId, varietyId, officerId, grade, target, complete, createdAt
+            FROM officerdailytarget
+            WHERE officerId = ? AND varietyId = ? AND grade = ?;
+        `;
+
+        collectionofficer.query(sql, [officerId, varietyId, grade], (err, results) => {
+            if (err) {
+                return reject(err);
+            }
+            resolve(results);
+        });
+    });
+};

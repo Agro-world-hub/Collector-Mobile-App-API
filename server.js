@@ -97,6 +97,12 @@ app.use('/api/auth', complainRoutes);
 app.use('/api/auth', priceUpdatesRoutes);
 app.use('/api/collection-manager',managerRoutes);
 
+
+const targetRoutes = require('./routes/Target')
+app.use('/api/target', targetRoutes);
+
+
+
 // Start server
 const PORT = process.env.PORT || 3000;
 const PORT2 = 3005

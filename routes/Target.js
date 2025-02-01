@@ -1,32 +1,35 @@
 const express = require('express');
-const authMiddleware = require('../middlewares/authMiddleware');
+const authMiddleware = require('../Middlewares/auth.middleware');
 const TargetEP = require('../end-point/Target-ep')
 
 const router = express.Router();
 
-router.get(
-    '/get-crop-category',
-    authMiddleware,
-    TargetEP.getAllCropCatogory
-)
-
-router.post(
-    "/create-daily-target",
-    authMiddleware,
-    TargetEP.addDailyTarget
-)
 
 router.get(
-    "/get-daily-target",
+    "/get-daily-target-officer",
     authMiddleware,
-    TargetEP.getAllDailyTarget
+    TargetEP.getTargetForOfficer
 )
 
+
 router.get(
-    "/download-daily-target",
-    authMiddleware,
-    TargetEP.downloadDailyTarget
+    "/get-daily-target-officer/:officerId",
+    TargetEP.getTargetForOfficer
 )
+
+router.get("/get-daily-center-target/:varietyId/:grade/:centerId",authMiddleware,TargetEP.getCenterTargetEp)
+
+router.get('/officer',authMiddleware, TargetEP.getTargetForOfficerManagerView);
+router.get('/officer/:officerId',authMiddleware, TargetEP.getTargetForOfficer);
+
+
+router.put('/pass-target',TargetEP.transferTarget);
+router.put('/recieve-target',TargetEP.receiveTarget);
+
+router.put('/manager/pass-target',authMiddleware,TargetEP.ManagertransferTarget);
+router.put('/manager/recieve-target',authMiddleware,TargetEP.ManagereceiveTarget);
+
+router.get('/get-daily-todo-byvariety/:officerId/:varietyId/:grade',TargetEP.getDailyTarget);
 
 
 

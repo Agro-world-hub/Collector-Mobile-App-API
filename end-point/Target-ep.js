@@ -304,3 +304,345 @@ exports.getAllTargets = async (req, res) => {
   }
 };
 
+
+exports.getTargetsByCompanyId = async (req, res) => {
+  try {
+    const centerId = req.user.centerId; // Fetch companyId from request parameters
+
+    if (!centerId) {
+      return res.status(400).json({ error: "centerId is required" });
+    }
+
+    const targets = await TargetDAO.getTargetsByCompanyIdDao(centerId);
+
+    if (!targets.length) {
+      return res.status(404).json({ message: "No targets found for this company." });
+    }
+
+    const formattedTargets = targets.flatMap((target) => {
+      return target.itemId
+        ? [
+            ...(parseFloat(target.targetA) > 0 || parseFloat(target.todoQtyA) > 0
+              ? [{
+                  varietyId: target.varietyId,
+                  grade: "A", // Assuming a static grade for simplicity, modify if grade is dynamic
+                  target: target.targetA,
+                  todo: target.todoQtyA,
+                }]
+              : []),
+            ...(parseFloat(target.targetB) > 0 || parseFloat(target.todoQtyB) > 0
+              ? [{
+                  varietyId: target.varietyId,
+                  grade: "B", // Assuming grade B for qtyB
+                  target: target.targetB,
+                  todo: target.todoQtyB,
+                }]
+              : []),
+            ...(parseFloat(target.targetC) > 0 || parseFloat(target.todoQtyC) > 0
+              ? [{
+                  varietyId: target.varietyId,
+                  grade: "C", // Assuming grade C for qtyC
+                  target: target.targetC,
+                  todo: target.todoQtyC,
+                }]
+              : []),
+          ]
+        : [];
+    });
+
+    res.status(200).json(formattedTargets);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to fetch targets" });
+  }
+};
+
+
+
+// exports.getTargetForOfficer = async (req, res) => {
+//   try {
+//     const officerId = req.user.id; 
+
+//     if (!officerId) {
+//       return res.status(400).json({ error: "Officer ID is required" });
+//     }
+
+//     const targets = await TargetDAO.getTargetForOfficerDao(officerId);
+
+//     if (!targets.length) {
+//       return res.status(404).json({ message: "No targets found for this officer." });
+//     }
+
+//     const formattedTargets = targets.map((target) => ({
+//       varietyId: target.varietyId,
+//       varietyName: target.varietyName,
+//       grade: target.grade,
+//       target: parseFloat(target.target),
+//       todo: parseFloat(target.target) - parseFloat(target.complete),
+//     }));
+
+//     res.status(200).json(formattedTargets);
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ error: "Failed to fetch targets for the officer." });
+//   }
+// };
+
+
+// exports.getTargetForOfficerManagerView = async (req, res) => {
+//   try {
+//     const {officerId} = req.params; 
+
+//     if (!officerId) {
+//       return res.status(400).json({ error: "Officer ID is required" });
+//     }
+
+//     const targets = await TargetDAO.getTargetForOfficerDao(officerId);
+
+//     if (!targets.length) {
+//       return res.status(404).json({ message: "No targets found for this officer." });
+//     }
+
+//     const formattedTargets = targets.map((target) => ({
+//       varietyId: target.varietyId,
+//       varietyName: target.varietyName,
+//       grade: target.grade,
+//       target: parseFloat(target.target),
+//       todo: parseFloat(target.target) - parseFloat(target.complete),
+//     }));
+
+//     res.status(200).json(formattedTargets);
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ error: "Failed to fetch targets for the officer." });
+//   }
+// };
+
+
+
+
+
+exports.getCenterTargetEp = async (req, res) => {
+  try {
+      const { varietyId, grade} = req.params; // Get parameters from URL
+      const centerId = req.user.centerId; // Get center ID from the authenticated
+      console.log("Received API Request - varietyId:", varietyId, "grade:", grade, "centerId:", centerId);
+
+      // Ensure parameters exist
+      if (!centerId || !varietyId || !grade) {
+          return res.status(400).json({ success: false, message: 'Missing required parameters' });
+      }
+
+      const results = await TargetDAO.getCenterTargetDao(centerId, varietyId, grade);
+      res.json({ success: true, data: results });
+  } catch (error) {
+      console.error('Error fetching center target data:', error);
+      res.status(500).json({ success: false, message: 'Internal Server Error' });
+  }
+};
+
+
+
+exports.getTargetForOfficerManagerView = async (req, res) => {
+    try {
+        const officerId  = req.user.id;
+        const centerId = req.user.centerId; // Get center ID from authenticated user session
+
+        console.log("Received API Request - Officer ID:", officerId, "Center ID:", centerId);
+
+        if (!officerId) {
+            return res.status(400).json({ error: "Officer ID is required" });
+        }
+
+        // Fetch officer targets
+        const targets = await TargetDAO.getTargetForOfficerDao(officerId);
+
+        if (!targets.length) {
+            return res.status(404).json({ message: "No targets found for this officer." });
+        }
+
+        // Format officer targets
+        const formattedTargets = targets.map((target) => ({
+            varietyId: target.varietyId,
+            varietyName: target.varietyName,
+            grade: target.grade,
+            target: parseFloat(target.target),
+            todo: parseFloat(target.target) - parseFloat(target.complete),
+        }));
+
+        // Fetch center targets for the same varieties & grades
+        const centerTargets = await Promise.all(
+            formattedTargets.map(async (target) => {
+                const centerTargetData = await TargetDAO.getCenterTargetDao(centerId, target.varietyId, target.grade);
+                return {
+                    varietyId: target.varietyId,
+                    grade: target.grade,
+                    centerTarget: centerTargetData.length > 0 ? centerTargetData[0] : null,
+                };
+            })
+        );
+
+        // Combine officer targets with center target data
+        const combinedData = formattedTargets.map((target) => {
+            const centerData = centerTargets.find(
+                (ct) => ct.varietyId === target.varietyId && ct.grade === target.grade
+            );
+            return {
+                ...target,
+                centerTarget: centerData ? centerData.centerTarget : null,
+            };
+        });
+
+        res.status(200).json({ success: true, data: combinedData });
+    } catch (error) {
+        console.error("Error fetching target data:", error);
+        res.status(500).json({ error: "Failed to fetch target data." });
+    }
+};
+
+
+exports.getTargetForOfficer = async (req, res) => {
+  try {
+      const {officerId}  = req.params;
+      const centerId = req.user.centerId; // Get center ID from authenticated user session
+
+      console.log("Received API Request - Officer ID:", officerId, "Center ID:", centerId);
+
+      if (!officerId) {
+          return res.status(400).json({ error: "Officer ID is required" });
+      }
+
+      // Fetch officer targets
+      const targets = await TargetDAO.getTargetForOfficerDao(officerId);
+
+      if (!targets.length) {
+          return res.status(404).json({ message: "No targets found for this officer." });
+      }
+
+      // Format officer targets
+      const formattedTargets = targets.map((target) => ({
+          varietyId: target.varietyId,
+          varietyName: target.varietyName,
+          grade: target.grade,
+          target: parseFloat(target.target),
+          todo: parseFloat(target.target) - parseFloat(target.complete),
+      }));
+
+      // Fetch center targets for the same varieties & grades
+      const centerTargets = await Promise.all(
+          formattedTargets.map(async (target) => {
+              const centerTargetData = await TargetDAO.getCenterTargetDao(centerId, target.varietyId, target.grade);
+              return {
+                  varietyId: target.varietyId,
+                  grade: target.grade,
+                  centerTarget: centerTargetData.length > 0 ? centerTargetData[0] : null,
+              };
+          })
+      );
+
+      // Combine officer targets with center target data
+      const combinedData = formattedTargets.map((target) => {
+          const centerData = centerTargets.find(
+              (ct) => ct.varietyId === target.varietyId && ct.grade === target.grade
+          );
+          return {
+              ...target,
+              centerTarget: centerData ? centerData.centerTarget : null,
+          };
+      });
+
+      res.status(200).json({ success: true, data: combinedData });
+  } catch (error) {
+      console.error("Error fetching target data:", error);
+      res.status(500).json({ error: "Failed to fetch target data." });
+  }
+};
+
+
+exports.transferTarget = async (req, res) => {
+  const { fromOfficerId, toOfficerId, varietyId, grade, amount } = req.body;
+  console.log('from officer---',fromOfficerId)
+
+  if (!fromOfficerId || !toOfficerId || !varietyId || !grade || !amount) {
+      return res.status(400).json({ error: "Missing required parameters" });
+  }
+
+  try {
+      const result = await TargetDAO.transferTargetDAO(fromOfficerId, toOfficerId, varietyId, grade, amount);
+      res.status(200).json(result);
+  } catch (error) {
+      res.status(500).json({ error: error.message });
+  }
+};
+
+
+exports.receiveTarget = async (req, res) => {
+  const { fromOfficerId, toOfficerId, varietyId, grade, amount } = req.body;
+  console.log('from officer---',fromOfficerId)
+
+  if (!fromOfficerId || !toOfficerId || !varietyId || !grade || !amount) {
+      return res.status(400).json({ error: "Missing required parameters" });
+  }
+
+  try {
+      const result = await TargetDAO.receiveTargetDAO(fromOfficerId, toOfficerId, varietyId, grade, amount);
+      res.status(200).json(result);
+  } catch (error) {
+      res.status(500).json({ error: error.message });
+  }
+};
+
+exports.ManagertransferTarget = async (req, res) => {
+  console.log('recieved pass target', req.body);
+  const { toOfficerId, varietyId, grade, amount } = req.body;
+  
+  const fromOfficerId = req.user.id;
+  
+
+  if (!fromOfficerId || !toOfficerId || !varietyId || !grade || !amount) {
+      return res.status(400).json({ error: "Missing required parameters" });
+  }
+
+  try {
+      const result = await TargetDAO.transferTargetDAO(fromOfficerId, toOfficerId, varietyId, grade, amount);
+      res.status(200).json(result);
+  } catch (error) {
+      res.status(500).json({ error: error.message });
+  }
+};
+
+
+exports.ManagereceiveTarget = async (req, res) => {
+  const { fromOfficerId,varietyId, grade, amount } = req.body;
+  const toOfficerId = req.user.id;
+  
+  console.log('recieved pass target', req.body);
+
+  if (!fromOfficerId || !toOfficerId || !varietyId || !grade || !amount) {
+      return res.status(400).json({ error: "Missing required parameters" });
+  }
+
+  try {
+      const result = await TargetDAO.receiveTargetDAO(fromOfficerId, toOfficerId, varietyId, grade, amount);
+      res.status(200).json(result);
+  } catch (error) {
+      res.status(500).json({ error: error.message });
+  }
+};
+
+
+exports.getDailyTarget = async (req, res) => {
+  const { officerId, varietyId,grade } = req.params;
+  console.log('getDailyTarget',req.params);	
+
+  if (!officerId || !varietyId) {
+      return res.status(400).json({ error: "Missing required parameters: officerId and varietyId" });
+  }
+
+  try {
+      const targets = await TargetDAO.getDailyTargetByOfficerAndVariety(officerId, varietyId,grade);
+      res.status(200).json({ status: "success", data: targets });
+  } catch (error) {
+      res.status(500).json({ error: error.message });
+  }
+};
