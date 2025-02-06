@@ -93,7 +93,7 @@ exports.getAllDailyTargetDAO = (companyId, searchText) => {
     return new Promise((resolve, reject) => {
         let targetSql = `
            SELECT CG.cropNameEnglish, CV.varietyNameEnglish, DTI.qtyA, DTI.qtyB, DTI.qtyC, DT.toDate, DT.toTime, DT.fromTime
-           FROM dailytarget DT, dailytargetitems DTI, \`plant-care\`.cropvariety CV, \`plant-care\`.cropgroup CG
+           FROM dailytarget DT, dailytargetitems DTI, \`plant_care\`.cropvariety CV, \`plant_care\`.cropgroup CG
            WHERE DT.id = DTI.targetId AND DTI.varietyId = CV.id AND CV.cropGroupId = CG.id AND DT.companyId = ?
         `
         const sqlParams = [companyId]
@@ -126,7 +126,7 @@ exports.getAllDailyTargetCompleteDAO = (companyId, searchText) => {
     return new Promise((resolve, reject) => {
         let completeSql = `
             SELECT CG.cropNameEnglish, CV.varietyNameEnglish, SUM(FPC.gradeAquan) AS totA, SUM(FPC.gradeBquan) AS totB, SUM(FPC.gradeCquan) AS totC, FPC.createdAt
-            FROM registeredfarmerpayments RFP, farmerpaymentscrops FPC, collectionofficer CO, \`plant-care\`.cropvariety CV, \`plant-care\`.cropgroup CG
+            FROM registeredfarmerpayments RFP, farmerpaymentscrops FPC, collectionofficer CO, \`plant_care\`.cropvariety CV, \`plant_care\`.cropgroup CG
             WHERE RFP.id = FPC.registerFarmerId AND RFP.collectionOfficerId = CO.id AND FPC.cropId = CV.id AND CV.cropGroupId = CG.id AND CO.companyId = ?
             GROUP BY CG.cropNameEnglish, CV.varietyNameEnglish
 
@@ -167,7 +167,7 @@ exports.downloadAllDailyTargetDao = (companyId, fromDate, toDate) => {
     return new Promise((resolve, reject) => {
         let targetSql = `
            SELECT CG.cropNameEnglish, CV.varietyNameEnglish, DTI.qtyA, DTI.qtyB, DTI.qtyC, DT.toDate, DT.toTime, DT.fromTime
-           FROM dailytarget DT, dailytargetitems DTI, \`plant-care\`.cropvariety CV, \`plant-care\`.cropgroup CG
+           FROM dailytarget DT, dailytargetitems DTI, \`plant_care\`.cropvariety CV, \`plant_care\`.cropgroup CG
            WHERE DT.id = DTI.targetId AND DTI.varietyId = CV.id AND CV.cropGroupId = CG.id AND DT.companyId = ? AND DATE(DT.fromDate) >= ? AND DATE(DT.toDate) <= ?
         `
         const sqlParams = [companyId, fromDate, toDate]
@@ -195,7 +195,7 @@ exports.downloadAllDailyTargetCompleteDAO = (companyId, fromDate, toDate) => {
     return new Promise((resolve, reject) => {
         let completeSql = `
             SELECT CG.cropNameEnglish, CV.varietyNameEnglish, SUM(FPC.gradeAquan) AS totA, SUM(FPC.gradeBquan) AS totB, SUM(FPC.gradeCquan) AS totC, FPC.createdAt
-            FROM registeredfarmerpayments RFP, farmerpaymentscrops FPC, collectionofficer CO, \`plant-care\`.cropvariety CV, \`plant-care\`.cropgroup CG
+            FROM registeredfarmerpayments RFP, farmerpaymentscrops FPC, collectionofficer CO, \`plant_care\`.cropvariety CV, \`plant_care\`.cropgroup CG
             WHERE RFP.id = FPC.registerFarmerId AND RFP.collectionOfficerId = CO.id AND FPC.cropId = CV.id AND CV.cropGroupId = CG.id AND CO.companyId = ? AND DATE(RFP.createdAt) BETWEEN DATE(?) AND DATE(?)
             GROUP BY CG.cropNameEnglish, CV.varietyNameEnglish
 
@@ -334,7 +334,7 @@ exports.getTargetsByCompanyIdDao = (centerId) => {
         FROM 
           officerdailytarget odt
         LEFT JOIN 
-          \`plant-care\`.cropvariety cv ON odt.varietyId = cv.id
+          \`plant_care\`.cropvariety cv ON odt.varietyId = cv.id
         INNER JOIN
           dailytarget dt ON odt.dailyTargetId = dt.id
         WHERE 
@@ -394,7 +394,43 @@ exports.getTargetsByCompanyIdDao = (centerId) => {
     });
 };
 
-
+exports.getCenterTarget = async (centerId) => {
+    return new Promise((resolve, reject) => {
+      // Construct the query to get data for all grades (A, B, C)
+      const query = `
+        SELECT 
+          dti.varietyId,
+          cv.varietyNameEnglish AS varietyName,  -- Get varietyName from cropvariety table
+          SUM(dti.qtyA) AS qtyA,  
+          SUM(dti.qtyB) AS qtyB, 
+          SUM(dti.qtyC) AS qtyC,  
+          SUM(dti.complteQtyA) AS complteQtyA,  
+          SUM(dti.complteQtyB) AS complteQtyB, 
+          SUM(dti.complteQtyC) AS complteQtyC 
+        FROM dailytargetitems dti
+        JOIN dailytarget dt ON dti.targetId = dt.id
+        JOIN plant_care.cropvariety cv ON dti.varietyId = cv.id 
+        WHERE dt.centerId = ?
+        GROUP BY dti.varietyId, cv.varietyNameEnglish;
+      `;
+  
+      // Execute the query
+      collectionofficer.query(query, [centerId], (error, results) => {
+        if (error) {
+          return reject(error);
+        }
+  
+        // If no results are found, return an empty array
+        if (results.length === 0) {
+          resolve([]);
+        } else {
+          resolve(results);  // Return the query results
+        }
+      });
+    });
+  };
+  
+  
 exports.transferTargetDAO = (fromOfficerId, toOfficerId, varietyId, grade, amount) => {
     return new Promise((resolve, reject) => {
         const validGrades = ["A", "B", "C"];

@@ -169,6 +169,7 @@ exports.getOfficerDetailsById = (officerId) => {
     const sql = `
       SELECT 
         co.*, 
+        co.empId,
         cc.centerName AS collectionCenterName,
         cc.contact01 AS centerContact01,
         cc.contact02 AS centerContact02,
@@ -204,6 +205,7 @@ exports.getOfficerDetailsById = (officerId) => {
     });
   });
 };
+
 
 
 //claim status

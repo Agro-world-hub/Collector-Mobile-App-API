@@ -186,6 +186,7 @@ exports.getForCreateId = (role) => {
 
 //transaction list 
 exports.getFarmerListByCollectionOfficerAndDate = (collectionOfficerId, date) => {
+  console.log('DAO: getFarmerListByCollectionOfficerAndDate', collectionOfficerId, date);
   return new Promise((resolve, reject) => {
       const query = `
           SELECT 
@@ -199,32 +200,81 @@ exports.getFarmerListByCollectionOfficerAndDate = (collectionOfficerId, date) =>
               SUM(FPC.gradeAprice * FPC.gradeAquan) +
               SUM(FPC.gradeBprice * FPC.gradeBquan) +
               SUM(FPC.gradeCprice * FPC.gradeCquan) AS totalAmount,
-              UB.address AS bankAddress,
               UB.accNumber AS accountNumber,
               UB.accHolderName AS accountHolderName,
               UB.bankName AS bankName,
-              UB.branchName AS branchName
+              UB.branchName AS branchName,
+              CO.empId  
           FROM farmerpaymentscrops FPC
           INNER JOIN registeredfarmerpayments RFP ON FPC.registerFarmerId = RFP.id
           INNER JOIN plant_care.users U ON RFP.userId = U.id
-          LEFT JOIN \`plant-care\`.userbankdetails UB ON U.id = UB.userId
-          WHERE RFP.collectionOfficerId = ?
+          LEFT JOIN \`plant_care\`.userbankdetails UB ON U.id = UB.userId
+          INNER JOIN collectionofficer CO ON RFP.collectionOfficerId = CO.id  
+          WHERE RFP.collectionOfficerId = ? 
             AND DATE(RFP.createdAt) = ?
           GROUP BY 
               RFP.id, U.id, U.firstName, U.lastName, U.phoneNumber, 
               CONCAT_WS(', ', U.houseNo, U.streetName, U.city, U.district), 
               U.NICnumber, 
-              UB.address, UB.accNumber, UB.accHolderName, UB.bankName, UB.branchName
+              UB.accNumber, UB.accHolderName, UB.bankName, UB.branchName, 
+              CO.empId  -- Group by empId to include it in the result
       `;
 
       db.collectionofficer.query(query, [collectionOfficerId, date], (error, results) => {
           if (error) {
               return reject(error); // Reject with error to be handled in the controller
           }
+          console.log('Result of transaction list:', results); 
           resolve(results); // Resolve with results
       });
   });
 };
+
+
+// exports.getFarmerListByCollectionOfficerAndDateForManager = (userId, date) => {
+//   return new Promise((resolve, reject) => {
+//       const query = `
+//           SELECT 
+//               RFP.id AS registeredFarmerId, 
+//               U.id AS userId, 
+//               U.firstName, 
+//               U.lastName, 
+//               U.phoneNumber, 
+//               CONCAT_WS(', ', U.houseNo, U.streetName, U.city, U.district) AS address,
+//               U.NICnumber, 
+//               SUM(FPC.gradeAprice * FPC.gradeAquan) +
+//               SUM(FPC.gradeBprice * FPC.gradeBquan) +
+//               SUM(FPC.gradeCprice * FPC.gradeCquan) AS totalAmount,
+//               UB.address AS bankAddress,
+//               UB.accNumber AS accountNumber,
+//               UB.accHolderName AS accountHolderName,
+//               UB.bankName AS bankName,
+//               UB.branchName AS branchName,
+//               CO.empId  
+//           FROM farmerpaymentscrops FPC
+//           INNER JOIN registeredfarmerpayments RFP ON FPC.registerFarmerId = RFP.id
+//           INNER JOIN plant_care.users U ON RFP.userId = U.id
+//           LEFT JOIN \`plant_care\`.userbankdetails UB ON U.id = UB.userId
+//           INNER JOIN collectionofficer CO ON RFP.collectionOfficerId = CO.id  
+//           WHERE RFP.collectionOfficerId = ? 
+//             AND DATE(RFP.createdAt) = ?
+//           GROUP BY 
+//               RFP.id, U.id, U.firstName, U.lastName, U.phoneNumber, 
+//               CONCAT_WS(', ', U.houseNo, U.streetName, U.city, U.district), 
+//               U.NICnumber, 
+//               UB.address, UB.accNumber, UB.accHolderName, UB.bankName, UB.branchName, 
+//               CO.empId  -- Group by empId to include it in the result
+//       `;
+
+//       db.collectionofficer.query(query, [userId, date], (error, results) => {
+//           if (error) {
+//               return reject(error); // Reject with error to be handled in the controller
+//           }
+//           resolve(results); // Resolve with results
+//       });
+//   });
+// };
+
 
 
 exports.getClaimOfficer = (empID, jobRole) => {
@@ -321,9 +371,9 @@ exports.GetFarmerReportDetailsDao = (userId, createdAtDate, farmerId) => {
           FROM 
               farmerpaymentscrops fpc
           INNER JOIN 
-              \`plant-care\`.\`cropvariety\` cv ON fpc.cropId = cv.id
+              \`plant_care\`.\`cropvariety\` cv ON fpc.cropId = cv.id
           INNER JOIN 
-              \`plant-care\`.\`cropgroup\` cg ON cv.cropGroupId = cg.id
+              \`plant_care\`.\`cropgroup\` cg ON cv.cropGroupId = cg.id
           INNER JOIN 
               registeredfarmerpayments rfp ON fpc.registerFarmerId = rfp.id
           WHERE 

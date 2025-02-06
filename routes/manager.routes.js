@@ -26,6 +26,8 @@ router.get('/generate-empId/:role',managerEp.getForCreateId);
 // Define the route for fetching farmer transaction list
 router.get('/transaction-list', managerEp.getFarmerListByCollectionOfficerAndDate);
 
+router.get('/my-collection',authenticate, managerEp.getFarmerListByCollectionOfficerAndDateForManager);
+
 
 router.post('/get-claim-officer', managerEp.getClaimOfficer);
 

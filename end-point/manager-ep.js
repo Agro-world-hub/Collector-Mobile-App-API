@@ -111,6 +111,34 @@ exports.getFarmerListByCollectionOfficerAndDate = async (req, res) => {
   }
 };
 
+
+exports.getFarmerListByCollectionOfficerAndDateForManager = async (req, res) => {
+  const { date } = req.query;
+  const collectionOfficerId = req.user.id;
+  console.log('manager transcations officer id' ,collectionOfficerId) // Get the collectionOfficerId from authenticated user (req.user.id)
+
+  // Check if the date is provided
+  if (!date) {
+      return res.status(400).json({
+          error: 'Date is required.',
+      });
+  }
+
+  try {
+      // Call the DAO function with collectionOfficerId and date
+      const farmers = await collectionofficerDao.getFarmerListByCollectionOfficerAndDate(
+          collectionOfficerId,
+          date
+      );
+      res.status(200).json(farmers);
+      console.log(farmers);
+  } catch (error) {
+      console.error('Error fetching farmer list:', error);
+      res.status(500).json({ error: 'An error occurred while fetching the farmer list' });
+  }
+};
+
+
 exports.getClaimOfficer = async (req, res) => {
 
   const {empID, jobRole} = req.body;

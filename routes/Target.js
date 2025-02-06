@@ -19,6 +19,8 @@ router.get(
 
 router.get("/get-daily-center-target/:varietyId/:grade/:centerId",authMiddleware,TargetEP.getCenterTargetEp)
 
+router.get("/get-center-target",authMiddleware,TargetEP.getCenterTarget)
+
 router.get('/officer',authMiddleware, TargetEP.getTargetForOfficerManagerView);
 router.get('/officer/:officerId',authMiddleware, TargetEP.getTargetForOfficer);
 

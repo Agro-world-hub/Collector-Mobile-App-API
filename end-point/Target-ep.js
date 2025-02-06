@@ -441,6 +441,56 @@ exports.getCenterTargetEp = async (req, res) => {
   }
 };
 
+exports.getCenterTarget= async (req, res) => {
+  try {
+    const centerId = req.user.centerId; // Get centerId from the authenticated user
+    console.log("Received API Request - centerId:", centerId);
+
+    // Ensure the centerId exists
+    if (!centerId) {
+      return res.status(400).json({ success: false, message: 'Missing centerId' });
+    }
+
+    // Call DAO to get center target data based on centerId
+    const targets = await TargetDAO.getCenterTarget(centerId);
+
+    // Map the results in the required format for all grades (A, B, C)
+    const formattedTargets = targets.map((target) => [
+      // Grade A
+      {
+        varietyId: target.varietyId,
+        varietyName: target.varietyName,
+        grade: "A",
+        target: parseFloat(target.qtyA || 0),
+        todo: parseFloat(target.qtyA || 0) - parseFloat(target.complteQtyA || 0),
+      },
+      // Grade B
+      {
+        varietyId: target.varietyId,
+        varietyName: target.varietyName,
+        grade: "B",
+        target: parseFloat(target.qtyB || 0),
+        todo: parseFloat(target.qtyB || 0) - parseFloat(target.complteQtyB || 0),
+      },
+      // Grade C
+      {
+        varietyId: target.varietyId,
+        varietyName: target.varietyName,
+        grade: "C",
+        target: parseFloat(target.qtyC || 0),
+        todo: parseFloat(target.qtyC || 0) - parseFloat(target.complteQtyC || 0),
+      },
+    ]).flat();  // Flatten the array to ensure all results are in a single array
+
+    res.json({ success: true, data: formattedTargets });
+  } catch (error) {
+    console.error('Error fetching center target data:', error);
+    res.status(500).json({ success: false, message: 'Internal Server Error' });
+  }
+};
+
+
+
 
 
 exports.getTargetForOfficerManagerView = async (req, res) => {
