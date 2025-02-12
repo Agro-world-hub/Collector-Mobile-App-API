@@ -124,7 +124,8 @@ const { cropDetailsSchema } = require('../Validations/crop-validations');
 
 exports.addCropDetails = async (req, res) => {
     console.log("Request body:", req.body);
-    const { crops, farmerId } = req.body;
+    const { crops, farmerId , invoiceNumber } = req.body;
+    console.log('invoiceNumber:', invoiceNumber);
     const userId = req.user.id;
 
     // Step 1: Validate the request body using Joi
@@ -147,7 +148,7 @@ exports.addCropDetails = async (req, res) => {
         await new Promise((resolve, reject) => db.collectionofficer.beginTransaction(err => (err ? reject(err) : resolve())));
 
         // Step 3: Insert registered farmer payment
-        const registeredFarmerId = await cropDetailsDao.insertFarmerPayment(farmerId, userId);
+        const registeredFarmerId = await cropDetailsDao.insertFarmerPayment(farmerId, userId ,invoiceNumber);
 
         // Step 4: Insert crop details
         const cropPromises = crops.map(crop => cropDetailsDao.insertCropDetails(registeredFarmerId, crop));
@@ -169,7 +170,8 @@ exports.addCropDetails = async (req, res) => {
 
 exports.addCropDetails2 = async (req, res) => {
     console.log("Request body:", req.body.crops);
-    const { crops, farmerId } = req.body;
+    const { crops, farmerId,invoiceNumber } = req.body;
+    console.log('invoiceNumber:', invoiceNumber);
     const userId = req.user.id;
 
     if (!crops || typeof crops !== 'object') {
@@ -177,7 +179,7 @@ exports.addCropDetails2 = async (req, res) => {
     }
 
     try {
-        const registeredFarmerId = await cropDetailsDao.insertFarmerPayment(farmerId, userId);
+        const registeredFarmerId = await cropDetailsDao.insertFarmerPayment(farmerId, userId ,invoiceNumber);
         await cropDetailsDao.insertCropDetails(registeredFarmerId, crops);
 
         res.status(201).json({

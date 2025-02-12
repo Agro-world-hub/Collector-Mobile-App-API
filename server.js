@@ -101,6 +101,9 @@ app.use('/api/collection-manager',managerRoutes);
 const targetRoutes = require('./routes/Target')
 app.use('/api/target', targetRoutes);
 
+const reportRoutes = require('./routes/report.routes')
+app.use('/api/report', reportRoutes);
+
 
 
 // Start server

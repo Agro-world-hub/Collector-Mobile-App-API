@@ -2,13 +2,13 @@ const jwt = require("jsonwebtoken");
 const db = require("../startup/database");
 
 // Insert payment for a registered farmer
-exports.insertFarmerPayment = (farmerId, userId) => {
+exports.insertFarmerPayment = (farmerId, userId,invoiceNumber) => {
     return new Promise((resolve, reject) => {
         const paymentQuery = `
-            INSERT INTO registeredfarmerpayments (userId, collectionOfficerId) 
-            VALUES (?, ?)
+            INSERT INTO registeredfarmerpayments (userId, collectionOfficerId, InvNo) 
+            VALUES (?, ?, ?)
         `;
-        const paymentValues = [farmerId, userId];
+        const paymentValues = [farmerId, userId,invoiceNumber];
 
         db.collectionofficer.query(paymentQuery, paymentValues, (err, result) => {
             if (err) {

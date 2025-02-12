@@ -4,7 +4,7 @@ const db = require("../startup/database");
 exports.getOfficerByEmpId = (empId) => {
   return new Promise((resolve, reject) => {
     const sql =
-      "SELECT id, jobRole FROM collectionofficer WHERE empId = ?";
+      "SELECT id, jobRole ,empId FROM collectionofficer WHERE empId = ?";
     db.collectionofficer.query(sql, [empId], (err, results) => {
       if (err) {
         return reject(new Error("Database error"));

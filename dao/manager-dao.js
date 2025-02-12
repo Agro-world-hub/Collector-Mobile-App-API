@@ -351,7 +351,7 @@ exports.disclaimOfficer = ( collectionOfficerId) => {
 
 
 
-//GET farmer details for the managers report
+// GET farmer details for the managers report
 exports.GetFarmerReportDetailsDao = (userId, createdAtDate, farmerId) => {
   return new Promise((resolve, reject) => {
       const query = `
@@ -393,6 +393,49 @@ exports.GetFarmerReportDetailsDao = (userId, createdAtDate, farmerId) => {
   });
 };
 
+// exports.GetFarmerReportDetailsDao = (userId, createdAtDate, farmerId) => {
+//   return new Promise((resolve, reject) => {
+//       const query = `
+//           SELECT 
+//               fpc.id AS id, 
+//               cg.cropNameEnglish AS cropName,
+//               cv.varietyNameEnglish AS variety,
+//               fpc.gradeAprice AS unitPriceA,
+//               fpc.gradeAquan AS weightA,
+//               fpc.gradeBprice AS unitPriceB,
+//               fpc.gradeBquan AS weightB,
+//               fpc.gradeCprice AS unitPriceC,
+//               fpc.gradeCquan AS weightC,
+//               (COALESCE(fpc.gradeAprice * fpc.gradeAquan, 0) +
+//                COALESCE(fpc.gradeBprice * fpc.gradeBquan, 0) +
+//                COALESCE(fpc.gradeCprice * fpc.gradeCquan, 0)) AS total,
+//               co.empId AS empId
+//           FROM 
+//               farmerpaymentscrops fpc
+//           INNER JOIN 
+//               \`plant_care\`.cropvariety cv ON fpc.cropId = cv.id
+//           INNER JOIN 
+//               \`plant_care\`.cropgroup cg ON cv.cropGroupId = cg.id
+//           INNER JOIN 
+//               registeredfarmerpayments rfp ON fpc.registerFarmerId = rfp.id
+//           INNER JOIN 
+//               collectionofficer co ON rfp.userId = co.id
+//           WHERE 
+//               rfp.userId = ? 
+//               AND DATE(fpc.createdAt) = ? 
+//               AND fpc.registerFarmerId = ?
+//           ORDER BY 
+//               fpc.createdAt DESC
+//       `;
+
+//       db.collectionofficer.query(query, [userId, createdAtDate, farmerId], (error, results) => {
+//           if (error) {
+//               return reject(error);
+//           }
+//           resolve(results);
+//       });
+//   });
+// };
 
 //get the collection officer list for the manager and the daos for the monthly report of a collection officer
 exports.getCollectionOfficers = async (managerId) => {
