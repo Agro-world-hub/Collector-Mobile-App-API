@@ -552,3 +552,26 @@ exports.getDailyTargetByOfficerAndVariety = (officerId, varietyId, grade) => {
         });
     });
 };
+
+
+exports.getOfficerSummaryDao = async (officerId) => {
+    return new Promise((resolve, reject) => {
+        const query = `
+            SELECT 
+                COUNT(*) AS totalTasks,
+                SUM(CASE WHEN complete >= target THEN 1 ELSE 0 END) AS completedTasks
+            FROM officerdailytarget
+            WHERE officerId = ?;
+        `;
+
+        collectionofficer.query(query, [officerId], (error, results) => {
+            if (error) {
+                console.error("Database error in getOfficerSummaryDao:", error);
+                reject(error);
+            } else {
+                resolve(results[0]); // Return the first row (summary)
+            }
+        });
+    });
+};
+

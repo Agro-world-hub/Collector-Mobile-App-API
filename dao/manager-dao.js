@@ -367,7 +367,8 @@ exports.GetFarmerReportDetailsDao = (userId, createdAtDate, farmerId) => {
               fpc.gradeCquan AS weightC,
               (COALESCE(fpc.gradeAprice * fpc.gradeAquan, 0) +
                COALESCE(fpc.gradeBprice * fpc.gradeBquan, 0) +
-               COALESCE(fpc.gradeCprice * fpc.gradeCquan, 0)) AS total
+               COALESCE(fpc.gradeCprice * fpc.gradeCquan, 0)) AS total,
+               rfp.InvNo AS invoiceNumber
           FROM 
               farmerpaymentscrops fpc
           INNER JOIN 

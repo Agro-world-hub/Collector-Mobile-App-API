@@ -49,37 +49,38 @@ app.use(bodyParser.json({ limit: '10mb' })); // Adjust the limit as necessary
 app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
 
 
-plantcare.connect(err => {
-    if (err) {
-      console.error('Error connecting to the database in index.js (plantcare):', err);
-      return;
-    }
-    console.log('Connected to the MySQL database in server.js.(plantcare)');
+// Function to test database connections using the pool
+const testConnection = (pool, name) => {
+  return new Promise((resolve, reject) => {
+    pool.getConnection((err, connection) => {
+      if (err) {
+        console.error(`❌ Error connecting to the ${name} database:`, err.message);
+        reject(err);
+      } else {
+        console.log(`✅ Successfully connected to the MySQL database: ${name}`);
+        connection.release(); // Release the connection back to the pool
+        resolve();
+      }
+    });
   });
-  
-  collectionofficer.connect(err => {
-    if (err) {
-      console.error('Error connecting to the database in index.js (collectionofficer):', err);
-      return;
-    }
-    console.log('Connected to the MySQL database in server.js.(collectionofficer)');
-  });
-  
-  marketPlace.connect(err => {
-    if (err) {
-      console.error('Error connecting to the database in index.js (marketPlace):', err);
-      return;
-    }
-    console.log('Connected to the MySQL database in server.js.(marketPlace)');
-  });
-  
-  dash.connect(err => {
-    if (err) {
-      console.error('Error connecting to the database in index.js (dash):', err);
-      return;
-    }
-    console.log('Connected to the MySQL database in server.js.(dash)');
-  });
+};
+
+// Test all database connections sequentially
+const checkConnections = async () => {
+  console.log('🔄 Testing database connections...\n');
+  try {
+    await testConnection(plantcare, 'PlantCare');
+    await testConnection(collectionofficer, 'CollectionOfficer');
+    await testConnection(marketPlace, 'MarketPlace');
+    await testConnection(dash, 'Dash');
+    console.log('\n🎉 All databases connected successfully!\n');
+  } catch (error) {
+    console.error('\n⚠️ Some databases failed to connect. Check logs above.\n');
+  }
+};
+
+// Run connection tests
+checkConnections();
 
 
 // Routes
@@ -101,8 +102,7 @@ app.use('/api/collection-manager',managerRoutes);
 const targetRoutes = require('./routes/Target')
 app.use('/api/target', targetRoutes);
 
-const reportRoutes = require('./routes/report.routes')
-app.use('/api/report', reportRoutes);
+
 
 
 
