@@ -117,6 +117,8 @@ exports.getAllCropNames = () => {
     });
 };
 
+
+
 exports.getVarietiesByCropId = (cropId) => {
     return new Promise((resolve, reject) => {
         const query = 'SELECT id, varietyNameEnglish FROM cropvariety WHERE cropGroupId = ?';
@@ -129,6 +131,8 @@ exports.getVarietiesByCropId = (cropId) => {
         
     });
 };
+
+
 
 exports.getMarketPricesByVarietyId = (varietyId) => {
     return new Promise((resolve, reject) => {
