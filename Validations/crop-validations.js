@@ -15,7 +15,7 @@ const cropDetailsSchema = Joi.object({
     }).required()
   ).required(),
   farmerId: Joi.number().required(),
-  invoiceNumber:Joi.number().required() // Make farmerId required as well
+  invoiceNumber:Joi.string().required() // Make farmerId required as well
 });
 
 module.exports = {

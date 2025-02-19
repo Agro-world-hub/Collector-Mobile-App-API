@@ -76,6 +76,7 @@ exports.getForCreateId = async (req, res) => {
     }
 
     const results = await collectionofficerDao.getForCreateId(rolePrefix);
+    console.log('employee id', results);
 
     if (results.length === 0) {
       return res.json({ result: { empId: "00001" }, status: true });

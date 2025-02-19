@@ -34,6 +34,7 @@ router.put('/manager/recieve-target',authMiddleware,TargetEP.ManagereceiveTarget
 router.get('/get-daily-todo-byvariety/:officerId/:varietyId/:grade',TargetEP.getDailyTarget);
 
 router.get("/officer-task-summary", authMiddleware, TargetEP.getOfficerTaskSummary);
+router.get("/officer-task-summary/:collectionOfficerId", TargetEP.getOfficerTaskSummaryManagerView);
 
 
 

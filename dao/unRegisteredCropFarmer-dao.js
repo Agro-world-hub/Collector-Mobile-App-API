@@ -141,3 +141,25 @@ exports.getMarketPricesByVarietyId = (varietyId) => {
         });
     });
 };
+
+
+exports.getLatestInvoiceNumberDao = (empId, currentDate) => {
+    return new Promise((resolve, reject) => {
+      const query = `
+        SELECT invNo 
+        FROM registeredfarmerpayments 
+        WHERE invNo LIKE ? 
+        ORDER BY id DESC 
+        LIMIT 1
+      `;
+  
+      const searchPattern = `${empId}${currentDate}%`; // Format: EMPIDYYMMDD%
+  
+      db.collectionofficer.query(query, [searchPattern], (error, results) => {
+        if (error) {
+          return reject(error);
+        }
+        resolve(results.length > 0 ? results[0] : null);
+      });
+    });
+  };

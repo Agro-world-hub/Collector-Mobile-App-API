@@ -340,7 +340,11 @@ exports.getTargetsByCompanyIdDao = (centerId) => {
         WHERE 
           odt.officerId = ?
           AND CURDATE() BETWEEN dt.fromDate AND dt.toDate
-          AND CURTIME() BETWEEN dt.fromTime AND dt.toTime
+          AND (
+            (CURTIME() BETWEEN dt.fromTime AND dt.toTime) 
+            OR 
+            (CURTIME() >= dt.fromTime AND CURTIME() <= dt.toTime)
+          )
       `;
   
       collectionofficer.query(sql, [officerId], (err, results) => {
@@ -348,9 +352,11 @@ exports.getTargetsByCompanyIdDao = (centerId) => {
           return reject(err);
         }
         resolve(results);
+        console.log('targets', results);
       });
     });
   };
+  
   
   
   exports.getCenterTargetDao = async (centerId, varietyId, grade) => {
@@ -565,6 +571,27 @@ exports.getOfficerSummaryDao = async (officerId) => {
         `;
 
         collectionofficer.query(query, [officerId], (error, results) => {
+            if (error) {
+                console.error("Database error in getOfficerSummaryDao:", error);
+                reject(error);
+            } else {
+                resolve(results[0]); // Return the first row (summary)
+            }
+        });
+    });
+};
+
+exports.getOfficerSummaryDaoManager = async (collectionOfficerId) => {
+    return new Promise((resolve, reject) => {
+        const query = `
+            SELECT 
+                COUNT(*) AS totalTasks,
+                SUM(CASE WHEN complete >= target THEN 1 ELSE 0 END) AS completedTasks
+            FROM officerdailytarget
+            WHERE officerId = ?;
+        `;
+
+        collectionofficer.query(query, [collectionOfficerId], (error, results) => {
             if (error) {
                 console.error("Database error in getOfficerSummaryDao:", error);
                 reject(error);
