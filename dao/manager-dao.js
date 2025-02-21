@@ -162,6 +162,7 @@ exports.getIrmDetails = async (irmId) => {
 
 
 exports.getForCreateId = (role) => {
+  console.log("DAO: getForCreateId", role);
   return new Promise((resolve, reject) => {
     const sql =
       "SELECT empId FROM collectionofficer WHERE empId LIKE ? ORDER BY empId DESC LIMIT 1";
