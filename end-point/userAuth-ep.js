@@ -385,8 +385,6 @@ exports.updateOnlineStatus = async (req, res) => {
       return res.status(404).json({ error: 'User not found.' });
     }
     const officer = { id: userId, status }; // Create an object with officer info
-    io.emit('officer_status_update', officer);
-
     // Respond with success
     return res.status(200).json({ message: 'Officer status updated successfully.' });
 

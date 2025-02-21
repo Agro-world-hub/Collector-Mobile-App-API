@@ -41,6 +41,12 @@ const socketIO = require("socket.io")(http, {
 
 socketIO.on("connection", (socket) => {
   console.log(`${socket.id} user is just connected`);
+  socket.on('updateOfficerStatus', (data) => {
+    const { status, token } = data;
+  });
+  socket.on('disconnect', () => {
+    console.log(`${socket.id} user is disconnected`);
+  });
 
 });
 
