@@ -4,7 +4,7 @@ const db = require("../startup/database");
 exports.getOfficerByEmpId = (empId) => {
   return new Promise((resolve, reject) => {
     const sql =
-      "SELECT id, jobRole FROM collectionofficer WHERE empId = ?";
+      "SELECT id, jobRole ,empId FROM collectionofficer WHERE empId = ?";
     db.collectionofficer.query(sql, [empId], (err, results) => {
       if (err) {
         return reject(new Error("Database error"));
@@ -33,6 +33,19 @@ exports.getOfficerPasswordById = (id) => {
     });
   });
 };
+
+exports.updateLoginStatus = (collectionOfficerId, status) => {
+  return new Promise((resolve, reject) => {
+    const sql = "UPDATE collectionofficer SET OnlineStatus = ? WHERE id = ?";
+    db.collectionofficer.query(sql, [ status, collectionOfficerId], (err, results) => {
+      if (err) {
+        return reject(new Error("Database error"));
+      }
+      resolve(results);
+      console.log(results)
+    })
+  })
+}
 
 
 exports.updatePasswordInDatabase = (collectionOfficerId, hashedPassword) => {
@@ -102,7 +115,7 @@ exports.getUserDetailsById = (userId) => {
             WHERE co.id = ?
         `;
 
-        db.query(sql, [userId], (err, results) => {
+        db.collectionofficer.query(sql, [userId], (err, results) => {
             if (err) {
                 return reject(new Error('Database error: ' + err));
             }
@@ -115,17 +128,20 @@ exports.getUserDetailsById = (userId) => {
 };
 
 
-exports.updatePhoneNumberById = (userId, phoneNumber) => {
-    return new Promise((resolve, reject) => {
-        const query = 'UPDATE collectionofficer SET phoneNumber01 = ? WHERE id = ?';
-        db.query(query, [phoneNumber, userId], (error, results) => {
-            if (error) {
-                return reject(new Error('Database error: ' + error));
-            }
-            resolve(results);
-        });
-    });
+exports.updatePhoneNumberById = (userId, phoneNumber, phoneNumber02) => {
+  console.log("DAO: updatePhoneNumberById", phoneNumber02);
+  return new Promise((resolve, reject) => {
+      const query = 'UPDATE collectionofficer SET phoneNumber01 = ?, phoneNumber02 =? WHERE id = ?';
+      db.collectionofficer.query(query, [phoneNumber, phoneNumber02, userId], (error, results) => {
+          if (error) {
+              return reject(new Error('Database error: ' + error));
+          }
+          resolve(results);
+          console.log("DAO: updatePhoneNumberById", results);
+      });
+  });
 };
+
 
 exports.getQRCodeByOfficerId = (officerId) => {
     return new Promise((resolve, reject) => {
@@ -153,6 +169,7 @@ exports.getOfficerDetailsById = (officerId) => {
     const sql = `
       SELECT 
         co.*, 
+        co.empId,
         cc.centerName AS collectionCenterName,
         cc.contact01 AS centerContact01,
         cc.contact02 AS centerContact02,
@@ -188,3 +205,39 @@ exports.getOfficerDetailsById = (officerId) => {
     });
   });
 };
+
+
+
+//claim status
+exports.getClaimStatusByUserId = (userId) => {
+  return new Promise((resolve, reject) => {
+    const sql = `SELECT claimStatus FROM collectionofficer WHERE id = ?`;
+    db.collectionofficer.query(sql, [userId], (err, results) => {
+      if (err) {
+        console.error('Error fetching claim status:', err);
+        reject(new Error('Database query failed'));
+        return;
+      }
+
+      if (results.length > 0) {
+        resolve(results[0].claimStatus);
+      } else {
+        resolve(null);
+      }
+    });
+  });
+};
+
+exports.updateOnlineStatus = ( status, userId) => {
+  return new Promise((resolve, reject) => {
+    const sql = `UPDATE collectionofficer SET OnlineStatus = ? WHERE id = ?`;
+    db.collectionofficer.query(sql, [status, userId], (err, results) => {
+      if (err) {
+        console.error('Error updating online status:', err);
+        reject(new Error('Database query failed'));
+        return;
+      }
+      resolve();
+    });
+  });
+}

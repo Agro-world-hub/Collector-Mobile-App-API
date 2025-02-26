@@ -16,4 +16,7 @@ router.get('/unitPrices/:cropId',unRegisterdcropfamerEp.getUnitPricesByCropId);
 // Route to get today's crop details by userId
 router.get('/user-crops/today/:userId/:registeredFarmerId',unRegisterdcropfamerEp.getCropDetailsByUserId);
 
+// Endpoint to get the latest invoice number
+router.get('/invoice/latest/:empId/:currentDate', unRegisterdcropfamerEp.getLatestInvoiceNumber);
+
 module.exports = router;

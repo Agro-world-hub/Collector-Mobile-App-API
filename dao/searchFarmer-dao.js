@@ -21,6 +21,7 @@ exports.getUsers = (nic) => {
                 return reject(err); // If there's an error, reject the promise
             }
             resolve(results); // If successful, resolve with the results
+            console.log(results);
         });
     });
 };

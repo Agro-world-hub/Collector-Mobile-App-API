@@ -2,12 +2,13 @@ const jwt = require("jsonwebtoken");
 const userAuthDao = require("../dao/userAuth-dao");
 const bcrypt = require("bcrypt");
 const { loginSchema } = require('../Validations/Auth-validations');
+const { Socket } = require("socket.io");
+
+
 
 
 exports.loginUser = async (req, res) => {
   try {
-    // Step 1: Validate the request body using Joi
-    console.log("Request Body:", req.body);
     const { error } = loginSchema.validate(req.body);
     console.log("Validation Error:", error);
 
@@ -53,13 +54,13 @@ exports.loginUser = async (req, res) => {
     const officer = users[0];
     console.log("Hashed Password from Database:", officer.password);
 
-    // Check if the officer's status is "Approved"
-    if (officer.status !== "Approved") {
-      return res.status(403).json({
-        status: "error",
-        message: `Access denied. Your account status is "${officer.status}". Please contact the admin for assistance.`,
-      });
-    }
+    // // Check if the officer's status is "Approved"
+    // if (officer.status !== "Approved") {	
+    //   return res.status(403).json({
+    //     status: "error",
+    //     message: `Access denied.No collection center found. Please contact the admin for assistance.`,
+    //   });
+    // }
 
     // Compare the provided password with the hashed password in the database
     const isPasswordValid = await bcrypt.compare(password, officer.password);
@@ -80,7 +81,8 @@ exports.loginUser = async (req, res) => {
       lastNameEnglish: officer.lastNameEnglish,
       phoneNumber01: officer.phoneNumber01,
       centerId: officer.centerId,
-      companyName: officer.companyName,
+      companyId: officer.companyId,
+      empId: officer.empId,
     };
 
     const token = jwt.sign(payload, process.env.JWT_SECRET || "T1", {
@@ -99,7 +101,14 @@ exports.loginUser = async (req, res) => {
       token,
       userId: officer.id,
       jobRole: jobRole,
+      empId: officer.empId,
     };
+    
+    const status = 1
+
+    console.log(collectionOfficerId)
+    const resds = await userAuthDao.updateLoginStatus(collectionOfficerId, status );
+    console.log(resds)
 
     res.status(200).json(response);
   } catch (err) {
@@ -273,26 +282,25 @@ exports.getUserDetails = async (req, res) => {
 
 exports.updatePhoneNumber = async (req, res) => {
   const userId = req.user.id; // Assuming req.user is set by your authentication middleware
-  const { phoneNumber } = req.body;
+  const { phoneNumber, phoneNumber2 } = req.body;
 
-  // Input validation
-  if (
-    !phoneNumber ||
-    typeof phoneNumber !== "string" ||
-    phoneNumber.length !== 11
-  ) {
+  console.log("Updating phone number ", phoneNumber, phoneNumber2);
+
+  const validatePhoneNumber = (number) =>
+    number && typeof number === "string" && number.length === 12;
+
+  // Ensure at least one phone number is valid
+  if (!validatePhoneNumber(phoneNumber) && !validatePhoneNumber(phoneNumber2)) {
     return res.status(400).json({
-      message: "Invalid phone number. It must be 11 characters long.",
+      message: "Invalid phone numbers. At least one valid 11-character phone number is required.",
     });
   }
-
-  // Add the + prefix to the phone number
-  const formattedPhoneNumber = `+${phoneNumber}`;
 
   try {
     const results = await userAuthDao.updatePhoneNumberById(
       userId,
-      formattedPhoneNumber
+      phoneNumber,
+      phoneNumber2
     );
 
     if (results.affectedRows === 0) {
@@ -337,3 +345,52 @@ exports.getOfficerQRCode = async (req, res) => {
     res.status(500).json({ error: "Failed to fetch officer QR code" });
   }
 };
+
+
+//claim status for the collection officer
+
+exports.GetClaimStatus = async (req, res) => {
+  const { id: userId } = req.user; // Extract userId from the authenticated user
+
+  try {
+      if (!userId) {
+          return res.status(400).json({ error: 'User ID is missing.' });
+      }
+
+      const claimStatus = await userAuthDao.getClaimStatusByUserId(userId);
+
+      if (claimStatus === null) {
+          return res.status(404).json({ error: 'User not found or claim status unavailable.' });
+      }
+
+      res.status(200).json({ userId, claimStatus });
+  } catch (error) {
+      console.error('Error fetching claim status:', error);
+      res.status(500).json({ error: 'An error occurred while fetching claim status.' });
+  }
+};
+
+exports.updateOnlineStatus = async (req, res) => {
+  console.log('hitttt online')
+  const userId = req.user.id;  // Correctly access the userId
+  const { status } = req.body;  // Extract status from the request body
+
+  try {
+    console.log('userId:', userId);
+    console.log(status)  // Log the userId for debugging
+    const result = await userAuthDao.updateOnlineStatus(status, userId);
+
+    // Check if the update was successful
+    if (result===null) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+    const officer = { id: userId, status }; // Create an object with officer info
+    // Respond with success
+    return res.status(200).json({ message: 'Officer status updated successfully.' });
+
+  } catch (error) {
+    console.error('Error updating online status:', error);
+    res.status(500).json({ error: 'An error occurred while updating online status.' });
+  }
+};
+

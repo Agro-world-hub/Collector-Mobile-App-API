@@ -1,5 +1,5 @@
 const collectionofficerDao =require('../dao/manager-dao')
-const Joi = require('joi');
+const jwt = require('jsonwebtoken');const Joi = require('joi');
 
 exports.createCollectionOfficer = async (req, res) => {
   try {
@@ -76,6 +76,7 @@ exports.getForCreateId = async (req, res) => {
     }
 
     const results = await collectionofficerDao.getForCreateId(rolePrefix);
+    console.log('employee id', results);
 
     if (results.length === 0) {
       return res.json({ result: { empId: "00001" }, status: true });
@@ -110,6 +111,97 @@ exports.getFarmerListByCollectionOfficerAndDate = async (req, res) => {
       res.status(500).json({ error: 'An error occurred while fetching the farmer list' });
   }
 };
+
+
+exports.getFarmerListByCollectionOfficerAndDateForManager = async (req, res) => {
+  const { date } = req.query;
+  const collectionOfficerId = req.user.id;
+  console.log('manager transcations officer id' ,collectionOfficerId) // Get the collectionOfficerId from authenticated user (req.user.id)
+
+  // Check if the date is provided
+  if (!date) {
+      return res.status(400).json({
+          error: 'Date is required.',
+      });
+  }
+
+  try {
+      // Call the DAO function with collectionOfficerId and date
+      const farmers = await collectionofficerDao.getFarmerListByCollectionOfficerAndDate(
+          collectionOfficerId,
+          date
+      );
+      res.status(200).json(farmers);
+      console.log(farmers);
+  } catch (error) {
+      console.error('Error fetching farmer list:', error);
+      res.status(500).json({ error: 'An error occurred while fetching the farmer list' });
+  }
+};
+
+
+exports.getClaimOfficer = async (req, res) => {
+
+  const {empID, jobRole} = req.body;
+  try {
+    const results = await collectionofficerDao.getClaimOfficer(empID, jobRole);
+    res.status(200).json({ result: results, status: true });
+  } catch (err) {
+    console.error("Error executing query:", err);
+    res.status(500).send("An error occurred while fetching data.");
+  }
+}
+
+exports.createClaimOfficer = async (req, res) => {
+  const { officerId } = req.body;
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) {
+    return res.status(401).json({ message: "Authorization token is missing" });
+  }
+
+  const decoded = jwt.verify(token, process.env.JWT_SECRET);
+  const irmId = decoded.id;
+  const centerId = decoded.centerId;
+
+  try {
+    const results = await collectionofficerDao.createClaimOfficer(officerId, irmId, centerId);
+    res.status(200).json({ result: results, status: true });
+  } catch (err) {
+    console.error("Error executing query:", err);
+    res.status(500).send("An error occurred while fetching data.");
+  }
+}
+
+exports.disclaimOfficer = async (req, res) => {
+  const { collectionOfficerId } = req.body;
+
+  if (!collectionOfficerId) {
+    return res.status(400).json({ status: 'error', message: 'Missing collectionOfficerId in request body.' });
+  }
+
+  try {
+    const results = await collectionofficerDao.disclaimOfficer(collectionOfficerId);
+    if (results.affectedRows > 0) {
+      res.status(200).json({
+        status: 'success',
+        data: results,
+        message: 'Officer disclaimed successfully.',
+      });
+    } else {
+      res.status(404).json({
+        status: 'error',
+        message: 'Officer not found or already disclaimed.',
+      });
+    }
+  } catch (err) {
+    console.error('Error executing query:', err);
+    res.status(500).json({
+      status: 'error',
+      message: 'An error occurred while disclaiming the officer.',
+    });
+  }
+};
+
 
 
 //GET farmer details for the managers purchase report
@@ -236,3 +328,20 @@ exports.getOfficerDetailsForReport = async (req, res) => {
     });
   }
 };
+
+
+exports.getofficeronline = async (req, res) => {
+  console.log('Get online officers request received');
+  const OfficerId = req.body.collectionOfficerId;
+  console.log('Collection Officer ID:', OfficerId);
+
+  try {
+    const result = await collectionofficerDao.getOfficerOnlineStatus(OfficerId);
+    res.status(200).json({ result });
+    console.log('Online officers:', result);
+    io.emit('officer_status_update', { OfficerId, OnlineStatus: result.OnlineStatus });
+  } catch (error) {
+    console.error('Error fetching online officers:', error);
+    res.status(500).json({ error: 'An error occurred while fetching online officers.' });
+  }
+}

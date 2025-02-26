@@ -2,13 +2,13 @@ const jwt = require("jsonwebtoken");
 const db = require("../startup/database");
 
 // Insert payment for a registered farmer
-exports.insertFarmerPayment = (farmerId, userId) => {
+exports.insertFarmerPayment = (farmerId, userId,invoiceNumber) => {
     return new Promise((resolve, reject) => {
         const paymentQuery = `
-            INSERT INTO registeredfarmerpayments (userId, collectionOfficerId) 
-            VALUES (?, ?)
+            INSERT INTO registeredfarmerpayments (userId, collectionOfficerId, InvNo) 
+            VALUES (?, ?, ?)
         `;
-        const paymentValues = [farmerId, userId];
+        const paymentValues = [farmerId, userId,invoiceNumber];
 
         db.collectionofficer.query(paymentQuery, paymentValues, (err, result) => {
             if (err) {
@@ -77,13 +77,14 @@ exports.getCropDetailsByUserAndFarmerId = (userId, registeredFarmerId) => {
                 fpc.gradeCquan AS weightC,
                 (COALESCE(fpc.gradeAprice * fpc.gradeAquan, 0) +
                  COALESCE(fpc.gradeBprice * fpc.gradeBquan, 0) +
-                 COALESCE(fpc.gradeCprice * fpc.gradeCquan, 0)) AS total
+                 COALESCE(fpc.gradeCprice * fpc.gradeCquan, 0)) AS total,
+                 rfp.InvNo AS invoiceNumber
             FROM 
                 farmerpaymentscrops fpc
             INNER JOIN 
-                \`plant-care\`.\`cropvariety\` cv ON fpc.cropId = cv.id
+                plant_care.cropvariety cv ON fpc.cropId = cv.id
             INNER JOIN 
-                \`plant-care\`.\`cropgroup\` cg ON cv.cropGroupId = cg.id
+                plant_care.cropgroup cg ON cv.cropGroupId = cg.id
             INNER JOIN 
                 registeredfarmerpayments rfp ON fpc.registerFarmerId = rfp.id
             WHERE 
@@ -116,6 +117,8 @@ exports.getAllCropNames = () => {
     });
 };
 
+
+
 exports.getVarietiesByCropId = (cropId) => {
     return new Promise((resolve, reject) => {
         const query = 'SELECT id, varietyNameEnglish FROM cropvariety WHERE cropGroupId = ?';
@@ -129,6 +132,8 @@ exports.getVarietiesByCropId = (cropId) => {
     });
 };
 
+
+
 exports.getMarketPricesByVarietyId = (varietyId) => {
     return new Promise((resolve, reject) => {
         const query = 'SELECT grade, price FROM marketprice WHERE varietyId = ?';
@@ -140,3 +145,25 @@ exports.getMarketPricesByVarietyId = (varietyId) => {
         });
     });
 };
+
+
+exports.getLatestInvoiceNumberDao = (empId, currentDate) => {
+    return new Promise((resolve, reject) => {
+      const query = `
+        SELECT invNo 
+        FROM registeredfarmerpayments 
+        WHERE invNo LIKE ? 
+        ORDER BY id DESC 
+        LIMIT 1
+      `;
+  
+      const searchPattern = `${empId}${currentDate}%`; // Format: EMPIDYYMMDD%
+  
+      db.collectionofficer.query(query, [searchPattern], (error, results) => {
+        if (error) {
+          return reject(error);
+        }
+        resolve(results.length > 0 ? results[0] : null);
+      });
+    });
+  };
