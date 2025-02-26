@@ -285,7 +285,7 @@ const statusApp = express();
 const httpServer = require("http").Server(statusApp);
 const io = socketIo(httpServer, {
   cors: {
-    origin: "http://localhost:8081", // Frontend's origin
+    origin: "*",// Frontend's origin
     methods: ["GET", "POST"]
   }
 });
