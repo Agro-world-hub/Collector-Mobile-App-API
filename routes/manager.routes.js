@@ -3,12 +3,13 @@ const router = express.Router();
 const authenticate = require('../Middlewares/auth.middleware');
 const managerEp = require('../end-point/manager-ep');
 const TargetEP = require('../end-point/Target-ep')
+const  upload  = require('../Middlewares/multer.middleware') ;
 
 // Route to get collection officers under a specific manager
 router.get('/collection-officers', authenticate, managerEp.getCollectionOfficers);
 
 //Route to add a collection officer
-router.post('/collection-officer/add', authenticate, managerEp.createCollectionOfficer);
+router.post('/collection-officer/add', authenticate, upload.single("image"), managerEp.createCollectionOfficer);
 
 // Route to fetch farmer payments summary
 router.get(

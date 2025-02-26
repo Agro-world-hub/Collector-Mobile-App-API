@@ -1,6 +1,72 @@
 const collectionofficerDao =require('../dao/manager-dao')
 const jwt = require('jsonwebtoken');const Joi = require('joi');
 
+const uploadFileToS3  = require('../Middlewares/s3upload');
+
+// exports.createCollectionOfficer = async (req, res) => {
+//   try {
+//     const { id: irmId } = req.user;
+
+//     // Get IRM details
+//     const irmDetails = await collectionofficerDao.getIrmDetails(irmId);
+//     if (!irmDetails) {
+//       return res.status(404).json({ error: "IRM details not found" });
+//     }
+
+//     const { companyId, centerId } = irmDetails;
+
+//     // Validate NIC
+//     console.log("NIC:", req.body.nicNumber);
+//     const nicExists = await collectionofficerDao.checkNICExist(req.body.nicNumber);
+//     if (nicExists) {
+//       return res.status(400).json({ error: "NIC or Email already exists" });
+//     }
+
+//     // Validate Email
+//     console.log("Email:", req.body.email);
+//     const emailExists = await collectionofficerDao.checkEmailExist(req.body.email);
+//     if (emailExists) {
+//       return res.status(400).json({ error: "Email already exists." });
+//     }
+
+//     // Map request body fields
+//     const officerData = {
+//       ...req.body,
+//       empId: req.body.userId, // Map userId to empId
+//       phoneNumber01: req.body.phoneNumber1, // Map phoneNumber1 to phoneNumber01
+//       phoneNumber02: req.body.phoneNumber2 || null, // Map phoneNumber2 to phoneNumber02
+//       nic: req.body.nicNumber,
+//       accHolderName: req.body.accountHolderName,
+//       accNumber: req.body.accountNumber,
+//       phoneCode01: req.body.phoneCode1,
+//       phoneCode02: req.body.phoneCode2 || null,
+//     };
+
+//     console.log("Mapped Officer Data:", officerData);
+
+//     // Create the collection officer
+//     const resultsPersonal = await collectionofficerDao.createCollectionOfficerPersonal(
+//       officerData,
+//       centerId,
+//       companyId,
+//       irmId
+//     );
+
+//     console.log("Collection Officer created successfully:", resultsPersonal);
+//     return res.status(201).json({
+//       message: "Collection Officer created successfully",
+//       id: resultsPersonal.insertId,
+//       status: true,
+//     });
+//   } catch (error) {
+//     console.error("Error creating collection officer:", error);
+//     return res.status(500).json({
+//       error: "An error occurred while creating the collection officer",
+//     });
+//   }
+// };
+
+
 exports.createCollectionOfficer = async (req, res) => {
   try {
     const { id: irmId } = req.user;
@@ -27,7 +93,21 @@ exports.createCollectionOfficer = async (req, res) => {
       return res.status(400).json({ error: "Email already exists." });
     }
 
-    // Map request body fields
+    // Handle file upload (if file exists)
+    let profileImageUrl = null;
+    if (req.file) {
+      const fileBuffer = req.file.buffer;
+      const fileName = req.file.originalname;
+
+      // Upload the file to S3 and get the URL
+      profileImageUrl = await uploadFileToS3(
+        fileBuffer,
+        fileName,
+        "collection-officers/profile-images"
+      );
+    }
+
+    // Map request body fields and include profile image URL if available
     const officerData = {
       ...req.body,
       empId: req.body.userId, // Map userId to empId
@@ -38,6 +118,7 @@ exports.createCollectionOfficer = async (req, res) => {
       accNumber: req.body.accountNumber,
       phoneCode01: req.body.phoneCode1,
       phoneCode02: req.body.phoneCode2 || null,
+      profileImageUrl, // Include the profile image URL (base64 or S3 URL)
     };
 
     console.log("Mapped Officer Data:", officerData);
@@ -63,6 +144,7 @@ exports.createCollectionOfficer = async (req, res) => {
     });
   }
 };
+
 
 
 

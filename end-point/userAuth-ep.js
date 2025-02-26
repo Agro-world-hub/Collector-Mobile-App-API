@@ -7,6 +7,127 @@ const { Socket } = require("socket.io");
 
 
 
+// exports.loginUser = async (req, res) => {
+//   try {
+//     const { error } = loginSchema.validate(req.body);
+//     console.log("Validation Error:", error);
+
+//     if (error) {
+//       return res.status(400).json({
+//         status: "error",
+//         message: error.details[0].message,
+//       });
+//     }
+
+//     const { empId, password } = req.body;
+
+//     console.log("Employee ID:", empId);
+//     console.log("Password Provided:", password);
+
+//     let collectionOfficerResult;
+//     try {
+//       collectionOfficerResult = await userAuthDao.getOfficerByEmpId(empId);
+//     } catch (error) {
+//       console.error("Error fetching Employee ID:", error.message);
+//       return res.status(404).json({
+//         status: "error",
+//         message: error.message,
+//       });
+//     }
+
+//     const collectionOfficerId = collectionOfficerResult[0]?.id;
+//     const jobRole = collectionOfficerResult[0]?.jobRole;
+
+//     if (!collectionOfficerId) {
+//       return res.status(404).json({
+//         status: "error",
+//         message: "Invalid Employee ID",
+//       });
+//     }
+
+//     const users = await userAuthDao.getOfficerPasswordById(collectionOfficerId);
+
+//     if (!users || users.length === 0) {
+//       return res.status(404).json({ status: "error", message: "User not found" });
+//     }
+
+//     const officer = users[0];
+//     console.log("Hashed Password from Database:", officer.password);
+
+//     // // Check if the officer's status is "Approved"
+//     // if (officer.status !== "Approved") {	
+//     //   return res.status(403).json({
+//     //     status: "error",
+//     //     message: `Access denied.No collection center found. Please contact the admin for assistance.`,
+//     //   });
+//     // }
+
+//     // Compare the provided password with the hashed password in the database
+//     const isPasswordValid = await bcrypt.compare(password, officer.password);
+//     console.log("Password Match Result:", isPasswordValid);
+
+//     if (!isPasswordValid) {
+//       return res.status(401).json({
+//         status: "error",
+//         message: "Invalid password",
+//       });
+//     }
+
+//     // If password is valid, generate a JWT token
+//     const payload = {
+//       id: officer.id,
+//       email: officer.email,
+//       firstNameEnglish: officer.firstNameEnglish,
+//       lastNameEnglish: officer.lastNameEnglish,
+//       phoneNumber01: officer.phoneNumber01,
+//       centerId: officer.centerId,
+//       companyId: officer.companyId,
+//       empId: officer.empId,
+//     };
+
+//     const token = jwt.sign(payload, process.env.JWT_SECRET || "T1", {
+//       expiresIn: "10h",
+//     });
+
+//     const passwordUpdateRequired = !officer.passwordUpdated;
+
+//     const response = {
+//       status: "success",
+//       message: passwordUpdateRequired
+//         ? "Login successful, but password update is required"
+//         : "Login successful",
+//       officer: payload,
+//       passwordUpdateRequired,
+//       token,
+//       userId: officer.id,
+//       jobRole: jobRole,
+//       empId: officer.empId,
+//     };
+    
+//     const status = 1
+
+//     console.log(collectionOfficerId)
+//     const resds = await userAuthDao.updateLoginStatus(collectionOfficerId, status );
+//     console.log(resds)
+
+//     res.status(200).json(response);
+//   } catch (err) {
+//     console.error("Login Error:", err);
+
+//     if (err.isJoi) {
+//       return res.status(400).json({
+//         status: "error",
+//         message: err.details[0].message,
+//       });
+//     }
+
+//     res.status(500).json({
+//       status: "error",
+//       message: "An error occurred during login.",
+//     });
+//   }
+// };
+
 exports.loginUser = async (req, res) => {
   try {
     const { error } = loginSchema.validate(req.body);
@@ -103,12 +224,6 @@ exports.loginUser = async (req, res) => {
       jobRole: jobRole,
       empId: officer.empId,
     };
-    
-    const status = 1
-
-    console.log(collectionOfficerId)
-    const resds = await userAuthDao.updateLoginStatus(collectionOfficerId, status );
-    console.log(resds)
 
     res.status(200).json(response);
   } catch (err) {
@@ -370,27 +485,60 @@ exports.GetClaimStatus = async (req, res) => {
   }
 };
 
-exports.updateOnlineStatus = async (req, res) => {
-  console.log('hitttt online')
-  const userId = req.user.id;  // Correctly access the userId
-  const { status } = req.body;  // Extract status from the request body
+// exports.updateOnlineStatus = async (req, res) => {
+//   console.log('hitttt online')
+//   const userId = req.user.id;  // Correctly access the userId
+//   const { status } = req.body;  // Extract status from the request body
 
-  try {
-    console.log('userId:', userId);
-    console.log(status)  // Log the userId for debugging
-    const result = await userAuthDao.updateOnlineStatus(status, userId);
+//   try {
+//     console.log('userId:', userId);
+//     console.log(status)  // Log the userId for debugging
+//     const result = await userAuthDao.updateOnlineStatus(status, userId);
 
-    // Check if the update was successful
-    if (result===null) {
-      return res.status(404).json({ error: 'User not found.' });
-    }
-    const officer = { id: userId, status }; // Create an object with officer info
-    // Respond with success
-    return res.status(200).json({ message: 'Officer status updated successfully.' });
+//     // Check if the update was successful
+//     if (result===null) {
+//       return res.status(404).json({ error: 'User not found.' });
+//     }
+//     const officer = { id: userId, status }; // Create an object with officer info
+//     io.emit('officer_status_update', officer);
 
-  } catch (error) {
-    console.error('Error updating online status:', error);
-    res.status(500).json({ error: 'An error occurred while updating online status.' });
-  }
-};
+//     // Respond with success
+//     return res.status(200).json({ message: 'Officer status updated successfully.' });
 
+//   } catch (error) {
+//     console.error('Error updating online status:', error);
+//     res.status(500).json({ error: 'An error occurred while updating online status.' });
+//   }
+// };
+
+
+// exports.updateOnlineStatusTest = async (req, res) => {
+//   const { status } = req.body;  // Get the status from the request body
+  
+//   console.log('Status:', status);
+
+//   if (typeof status !== 'boolean') {
+//     return res.status(400).json({ error: 'Status must be a boolean value.' });
+//   }
+
+//   // Assuming req.user contains the user data after successful authentication
+//   const userId = req.user.id;  // Get userId from req.user (authenticated user)
+
+//   if (!userId) {
+//     return res.status(401).json({ error: 'User not authenticated' });
+//   }
+
+//   try {
+//     // Update the online status in the database
+//     const result = await userAuthDao.updateOnlineStatus(status, userId);
+
+//     if (result.affectedRows > 0) {
+//       return res.status(200).json({ message: 'User status updated successfully.' });
+//     } else {
+//       return res.status(404).json({ error: 'User not found' });
+//     }
+//   } catch (error) {
+//     console.error('Error updating online status:', error);
+//     return res.status(500).json({ error: 'Failed to update online status' });
+//   }
+// };
