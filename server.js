@@ -232,7 +232,7 @@ app.use('/api/target', targetRoutes);
 
 // Start HTTP server
 const PORT = process.env.PORT || 3000;
-const PORT2 = 3005;
+const PORT2 = process.env.PORT2 || 3005;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 httpServer.listen(PORT2, () => {
   console.log(`Socket.IO server listening on port ${PORT2}`);
