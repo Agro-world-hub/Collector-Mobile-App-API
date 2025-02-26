@@ -8,6 +8,8 @@ const complainRoutes = require('./routes/complains.routes');
 const priceUpdatesRoutes = require('./routes/price.routes');
 const managerRoutes = require('./routes/manager.routes');
 const { plantcare, collectionofficer, marketPlace, dash } = require('./startup/database');
+const heathRoutes = require("./routes/heathRoutes");
+
 const socketIo = require('socket.io');
 require('dotenv').config();
 
@@ -229,6 +231,8 @@ app.use('/api/auth', priceUpdatesRoutes);
 app.use('/api/collection-manager', managerRoutes);
 const targetRoutes = require('./routes/Target');
 app.use('/api/target', targetRoutes);
+
+app.use("", heathRoutes);
 
 // Start HTTP server
 const PORT = process.env.PORT || 3000;
