@@ -18,7 +18,8 @@ router.get('/get-officer-Qr', auth, userAuthEp.getOfficerQRCode);
 
 router.get('/get-claim-status', auth, userAuthEp.GetClaimStatus);
 
-router.post("/update-officer-status", auth, userAuthEp.updateOnlineStatus);
+// router.post("/update-officer-status", auth, userAuthEp.updateOnlineStatus);
+
 
 
 module.exports = router;

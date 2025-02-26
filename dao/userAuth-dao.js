@@ -228,10 +228,10 @@ exports.getClaimStatusByUserId = (userId) => {
   });
 };
 
-exports.updateOnlineStatus = ( status, userId) => {
+exports.updateOnlineStatusWithSocket = async (empId, status) => {
   return new Promise((resolve, reject) => {
-    const sql = `UPDATE collectionofficer SET OnlineStatus = ? WHERE id = ?`;
-    db.collectionofficer.query(sql, [status, userId], (err, results) => {
+    const sql = `UPDATE collectionofficer SET onlineStatus = ? WHERE empId = ?`;
+    db.collectionofficer.query(sql, [status, empId], (err, results) => {
       if (err) {
         console.error('Error updating online status:', err);
         reject(new Error('Database query failed'));
@@ -241,3 +241,17 @@ exports.updateOnlineStatus = ( status, userId) => {
     });
   });
 }
+
+
+// exports.updateOnlineStatusWithSocket = async (empId, status) => {
+//   try {
+//     await collectionofficer.promise().query(
+//       "UPDATE collectionofficer SET onlineStatus = ? WHERE empId = ?",
+//       [status, empId]
+//     );
+//   } catch (error) {
+//     console.error(`Error updating online status for ${empId}:`, error);
+//     throw new Error("Failed to update status");
+//   }
+// };
+
