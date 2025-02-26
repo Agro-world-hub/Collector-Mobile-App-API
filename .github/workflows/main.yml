@@ -31,7 +31,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      ECR_REPO_NAME: "aw-collector-api"
+      ECR_REPO_NAME: "aw-collection-api"
 
     permissions:
       id-token: write
