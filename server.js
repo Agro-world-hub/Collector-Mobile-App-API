@@ -282,7 +282,7 @@ const statusApp = express();
   app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
 });
 
-const httpsServer = require("http").Server(statusApp);
+const httpsServer = require("https").Server(statusApp);
 const io = socketIo(httpsServer, {
   cors: {
     origin: "*",
