@@ -282,8 +282,8 @@ const statusApp = express();
   app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
 });
 
-const httpServer = require("http").Server(statusApp);
-const io = socketIo(httpServer, {
+const httpsServer = require("https").Server(statusApp);
+const io = socketIo(httpsServer, {
   cors: {
     origin: "*",// Frontend's origin
     methods: ["GET", "POST"]
@@ -352,6 +352,6 @@ const PORT = process.env.PORT || 3000;
 const PORT2 = process.env.PORT2 || 3005;
 
 mainApp.listen(PORT, () => console.log(`Main API server running on port ${PORT} with base path ${basePathMain}`));
-httpServer.listen(PORT2, () => {
+httpsServer.listen(PORT2, () => {
   console.log(`Socket.IO server listening on port ${PORT2} with base path ${basePathStatus}`);
 });
