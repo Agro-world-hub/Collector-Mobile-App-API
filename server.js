@@ -285,8 +285,9 @@ const statusApp = express();
 const httpsServer = require("http").Server(statusApp);
 const io = socketIo(httpsServer, {
   cors: {
-    origin: "*",// Frontend's origin
-    methods: ["GET", "POST"]
+    origin: "*",
+    methods: ["GET", "POST"],
+    credentials: true
   }
 });
 
