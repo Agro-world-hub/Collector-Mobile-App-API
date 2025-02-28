@@ -282,6 +282,17 @@ const statusApp = express();
   app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
 });
 
+// const httpsServer = require("http").Server(statusApp);
+// const io = socketIo(httpsServer, {
+//   cors: {
+//     origin: "*",
+//     methods: ["GET", "POST"],
+//     credentials: true
+//   }
+// });
+
+// const socket = require('./end-point/socket-ep');
+// io.on("connection",socket.handleConnection );
 const httpsServer = require("http").Server(statusApp);
 const io = socketIo(httpsServer, {
   cors: {
@@ -290,9 +301,8 @@ const io = socketIo(httpsServer, {
     credentials: true
   }
 });
-
 const socket = require('./end-point/socket-ep');
-io.on("connection",socket.handleConnection );
+io.of('/agro-api/collection-status').on('connection', socket.handleConnection);
 
 // Function to test database connections using the pool
 const testConnection = (pool, name) => {
@@ -325,7 +335,6 @@ const checkConnections = async () => {
   }
 };
 
-// Run connection tests
 checkConnections();
 
 // Routes for main API (PORT 3000)
