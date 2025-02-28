@@ -11,5 +11,6 @@ router.post('/farmer-complaint', auth, ComplaintEp.createFarmerComplaint);
 router.post('/officer-complaint', auth, ComplaintEp.createOfficerComplain);
 router.get('/get-complains', auth, ComplaintEp.getComplains );
 // router.get('api/complain/reply/:id', ComplaintEp.getComplainReplyByid );
+router.get('/get-complain-category/:appName', ComplaintEp.getComplainCategory );
 
 module.exports = router;
