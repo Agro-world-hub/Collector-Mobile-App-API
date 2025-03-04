@@ -402,7 +402,8 @@ exports.updatePhoneNumber = async (req, res) => {
   console.log("Updating phone number ", phoneNumber, phoneNumber2);
 
   const validatePhoneNumber = (number) =>
-    number && typeof number === "string" && number.length === 12;
+    number && typeof number === "string" && number.length === 9;
+
 
   // Ensure at least one phone number is valid
   if (!validatePhoneNumber(phoneNumber) && !validatePhoneNumber(phoneNumber2)) {
@@ -417,6 +418,7 @@ exports.updatePhoneNumber = async (req, res) => {
       phoneNumber,
       phoneNumber2
     );
+    console.log("Results:", results);
 
     if (results.affectedRows === 0) {
       return res.status(404).json({ message: "User not found" });

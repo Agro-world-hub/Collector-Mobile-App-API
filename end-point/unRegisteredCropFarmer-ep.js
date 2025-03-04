@@ -261,19 +261,56 @@ exports.getUnitPricesByCropId = async (req, res) => {
     }
 };
 
-exports.getLatestInvoiceNumber = async (req, res) => {
-    try {
-      const { empId, currentDate } = req.params;
-      console.log(empId, currentDate);
-      const latestInvoice = await cropDetailsDao.getLatestInvoiceNumberDao(empId, currentDate);
+// exports.getLatestInvoiceNumber = async (req, res) => {
+//     try {
+//       const { empId, currentDate } = req.params;
+//       console.log(empId, currentDate);
+//       const latestInvoice = await cropDetailsDao.getLatestInvoiceNumberDao(empId, currentDate);
   
-      if (latestInvoice) {
-        res.status(200).json({ invoiceNumber: latestInvoice.invoiceNumber });
-      } else {
-        res.status(200).json({ invoiceNumber: null });
-      }
-    } catch (error) {
-      console.error('Error fetching latest invoice number:', error);
-      res.status(500).json({ error: 'Internal Server Error' });
+//       if (latestInvoice) {
+//         res.status(200).json({ invoiceNumber: latestInvoice.invoiceNumber });
+//       } else {
+//         res.status(200).json({ invoiceNumber: null });
+//       }
+//     } catch (error) {
+//       console.error('Error fetching latest invoice number:', error);
+//       res.status(500).json({ error: 'Internal Server Error' });
+//     }
+//   };
+  
+  
+exports.getLatestInvoiceNumber = async (req, res) => {
+  try {
+    const { empId, currentDate } = req.params;
+
+    // Fetch the latest invoice number for this employee and date
+    const latestInvoice = await cropDetailsDao.getLatestInvoiceNumberDao(empId, currentDate);
+
+    let newSequenceNumber = '00001'; // Default to 00001 if no invoice number exists
+
+    if (latestInvoice && latestInvoice.invNo) {
+      // Extract the last sequence number from the invoice (last 5 digits)
+      const lastInvoiceNumber = latestInvoice.invNo;
+      const lastSequence = parseInt(lastInvoiceNumber.slice(-5), 10); // Last 5 digits for sequence
+      newSequenceNumber = String(lastSequence + 1).padStart(5, '0'); // Increment and pad to 5 digits
     }
-  };
+
+    // Check if it's a new day and reset the sequence number if necessary
+    const currentDateFromInvoice = latestInvoice ? latestInvoice.invNo.slice(empId.length, empId.length + 6) : null;
+    
+    // If the current date does not match the invoice's date, reset the sequence to '00001'
+    if (currentDate !== currentDateFromInvoice) {
+      newSequenceNumber = '00001';
+    }
+
+    // Generate the new invoice number
+    const invoiceNumber = `${empId}${currentDate}${newSequenceNumber}`;
+    console.log('Generated Invoice Number:', invoiceNumber);
+
+    // Respond with the newly generated invoice number
+    res.status(200).json({ invoiceNumber });
+  } catch (error) {
+    console.error('Error generating invoice number:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};

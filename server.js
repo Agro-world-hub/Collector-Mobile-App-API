@@ -348,7 +348,7 @@ mainApp.use(`${basePathMain}/api/unregisteredfarmercrop`, addCropDetails);
 mainApp.use(`${basePathMain}/api/getUserData`, getUserdata);
 const searchRoutes = require('./routes/search.routes');
 mainApp.use(`${basePathMain}/api/auth`, searchRoutes);
-mainApp.use(`${basePathMain}/api/auth`, complainRoutes);
+mainApp.use(`${basePathMain}/api/complain`, complainRoutes);
 mainApp.use(`${basePathMain}/api/auth`, priceUpdatesRoutes);
 mainApp.use(`${basePathMain}/api/collection-manager`, managerRoutes);
 const targetRoutes = require('./routes/Target');

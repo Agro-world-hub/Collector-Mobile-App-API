@@ -209,9 +209,28 @@ exports.getOfficerDetailsById = (officerId) => {
 
 
 //claim status
+// exports.getClaimStatusByUserId = (userId) => {
+//   return new Promise((resolve, reject) => {
+//     const sql = `SELECT claimStatus FROM collectionofficer WHERE id = ?`;
+//     db.collectionofficer.query(sql, [userId], (err, results) => {
+//       if (err) {
+//         console.error('Error fetching claim status:', err);
+//         reject(new Error('Database query failed'));
+//         return;
+//       }
+
+//       if (results.length > 0) {
+//         resolve(results[0].claimStatus);
+//       } else {
+//         resolve(null);
+//       }
+//     });
+//   });
+// };
 exports.getClaimStatusByUserId = (userId) => {
   return new Promise((resolve, reject) => {
     const sql = `SELECT claimStatus FROM collectionofficer WHERE id = ?`;
+
     db.collectionofficer.query(sql, [userId], (err, results) => {
       if (err) {
         console.error('Error fetching claim status:', err);
@@ -222,11 +241,12 @@ exports.getClaimStatusByUserId = (userId) => {
       if (results.length > 0) {
         resolve(results[0].claimStatus);
       } else {
-        resolve(null);
+        resolve(null);  // No result found
       }
     });
   });
 };
+
 
 exports.updateOnlineStatusWithSocket = async (empId, status) => {
   return new Promise((resolve, reject) => {
@@ -237,7 +257,7 @@ exports.updateOnlineStatusWithSocket = async (empId, status) => {
         reject(new Error('Database query failed'));
         return;
       }
-      resolve();
+      resolve(null);
     });
   });
 }
