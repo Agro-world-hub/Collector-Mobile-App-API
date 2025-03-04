@@ -275,3 +275,31 @@ exports.updateOnlineStatusWithSocket = async (empId, status) => {
 //   }
 // };
 
+exports.getUserProfileImage = async (userId) => {
+  return new Promise((resolve, reject) => {
+    const sql = "SELECT image FROM collectionofficer WHERE id = ?";
+    db.collectionofficer.query(sql, [userId], (err, results) => {
+      if (err) {
+        reject(err);
+      } else if (results.length > 0) {
+        resolve(results[0].profileImage); 
+      } else {
+        resolve(null); 
+      }
+    });
+  });
+};
+
+exports.updateUserProfileImage = async (userId, profileImageUrl) => {
+  return new Promise((resolve, reject) => {
+    const sql = "UPDATE collectionofficer SET image = ? WHERE id = ?";
+    db.collectionofficer.query(sql, [profileImageUrl, userId], (err, result) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(result); 
+        console.log(result);
+      }
+    });
+  });
+};

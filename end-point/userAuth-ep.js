@@ -3,7 +3,8 @@ const userAuthDao = require("../dao/userAuth-dao");
 const bcrypt = require("bcrypt");
 const { loginSchema } = require('../Validations/Auth-validations');
 const { Socket } = require("socket.io");
-
+const uploadFileToS3 = require('../Middlewares/s3upload');
+const delectfilesOnS3  = require('../Middlewares/s3delete')
 
 
 
@@ -544,3 +545,44 @@ exports.GetClaimStatus = async (req, res) => {
 //     return res.status(500).json({ error: 'Failed to update online status' });
 //   }
 // };
+
+exports.uploadProfileImage = async (req, res) => {
+  console.log("hitttt")
+  try {
+    const userId = req.user.id;
+
+    const existingProfileImage = await userAuthDao.getUserProfileImage(userId);
+    if (existingProfileImage) {
+      delectfilesOnS3(existingProfileImage);
+    }
+
+    let profileImageUrl = null;
+
+    if (req.file) {
+      const fileName = req.file.originalname;
+      const imageBuffer = req.file.buffer;
+
+      const uploadedImage = await uploadFileToS3(imageBuffer, fileName, "collectionofficer/image");
+      profileImageUrl = uploadedImage; 
+    } else {
+    }
+    await userAuthDao.updateUserProfileImage(userId, profileImageUrl);
+
+    res.status(200).json({
+      status: "success",
+      message: "Profile image uploaded successfully",
+      profileImageUrl,
+    });
+  } catch (err) {
+    console.error("Error uploading profile image:", err);
+
+    if (err.isJoi) {
+      return res.status(400).json({
+        status: "error",
+        message: err.details[0].message,
+      });
+    }
+
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};

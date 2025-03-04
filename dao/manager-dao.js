@@ -434,6 +434,7 @@ exports.getFarmerListByCollectionOfficerAndDate = (collectionOfficerId, date) =>
               U.firstName, 
               U.lastName, 
               U.phoneNumber, 
+              U.profileImage,
               CONCAT_WS(', ', U.houseNo, U.streetName, U.city, U.district) AS address,
               U.NICnumber, 
               SUM(FPC.gradeAprice * FPC.gradeAquan) +
@@ -686,7 +687,8 @@ exports.getCollectionOfficers = async (managerId) => {
       phoneNumber01 AS phoneNumber1,
       phoneNumber02 AS phoneNumber2,
       id AS collectionOfficerId,
-      status
+      status,
+      image
     FROM collectionofficer
     WHERE jobRole = 'Collection Officer' AND irmId = ?
   `;
