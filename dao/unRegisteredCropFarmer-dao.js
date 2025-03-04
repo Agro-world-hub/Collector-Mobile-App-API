@@ -20,47 +20,89 @@ exports.insertFarmerPayment = (farmerId, userId,invoiceNumber) => {
 };
 
 // Insert crop details
+// exports.insertCropDetails = (registeredFarmerId, crop) => {
+//     return new Promise((resolve, reject) => {
+//         const {
+//             varietyId,
+//             gradeAprice,
+//             gradeBprice,
+//             gradeCprice,
+//             gradeAquan,
+//             gradeBquan,
+//             gradeCquan,
+//             image
+//         } = crop;
+
+//         const cropQuery = `
+//             INSERT INTO farmerpaymentscrops (
+//                 registerFarmerId, cropId, gradeAprice, gradeBprice, gradeCprice, 
+//                 gradeAquan, gradeBquan, gradeCquan, image
+//             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+//         `;
+
+//         const cropValues = [
+//             registeredFarmerId,
+//             varietyId,
+//             gradeAprice || 0,
+//             gradeBprice || 0,
+//             gradeCprice || 0,
+//             gradeAquan || 0,
+//             gradeBquan || 0,
+//             gradeCquan || 0,
+//             image ? Buffer.from(image, 'base64') : null
+//         ];
+
+//         db.collectionofficer.query(cropQuery, cropValues, (err, result) => {
+//             if (err) {
+//                 return reject(err);
+//             }
+//             resolve(result);
+//         });
+//     });
+// };
+
 exports.insertCropDetails = (registeredFarmerId, crop) => {
     return new Promise((resolve, reject) => {
-        const {
-            varietyId,
-            gradeAprice,
-            gradeBprice,
-            gradeCprice,
-            gradeAquan,
-            gradeBquan,
-            gradeCquan,
-            image
-        } = crop;
-
-        const cropQuery = `
-            INSERT INTO farmerpaymentscrops (
-                registerFarmerId, cropId, gradeAprice, gradeBprice, gradeCprice, 
-                gradeAquan, gradeBquan, gradeCquan, image
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `;
-
-        const cropValues = [
-            registeredFarmerId,
-            varietyId,
-            gradeAprice || 0,
-            gradeBprice || 0,
-            gradeCprice || 0,
-            gradeAquan || 0,
-            gradeBquan || 0,
-            gradeCquan || 0,
-            image ? Buffer.from(image, 'base64') : null
-        ];
-
-        db.collectionofficer.query(cropQuery, cropValues, (err, result) => {
-            if (err) {
-                return reject(err);
-            }
-            resolve(result);
-        });
+      const {
+        varietyId,
+        gradeAprice,
+        gradeBprice,
+        gradeCprice,
+        gradeAquan,
+        gradeBquan,
+        gradeCquan,
+        imageUrl // Now using the S3 image URL instead of base64 data
+      } = crop;
+  
+      const cropQuery = `
+        INSERT INTO farmerpaymentscrops (
+          registerFarmerId, cropId, gradeAprice, gradeBprice, gradeCprice, 
+          gradeAquan, gradeBquan, gradeCquan, image
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `;
+  
+      const cropValues = [
+        registeredFarmerId,
+        varietyId,
+        gradeAprice || 0,
+        gradeBprice || 0,
+        gradeCprice || 0,
+        gradeAquan || 0,
+        gradeBquan || 0,
+        gradeCquan || 0,
+        imageUrl // Store the URL instead of binary data
+      ];
+  
+      db.collectionofficer.query(cropQuery, cropValues, (err, result) => {
+        if (err) {
+          return reject(err);
+        }
+        resolve(result);
+      });
     });
-};
+  };
 
+  
 
 exports.getCropDetailsByUserAndFarmerId = (userId, registeredFarmerId) => {
     return new Promise((resolve, reject) => {

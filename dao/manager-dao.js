@@ -142,97 +142,236 @@ exports.checkEmailExist = (email) => {
 //   });
 // };
 
+// exports.createCollectionOfficerPersonal = (officerData, centerId, companyId, irmId) => {
+//   return new Promise((resolve, reject) => {
+//     try {
+//       console.log("Center ID:", centerId, "Company ID:", companyId, "IRM ID:", irmId);
+
+//       const {
+//         firstNameEnglish,
+//         firstNameSinhala,
+//         firstNameTamil,
+//         lastNameEnglish,
+//         lastNameSinhala,
+//         lastNameTamil,
+//         jobRole,
+//         empId,
+//         empType,
+//         phoneCode01,
+//         phoneNumber01,
+//         phoneCode02,
+//         phoneNumber02,
+//         nic,
+//         email,
+//         houseNumber,
+//         streetName,
+//         city,
+//         district,
+//         province,
+//         country,
+//         languages,
+//         accHolderName,
+//         accNumber,
+//         bankName,
+//         branchName,
+//         profileImageUrl, // Base64 image URL
+//       } = officerData;
+
+//       // Ensure that the profileImageUrl is set to null if not provided
+//       const image = profileImageUrl || null;
+
+//       const insertValues = [
+//         centerId,
+//         companyId,
+//         irmId,
+//         firstNameEnglish,
+//         firstNameSinhala || null,
+//         firstNameTamil || null,
+//         lastNameEnglish,
+//         lastNameSinhala || null,
+//         lastNameTamil || null,
+//         jobRole,
+//         empId,
+//         empType,
+//         phoneCode01,
+//         phoneNumber01,
+//         phoneCode02 || null,
+//         phoneNumber02 || null,
+//         nic,
+//         email,
+//         houseNumber || null,
+//         streetName || null,
+//         city || null,
+//         district || null,
+//         province || null,
+//         country || null,
+//         languages || null,
+//         accHolderName || null,
+//         accNumber || null,
+//         bankName || null,
+//         branchName || null,
+//         image, // Base64 image or null
+//         'Not Approved' // Status
+//     ];
+
+//       // SQL query to insert the officer data
+//       const sql = `
+//      INSERT INTO collectionofficer (
+//         centerId, companyId, irmId, firstNameEnglish, firstNameSinhala, firstNameTamil, lastNameEnglish,
+//         lastNameSinhala, lastNameTamil, jobRole, empId, empType, phoneCode01, phoneNumber01, phoneCode02, phoneNumber02,
+//         nic, email, houseNumber, streetName, city, district, province, country,
+//         languages, accHolderName, accNumber, bankName, branchName, image, status
+//     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+
+
+//       `;
+
+//       // Execute the query
+//       db.collectionofficer.query(sql, insertValues, (err, results) => {
+//         if (err) {
+//           console.error("Database query error:", err);
+//           return reject(new Error("Failed to insert collection officer into the database."));
+//         }
+//         resolve(results); // Return the query results on success
+//       });
+//     } catch (error) {
+//       console.error("Unexpected error in createCollectionOfficerPersonal:", error);
+//       reject(error); // Handle unexpected errors
+//     }
+//   });
+// };
+
+
+// exports.createCollectionOfficerPersonal = (officerData, centerId, companyId, irmId) => {
+//   return new Promise((resolve, reject) => {
+//     try {
+//       console.log("Center ID:", centerId, "Company ID:", companyId, "IRM ID:", irmId);
+
+//       // SQL query for inserting the officer data
+//       const sql = `
+//         INSERT INTO collectionofficer (
+//           centerId, companyId, irmId, firstNameEnglish, firstNameSinhala, firstNameTamil, lastNameEnglish,
+//           lastNameSinhala, lastNameTamil, jobRole, empId, empType, phoneCode01, phoneNumber01, phoneCode02, phoneNumber02,
+//           nic, email, houseNumber, streetName, city, district, province, country,
+//           languages, accHolderName, accNumber, bankName, branchName,image, status,passwordUpdated
+//         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+//                  ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+//                  ?, ?, ?, ?, ?, ?, ?, ?, ?,?, 'Not Approved',0)
+//       `;
+      
+      
+      
+//       // Execute the query
+//       db.collectionofficer.query(
+//         sql,
+//         [
+//           centerId,
+//           companyId,
+//           irmId,
+//           officerData.firstNameEnglish,
+//           officerData.firstNameSinhala || null,
+//           officerData.firstNameTamil || null,
+//           officerData.lastNameEnglish,
+//           officerData.lastNameSinhala || null,
+//           officerData.lastNameTamil || null,
+//           officerData.jobRole,
+//           officerData.empId, // Map userId from request body
+//           officerData.empType,
+//           officerData.phoneCode01,
+//           officerData.phoneNumber01,
+//           officerData.phoneCode02 || null,
+//           officerData.phoneNumber02 || null,
+//           officerData.nic,
+//           officerData.email,
+//           officerData.houseNumber,
+//           officerData.streetName,
+//           officerData.city,
+//           officerData.district,
+//           officerData.province,
+//           officerData.country,
+//           officerData.languages,
+//           officerData.accHolderName || null,
+//           officerData.accNumber || null,
+//           officerData.bankName || null,
+//           officerData.branchName || null,
+//           officerData.image || null,
+//         ],
+//         (err, results) => {
+//           if (err) {
+//             console.error("Database query error:", err);
+//             return reject(new Error("Failed to insert collection officer into the database."));
+//           }
+//           resolve(results); // Return the query results on success
+//         }
+//       );
+//     } catch (error) {
+//       console.error("Unexpected error in createCollectionOfficerPersonal:", error);
+//       reject(error); // Handle unexpected errors
+//     }
+//   });
+// };
+
+
 exports.createCollectionOfficerPersonal = (officerData, centerId, companyId, irmId) => {
   return new Promise((resolve, reject) => {
     try {
       console.log("Center ID:", centerId, "Company ID:", companyId, "IRM ID:", irmId);
 
-      const {
-        firstNameEnglish,
-        firstNameSinhala,
-        firstNameTamil,
-        lastNameEnglish,
-        lastNameSinhala,
-        lastNameTamil,
-        jobRole,
-        empId,
-        empType,
-        phoneCode01,
-        phoneNumber01,
-        phoneCode02,
-        phoneNumber02,
-        nic,
-        email,
-        houseNumber,
-        streetName,
-        city,
-        district,
-        province,
-        country,
-        languages,
-        accHolderName,
-        accNumber,
-        bankName,
-        branchName,
-        profileImageUrl, // Base64 image URL
-      } = officerData;
-
-      // Ensure that the profileImageUrl is set to null if not provided
-      const image = profileImageUrl || null;
-
-      const insertValues = [
-        centerId,
-        companyId,
-        irmId,
-        firstNameEnglish,
-        firstNameSinhala || null,
-        firstNameTamil || null,
-        lastNameEnglish,
-        lastNameSinhala || null,
-        lastNameTamil || null,
-        jobRole,
-        empId,
-        empType,
-        phoneCode01,
-        phoneNumber01,
-        phoneCode02 || null,
-        phoneNumber02 || null,
-        nic,
-        email,
-        houseNumber || null,
-        streetName || null,
-        city || null,
-        district || null,
-        province || null,
-        country || null,
-        languages || null,
-        accHolderName || null,
-        accNumber || null,
-        bankName || null,
-        branchName || null,
-        image, // Insert the base64 image or null
-        'Not Approved', // Status
-        0 // passwordUpdated
-      ];
-
-      // SQL query to insert the officer data
+      // SQL query for inserting the officer data
       const sql = `
         INSERT INTO collectionofficer (
           centerId, companyId, irmId, firstNameEnglish, firstNameSinhala, firstNameTamil, lastNameEnglish,
           lastNameSinhala, lastNameTamil, jobRole, empId, empType, phoneCode01, phoneNumber01, phoneCode02, phoneNumber02,
           nic, email, houseNumber, streetName, city, district, province, country,
           languages, accHolderName, accNumber, bankName, branchName, image, status, passwordUpdated
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                 ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                 ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Not Approved', 0)
       `;
-
-      // Execute the query
-      db.collectionofficer.query(sql, insertValues, (err, results) => {
-        if (err) {
-          console.error("Database query error:", err);
-          return reject(new Error("Failed to insert collection officer into the database."));
+      
+      // Use profileImageUrl instead of officerData.image
+      db.collectionofficer.query(
+        sql,
+        [
+          centerId,
+          companyId,
+          irmId,
+          officerData.firstNameEnglish,
+          officerData.firstNameSinhala || null,
+          officerData.firstNameTamil || null,
+          officerData.lastNameEnglish,
+          officerData.lastNameSinhala || null,
+          officerData.lastNameTamil || null,
+          officerData.jobRole,
+          officerData.empId, // Map userId from request body
+          officerData.empType,
+          officerData.phoneCode01,
+          officerData.phoneNumber01,
+          officerData.phoneCode02 || null,
+          officerData.phoneNumber02 || null,
+          officerData.nic,
+          officerData.email,
+          officerData.houseNumber,
+          officerData.streetName,
+          officerData.city,
+          officerData.district,
+          officerData.province,
+          officerData.country,
+          officerData.languages,
+          officerData.accHolderName || null,
+          officerData.accNumber || null,
+          officerData.bankName || null,
+          officerData.branchName || null,
+          officerData.profileImageUrl || null, // Use profileImageUrl here
+        ],
+        (err, results) => {
+          if (err) {
+            console.error("Database query error:", err);
+            return reject(new Error("Failed to insert collection officer into the database."));
+          }
+          resolve(results); // Return the query results on success
         }
-        resolve(results); // Return the query results on success
-      });
+      );
     } catch (error) {
       console.error("Unexpected error in createCollectionOfficerPersonal:", error);
       reject(error); // Handle unexpected errors
@@ -295,6 +434,7 @@ exports.getFarmerListByCollectionOfficerAndDate = (collectionOfficerId, date) =>
               U.firstName, 
               U.lastName, 
               U.phoneNumber, 
+              U.profileImage,
               CONCAT_WS(', ', U.houseNo, U.streetName, U.city, U.district) AS address,
               U.NICnumber, 
               SUM(FPC.gradeAprice * FPC.gradeAquan) +
@@ -546,7 +686,9 @@ exports.getCollectionOfficers = async (managerId) => {
       CONCAT(firstNameEnglish, ' ', lastNameEnglish) AS fullName,
       phoneNumber01 AS phoneNumber1,
       phoneNumber02 AS phoneNumber2,
-      id AS collectionOfficerId
+      id AS collectionOfficerId,
+      status,
+      image
     FROM collectionofficer
     WHERE jobRole = 'Collection Officer' AND irmId = ?
   `;

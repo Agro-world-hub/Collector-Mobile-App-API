@@ -70,43 +70,79 @@ const uploadFileToS3  = require('../Middlewares/s3upload');
 exports.createCollectionOfficer = async (req, res) => {
   try {
     const { id: irmId } = req.user;
-
+    
     // Get IRM details
     const irmDetails = await collectionofficerDao.getIrmDetails(irmId);
     if (!irmDetails) {
       return res.status(404).json({ error: "IRM details not found" });
     }
-
     const { companyId, centerId } = irmDetails;
-
+    
     // Validate NIC
     console.log("NIC:", req.body.nicNumber);
     const nicExists = await collectionofficerDao.checkNICExist(req.body.nicNumber);
     if (nicExists) {
       return res.status(400).json({ error: "NIC or Email already exists" });
     }
-
+    
     // Validate Email
     console.log("Email:", req.body.email);
     const emailExists = await collectionofficerDao.checkEmailExist(req.body.email);
     if (emailExists) {
       return res.status(400).json({ error: "Email already exists." });
     }
+    
+    // Helper function to convert base64 to buffer (defined inline)
+    const convertBase64ToBuffer = (base64String) => {
+      try {
+        // Remove data:image/jpeg;base64, or similar prefix if present
+        const base64Data = base64String.includes(';base64,') 
+          ? base64String.split(';base64,').pop() 
+          : base64String;
+        
+        return Buffer.from(base64Data, 'base64');
+      } catch (error) {
+        console.error("Error converting base64 to buffer:", error);
+        throw new Error("Invalid base64 format");
+      }
+    };
 
-    // Handle file upload (if file exists)
+    // Helper function to generate a unique filename (defined inline)
+    const generateUniqueFileName = (originalName) => {
+      const timestamp = Date.now();
+      const randomStr = Math.random().toString(36).substring(2, 8);
+      
+      // Extract extension from original filename or use default
+      let fileExt = 'jpg';
+      if (originalName && originalName.includes('.')) {
+        fileExt = originalName.split('.').pop();
+      }
+      
+      return `${timestamp}-${randomStr}.${fileExt}`;
+    };
+    
+    // Handle image upload from base64
     let profileImageUrl = null;
-    if (req.file) {
-      const fileBuffer = req.file.buffer;
-      const fileName = req.file.originalname;
-
-      // Upload the file to S3 and get the URL
-      profileImageUrl = await uploadFileToS3(
-        fileBuffer,
-        fileName,
-        "collection-officers/profile-images"
-      );
+    if (req.body.profileImage) {
+      try {
+        // Convert base64 to buffer
+        const fileBuffer = convertBase64ToBuffer(req.body.profileImage);
+        
+        // Generate a unique filename
+        const fileName = generateUniqueFileName('profile.jpg');
+        
+        // Upload to S3
+        profileImageUrl = await uploadFileToS3(
+          fileBuffer,
+          fileName,
+          "collection-officers/profile-images"
+        );
+      } catch (uploadError) {
+        console.error("Error uploading image to S3:", uploadError);
+        return res.status(400).json({ error: "Invalid image format or upload failed" });
+      }
     }
-
+    
     // Map request body fields and include profile image URL if available
     const officerData = {
       ...req.body,
@@ -118,11 +154,11 @@ exports.createCollectionOfficer = async (req, res) => {
       accNumber: req.body.accountNumber,
       phoneCode01: req.body.phoneCode1,
       phoneCode02: req.body.phoneCode2 || null,
-      profileImageUrl, // Include the profile image URL (base64 or S3 URL)
+      profileImageUrl, // Include the S3 URL for the image
     };
-
+    
     console.log("Mapped Officer Data:", officerData);
-
+    
     // Create the collection officer
     const resultsPersonal = await collectionofficerDao.createCollectionOfficerPersonal(
       officerData,
@@ -130,7 +166,7 @@ exports.createCollectionOfficer = async (req, res) => {
       companyId,
       irmId
     );
-
+    
     console.log("Collection Officer created successfully:", resultsPersonal);
     return res.status(201).json({
       message: "Collection Officer created successfully",
@@ -144,7 +180,6 @@ exports.createCollectionOfficer = async (req, res) => {
     });
   }
 };
-
 
 
 
@@ -427,3 +462,4 @@ exports.getofficeronline = async (req, res) => {
     res.status(500).json({ error: 'An error occurred while fetching online officers.' });
   }
 }
+
