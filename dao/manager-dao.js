@@ -685,7 +685,8 @@ exports.getCollectionOfficers = async (managerId) => {
       CONCAT(firstNameEnglish, ' ', lastNameEnglish) AS fullName,
       phoneNumber01 AS phoneNumber1,
       phoneNumber02 AS phoneNumber2,
-      id AS collectionOfficerId
+      id AS collectionOfficerId,
+      status
     FROM collectionofficer
     WHERE jobRole = 'Collection Officer' AND irmId = ?
   `;
