@@ -365,7 +365,6 @@ const PORT2 = process.env.PORT2 || 3005;
 const socketIoClient = require('socket.io-client');
 
 statusApp.get('/agro-api/collection-status/test-socket', (req, res) => {
-  // Create a new socket.io client that connects to your Socket.IO server
   const socket = socketIoClient('http://localhost:3005/agro-api/collection-status', {
     transports: ['websocket'],
     reconnection: true,
@@ -373,18 +372,12 @@ statusApp.get('/agro-api/collection-status/test-socket', (req, res) => {
     reconnectionDelay: 1000,
   });
 
-  // When the connection is successful
   socket.on('connect', () => {
     console.log('WebSocket client connected');
-    
-    // Test an event emission (example: emitting a test event)
     socket.emit('test-event', { message: 'Hello from backend!' });
-    
-    // Send success response
     res.send('WebSocket connection successful');
   });
 
-  // Handle connection error
   socket.on('connect_error', (error) => {
     console.error('WebSocket connection error:', error);
     res.status(500).send('Failed to connect to WebSocket');
