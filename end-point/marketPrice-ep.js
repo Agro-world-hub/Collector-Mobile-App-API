@@ -12,7 +12,7 @@ exports.insertMarketPriceRequestBatch = async (req, res) => {
         const userId = req.user.id; // Get the user ID from the authenticated user
         console.log(userId); // For debugging purposes
 
-        const status = 'requested'; // Default status
+        const status = 'Pending'; // Default status
 
         // Step 1: Get the empId from collectionofficercompanydetails based on req.user.id
         const empId = await marketPriceDAO.getEmpIdFromCollectionOfficerCompanyDetails(userId);

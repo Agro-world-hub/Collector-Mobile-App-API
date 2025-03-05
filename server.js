@@ -298,10 +298,12 @@ const statusApp = express();
 const httpsServer = require("http").Server(statusApp);
 const io = socketIo(httpsServer, {
   cors: {
-    origin: "*",
+    origin: "https://dev.agroworld.lk, http://localhost:8081",
     methods: ["GET", "POST"],
     credentials: true
-  }
+  },
+  transports: ['websocket'],
+  debug: true  
 });
 const socket = require('./end-point/socket-ep');
 io.of('/agro-api/collection-status').on('connection', socket.handleConnection);
