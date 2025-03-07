@@ -1,22 +1,44 @@
 const db = require("../startup/database");
 
 // DAO for fetching officer details by empId
+// exports.getOfficerByEmpId = (empId) => {
+//   return new Promise((resolve, reject) => {
+//     const sql =
+//       "SELECT id, jobRole ,empId FROM collectionofficer WHERE empId = ?";
+//     db.collectionofficer.query(sql, [empId], (err, results) => {
+//       if (err) {
+//         return reject(new Error("Database error"));
+//       }
+//       if (results.length === 0) {
+//         return reject(new Error("Invalid Employee ID"));
+//       }
+//       resolve(results);
+//       console.log("Results:", results);
+//     });
+//   });
+// };
 exports.getOfficerByEmpId = (empId) => {
   return new Promise((resolve, reject) => {
     const sql =
-      "SELECT id, jobRole ,empId FROM collectionofficer WHERE empId = ?";
+      "SELECT id, jobRole, empId FROM collectionofficer WHERE empId = ?";
+    
     db.collectionofficer.query(sql, [empId], (err, results) => {
       if (err) {
-        return reject(new Error("Database error"));
+        console.error("Database Query Error:", err.message);
+        return reject(new Error("Database query failed. Please try again."));
       }
+
       if (results.length === 0) {
-        return reject(new Error("Invalid Employee ID"));
+        console.warn(`No officer found for Employee ID: ${empId}`);
+        return resolve(null);  // Return null instead of rejecting
       }
-      resolve(results);
+
       console.log("Results:", results);
+      resolve(results);
     });
   });
 };
+
 
 // DAO for fetching officer details by ID
 exports.getOfficerPasswordById = (id) => {
