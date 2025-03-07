@@ -448,18 +448,16 @@ exports.getOfficerDetailsForReport = async (req, res) => {
 
 
 exports.getofficeronline = async (req, res) => {
-  console.log('Get online officers request received');
-  const OfficerId = req.body.collectionOfficerId;
-  console.log('Collection Officer ID:', OfficerId);
+  const { collectionOfficerId } = req.params;
 
   try {
-    const result = await collectionofficerDao.getOfficerOnlineStatus(OfficerId);
-    res.status(200).json({ result });
-    console.log('Online officers:', result);
-    io.emit('officer_status_update', { OfficerId, OnlineStatus: result.OnlineStatus });
+    const result = await collectionofficerDao.getOfficerOnlineStatus(collectionOfficerId);
+    res.status(200).json({ success: true, result });
   } catch (error) {
-    console.error('Error fetching online officers:', error);
-    res.status(500).json({ error: 'An error occurred while fetching online officers.' });
+    console.error('Error fetching officer status:', error);
+    res.status(500).json({ success: false, error: 'An error occurred while fetching officer status.' });
   }
-}
+};
+
+
 

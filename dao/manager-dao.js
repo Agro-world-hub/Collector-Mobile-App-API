@@ -732,7 +732,7 @@ exports.getFarmerPaymentsSummary = async ({ collectionOfficerId, fromDate, toDat
   return db.collectionofficer.promise().query(sql, [collectionOfficerId, fromDate, toDate]);
 };
 
-exports.getOfficerOnlineStatus = async (OfficerId) => {
+exports.getOfficerOnlineStatus = async (collectionOfficerId) => {
   return new Promise((resolve, reject) => {  // Wrap the query in a Promise
     const sql = `
       SELECT 
@@ -743,7 +743,7 @@ exports.getOfficerOnlineStatus = async (OfficerId) => {
         id = ?;
     `;
     
-    db.collectionofficer.query(sql, [OfficerId], (err, results) => {
+    db.collectionofficer.query(sql, [collectionOfficerId], (err, results) => {
       if (err) {
         reject(new Error('Database query failed'));  // Reject the promise in case of error
         return;

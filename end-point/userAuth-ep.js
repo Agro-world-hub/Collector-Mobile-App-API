@@ -488,31 +488,23 @@ exports.GetClaimStatus = async (req, res) => {
   }
 };
 
-// exports.updateOnlineStatus = async (req, res) => {
-//   console.log('hitttt online')
-//   const userId = req.user.id;  // Correctly access the userId
-//   const { status } = req.body;  // Extract status from the request body
+exports.updateOnlineStatus = async (req, res) => {
+  try {
+    const { empId, status } = req.body;
+    const result = await userAuthDao.updateOnlineStatusWithSocket(empId, status);
 
-//   try {
-//     console.log('userId:', userId);
-//     console.log(status)  // Log the userId for debugging
-//     const result = await userAuthDao.updateOnlineStatus(status, userId);
+    // Check if the update was successful
+    if (result===null) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
 
-//     // Check if the update was successful
-//     if (result===null) {
-//       return res.status(404).json({ error: 'User not found.' });
-//     }
-//     const officer = { id: userId, status }; // Create an object with officer info
-//     io.emit('officer_status_update', officer);
+    return res.status(200).json({ message: 'Officer status updated successfully.' });
 
-//     // Respond with success
-//     return res.status(200).json({ message: 'Officer status updated successfully.' });
-
-//   } catch (error) {
-//     console.error('Error updating online status:', error);
-//     res.status(500).json({ error: 'An error occurred while updating online status.' });
-//   }
-// };
+  } catch (error) {
+    console.error('Error updating online status:', error);
+    res.status(500).json({ error: 'An error occurred while updating online status.' });
+  }
+};
 
 
 // exports.updateOnlineStatusTest = async (req, res) => {

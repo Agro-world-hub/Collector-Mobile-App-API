@@ -7,6 +7,7 @@ const upload = require('../Middlewares/multer.middleware');
 const userAuthEp = require('../end-point/userAuth-ep');
 
 router.post('/login', userAuthEp.loginUser);
+router.post('/online-status', userAuthEp.updateOnlineStatus);
 router.post('/change-password', userAuthEp.updatePassword);
 
 router.get('/user-profile', auth, userAuthEp.getProfile);
