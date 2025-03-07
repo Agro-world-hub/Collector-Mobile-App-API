@@ -256,7 +256,9 @@ exports.addCropDetails = async (req, res) => {
       
       // Update the crop object with the S3 image URL
       const cropWithImageUrl = { ...crop, imageUrl };
-      return cropDetailsDao.insertCropDetails(registeredFarmerId, cropWithImageUrl);
+      const officerId = userId;
+      const centerId = req.user.centerId;
+      return cropDetailsDao.insertCropDetails(registeredFarmerId, cropWithImageUrl,officerId ,centerId);
     });
     
     await Promise.all(cropPromises);
@@ -316,7 +318,9 @@ exports.addCropDetails2 = async (req, res) => {
     const cropsWithImageUrl = { ...crops, imageUrl };
     
     const registeredFarmerId = await cropDetailsDao.insertFarmerPayment(farmerId, userId, invoiceNumber);
-    await cropDetailsDao.insertCropDetails(registeredFarmerId, cropsWithImageUrl);
+    const officerId = userId;
+    const centerId = req.user.centerId;
+    await cropDetailsDao.insertCropDetails(registeredFarmerId, cropsWithImageUrl,officerId,centerId);
 
     res.status(201).json({
       message: 'Crop payment records added successfully',

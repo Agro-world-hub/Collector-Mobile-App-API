@@ -259,10 +259,10 @@ require('dotenv').config();
 
 // Create separate Express apps for different base paths
 const mainApp = express();
-const statusApp = express();
+// const statusApp = express();
 
 // Middleware for both apps
-[mainApp, statusApp].forEach(app => {
+[mainApp].forEach(app => {
   app.use(
     cors({
       origin: "http://localhost:8081",
@@ -295,16 +295,15 @@ const statusApp = express();
 // const socket = require('./end-point/socket-ep');
 // io.on("connection",socket.handleConnection );
 
-const httpsServer = require("http").Server(statusApp);
-const io = socketIo(httpsServer, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"],
-    credentials: true
-  }
-});
-const socket = require('./end-point/socket-ep');
-io.of('/agro-api/collection-status').on('connection', socket.handleConnection);
+// const httpsServer = require("http").Server(statusApp);
+// const io = socketIo(httpsServer, {
+//   cors: {
+//     origin: "https://dev.agroworld.lk, http://localhost:8081",
+//     methods: ["GET", "POST"]
+//     }  
+// });
+// const socket = require('./end-point/socket-ep');
+// io.of('/agro-api/collection-status').on('connection', socket.handleConnection);
 
 // Function to test database connections using the pool
 const testConnection = (pool, name) => {
@@ -357,13 +356,46 @@ mainApp.use(`${basePathMain}`, heathRoutes);
 
 // Routes for status API (PORT 3005)
 const basePathStatus = '/agro-api/collection-status';
-statusApp.use(basePathStatus, heathRoutes);
+// statusApp.use(basePathStatus, heathRoutes);
 
 // Start servers
 const PORT = process.env.PORT || 3000;
-const PORT2 = process.env.PORT2 || 3005;
+// const PORT2 = process.env.PORT2 || 3005;
+
+// const socketIoClient = require('socket.io-client');
+
+// statusApp.get('/agro-api/collection-status/test-socket', (req, res) => {
+//   const socket = socketIoClient('https://dev.agroworld.lk/agro-api/collection-status', {
+//     transports: ['websocket'],
+//     reconnection: true,
+//     reconnectionAttempts: 5,
+//     reconnectionDelay: 1000,
+//   });
+
+//   socket.on('connect', () => {
+//     console.log('WebSocket client connected');
+//     socket.emit('test-event', { message: 'Hello from backend!' });
+//     res.send('WebSocket connection successful');
+//   });
+
+//   socket.on('connect_error', (error) => {
+//     console.error('WebSocket connection error:', error);
+//     res.status(500).send('Failed to connect to WebSocket');
+//   });
+
+//   // Handle WebSocket disconnection
+//   socket.on('disconnect', () => {
+//     console.log('WebSocket client disconnected');
+//   });
+
+//   // Handle specific events from the server (example: listening for a response to 'test-event')
+//   socket.on('response-event', (data) => {
+//     console.log('Received response from server:', data);
+//   });
+// });
+
 
 mainApp.listen(PORT, () => console.log(`Main API server running on port ${PORT} with base path ${basePathMain}`));
-httpsServer.listen(PORT2, () => {
-  console.log(`Socket.IO server listening on port ${PORT2} with base path ${basePathStatus}`);
-});
+// httpsServer.listen(PORT2, () => {
+//   console.log(`Socket.IO server listening on port ${PORT2} with base path ${basePathStatus}`);
+// });
