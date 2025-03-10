@@ -184,6 +184,10 @@ exports.insertCropDetails = (registeredFarmerId, crop, officerId, centerId) => {
             varietyId,
             officerId
           ];
+          console.log("Grade A Quantity: ", gradeAquan);
+console.log("Grade B Quantity: ", gradeBquan);
+console.log("Grade C Quantity: ", gradeCquan);
+
           
           connection.query(updateOfficerQuery, updateOfficerValues, (updateOfficerErr, updateOfficerResult) => {
             if (updateOfficerErr) {

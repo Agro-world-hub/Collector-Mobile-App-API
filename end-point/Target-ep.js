@@ -463,6 +463,7 @@ exports.getCenterTarget= async (req, res) => {
         grade: "A",
         target: parseFloat(target.qtyA || 0),
         todo: parseFloat(target.qtyA || 0) - parseFloat(target.complteQtyA || 0),
+        complete: parseFloat(target.complteQtyA || 0),
       },
       // Grade B
       {
@@ -518,6 +519,7 @@ exports.getTargetForOfficerManagerView = async (req, res) => {
             grade: target.grade,
             target: parseFloat(target.target),
             todo: parseFloat(target.target) - parseFloat(target.complete),
+            complete: parseFloat(target.complete)
         }));
 
         // Fetch center targets for the same varieties & grades
