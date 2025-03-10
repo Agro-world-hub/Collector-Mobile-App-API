@@ -956,7 +956,7 @@ exports.getTargetsByCompanyIdDao = (centerId) => {
           return reject(err);
         }
         resolve(results);
-        console.log('targets', results);
+        console.log('targetssssssss', results);
       });
     });
   };
@@ -1310,6 +1310,7 @@ exports.getDailyTargetByOfficerAndVariety = (officerId, varietyId, grade) => {
                 return reject(err);
             }
             resolve(results);
+            console.log('results', results);
         });
     });
 };
