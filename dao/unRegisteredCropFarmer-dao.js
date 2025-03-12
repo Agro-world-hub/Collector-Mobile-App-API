@@ -184,10 +184,6 @@ exports.insertCropDetails = (registeredFarmerId, crop, officerId, centerId) => {
             varietyId,
             officerId
           ];
-          console.log("Grade A Quantity: ", gradeAquan);
-console.log("Grade B Quantity: ", gradeBquan);
-console.log("Grade C Quantity: ", gradeCquan);
-
           
           connection.query(updateOfficerQuery, updateOfficerValues, (updateOfficerErr, updateOfficerResult) => {
             if (updateOfficerErr) {
@@ -317,33 +313,108 @@ exports.getCropDetailsByUserAndFarmerId = (userId, registeredFarmerId) => {
 };
 
 
-exports.getAllCropNames = () => {
-    return new Promise((resolve, reject) => {
-        const query = 'SELECT id, cropNameEnglish FROM cropgroup';
+// exports.getAllCropNames = () => {
+//     return new Promise((resolve, reject) => {
+//         const query = 'SELECT id, cropNameEnglish FROM cropgroup';
         
-        db.plantcare.query(query, (error, results) => {
-            if (error) {
-                return reject(error);  // Rejecting the promise with the error
-            }
-            resolve(results);  // Resolving the promise with the results
-        });
+//         db.plantcare.query(query, (error, results) => {
+//             if (error) {
+//                 return reject(error);  // Rejecting the promise with the error
+//             }
+//             resolve(results);  // Resolving the promise with the results
+//         });
         
-    });
+//     });
+// };
+
+
+
+// exports.getVarietiesByCropId = (cropId) => {
+//     return new Promise((resolve, reject) => {
+//         const query = 'SELECT id, varietyNameEnglish FROM cropvariety WHERE cropGroupId = ?';
+//         db.plantcare.query(query, [cropId], (error, results) => {
+//             if (error) {
+//                 return reject(error);  // Reject with error for controller to handle
+//             }
+//             resolve(results);  // Resolve with results
+//         });
+        
+//     });
+// };
+
+
+exports.getAllCropNames= (officerId) => {
+  return new Promise((resolve, reject) => {
+      if (!officerId) {
+          return reject(new Error("Officer ID is required"));
+      }
+
+      // This query gets unique crop groups for a specific officer
+      const cropQuery = `
+          SELECT DISTINCT
+              cg.id,
+              cg.cropNameEnglish
+          FROM 
+              officerdailytarget odt
+          INNER JOIN
+              plant_care.cropvariety cv ON odt.varietyId = cv.id
+          INNER JOIN
+              plant_care.cropgroup cg ON cv.cropGroupId = cg.id
+          WHERE
+              odt.officerId = ?
+          ORDER BY
+              cg.cropNameEnglish
+      `;
+
+      db.collectionofficer.query(cropQuery, [officerId], (error, results) => {
+          if (error) {
+              console.error("Error fetching officer crop details:", error);
+              return reject(error);
+          }
+
+          // Format exactly matches what the frontend expects
+          resolve(results);
+      });
+  });
 };
 
+exports.getVarietiesByCropId = (officerId, cropId) => {
+  return new Promise((resolve, reject) => {
+      if (!officerId || !cropId) {
+          return reject(new Error("Officer ID and Crop ID are required"));
+      }
 
+      // This query gets varieties for a specific officer and crop group
+      const varietyQuery = `
+          SELECT DISTINCT
+              cv.id,
+              cv.varietyNameEnglish
+          FROM 
+              officerdailytarget odt
+          INNER JOIN
+              plant_care.cropvariety cv ON odt.varietyId = cv.id
+          WHERE
+              odt.officerId = ?
+              AND cv.cropGroupId = ?
+          ORDER BY
+              cv.varietyNameEnglish
+      `;
 
-exports.getVarietiesByCropId = (cropId) => {
-    return new Promise((resolve, reject) => {
-        const query = 'SELECT id, varietyNameEnglish FROM cropvariety WHERE cropGroupId = ?';
-        db.plantcare.query(query, [cropId], (error, results) => {
-            if (error) {
-                return reject(error);  // Reject with error for controller to handle
-            }
-            resolve(results);  // Resolve with results
-        });
-        
-    });
+      db.collectionofficer.query(varietyQuery, [officerId, cropId], (error, results) => {
+          if (error) {
+              console.error("Error fetching varieties for officer and crop:", error);
+              return reject(error);
+          }
+
+          // Transform to match the frontend expected format
+          const formattedResults = results.map(variety => ({
+              id: variety.id,
+              variety: variety.varietyNameEnglish
+          }));
+
+          resolve(formattedResults);
+      });
+  });
 };
 
 
