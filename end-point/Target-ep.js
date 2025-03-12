@@ -514,6 +514,7 @@ exports.getCenterTarget = async (req, res) => {
         grade: "A",
         target: parseFloat(target.qtyA || 0),
         todo: parseFloat(target.qtyA || 0) - parseFloat(target.complteQtyA || 0),
+        complete: parseFloat(target.complteQtyA || 0),
       },
       // Grade B
       {
@@ -566,14 +567,15 @@ exports.getTargetForOfficerManagerView = async (req, res) => {
       return res.status(404).json({ message: "No targets found for this officer." });
     }
 
-    // Format officer targets
-    const formattedTargets = targets.map((target) => ({
-      varietyId: target.varietyId,
-      varietyName: target.varietyName,
-      grade: target.grade,
-      target: parseFloat(target.target),
-      todo: parseFloat(target.target) - parseFloat(target.complete),
-    }));
+        // Format officer targets
+        const formattedTargets = targets.map((target) => ({
+            varietyId: target.varietyId,
+            varietyName: target.varietyName,
+            grade: target.grade,
+            target: parseFloat(target.target),
+            todo: parseFloat(target.target) - parseFloat(target.complete),
+            complete: parseFloat(target.complete)
+        }));
 
     // Fetch center targets for the same varieties & grades
     const centerTargets = await Promise.all(
