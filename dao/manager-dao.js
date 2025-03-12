@@ -1,4 +1,4 @@
-const db = require('../startup/database'); 
+const db = require('../startup/database');
 const QRCode = require('qrcode');
 
 exports.getDailyReport = (collectionOfficerId, fromDate, toDate) => {
@@ -20,7 +20,7 @@ exports.getDailyReport = (collectionOfficerId, fromDate, toDate) => {
       ORDER BY 
         date ASC;
     `;
-    
+
 
     const params = [collectionOfficerId, fromDate, toDate];
 
@@ -28,7 +28,7 @@ exports.getDailyReport = (collectionOfficerId, fromDate, toDate) => {
       if (err) {
         return reject(err);
       }
-      
+
       const reportData = results.map(row => ({
         date: row.date,
         totalPayments: row.totalPayments,
@@ -44,35 +44,35 @@ exports.getDailyReport = (collectionOfficerId, fromDate, toDate) => {
 exports.checkNICExist = (nic) => {
   return new Promise((resolve, reject) => {
     console.log("NIC:", nic);
-      const sql = `
+    const sql = `
           SELECT COUNT(*) AS count 
           FROM collectionofficer 
           WHERE nic = ?
       `;
 
-      db.collectionofficer.query(sql, [nic], (err, results) => {
-          if (err) {
-              return reject(err);
-              
-          }
-          resolve(results[0].count > 0); // Return true if either NIC or email exists
-      });
+    db.collectionofficer.query(sql, [nic], (err, results) => {
+      if (err) {
+        return reject(err);
+
+      }
+      resolve(results[0].count > 0); // Return true if either NIC or email exists
+    });
   });
 };
 exports.checkEmailExist = (email) => {
   return new Promise((resolve, reject) => {
-      const sql = `
+    const sql = `
           SELECT COUNT(*) AS count 
           FROM collectionofficer 
           WHERE email = ?
       `;
 
-      db.collectionofficer.query(sql, [email], (err, results) => {
-          if (err) {
-              return reject(err);
-          }
-          resolve(results[0].count > 0); // Return true if either NIC or email exists
-      });
+    db.collectionofficer.query(sql, [email], (err, results) => {
+      if (err) {
+        return reject(err);
+      }
+      resolve(results[0].count > 0); // Return true if either NIC or email exists
+    });
   });
 };
 
@@ -258,9 +258,9 @@ exports.checkEmailExist = (email) => {
 //                  ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
 //                  ?, ?, ?, ?, ?, ?, ?, ?, ?,?, 'Not Approved',0)
 //       `;
-      
-      
-      
+
+
+
 //       // Execute the query
 //       db.collectionofficer.query(
 //         sql,
@@ -328,7 +328,7 @@ exports.createCollectionOfficerPersonal = (officerData, centerId, companyId, irm
                  ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                  ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Not Approved', 0)
       `;
-      
+
       // Use profileImageUrl instead of officerData.image
       db.collectionofficer.query(
         sql,
@@ -427,7 +427,7 @@ exports.getForCreateId = (role) => {
 exports.getFarmerListByCollectionOfficerAndDate = (collectionOfficerId, date) => {
   console.log('DAO: getFarmerListByCollectionOfficerAndDate', collectionOfficerId, date);
   return new Promise((resolve, reject) => {
-      const query = `
+    const query = `
           SELECT 
               RFP.id AS registeredFarmerId, 
               U.id AS userId, 
@@ -460,13 +460,13 @@ exports.getFarmerListByCollectionOfficerAndDate = (collectionOfficerId, date) =>
               CO.empId  -- Group by empId to include it in the result
       `;
 
-      db.collectionofficer.query(query, [collectionOfficerId, date], (error, results) => {
-          if (error) {
-              return reject(error); // Reject with error to be handled in the controller
-          }
-          console.log('Result of transaction list:', results); 
-          resolve(results); // Resolve with results
-      });
+    db.collectionofficer.query(query, [collectionOfficerId, date], (error, results) => {
+      if (error) {
+        return reject(error); // Reject with error to be handled in the controller
+      }
+      console.log('Result of transaction list:', results);
+      resolve(results); // Resolve with results
+    });
   });
 };
 
@@ -547,7 +547,7 @@ exports.getClaimOfficer = (empID, jobRole) => {
   });
 };
 
-exports.createClaimOfficer = ( officerId, irmId, centerId) => {
+exports.createClaimOfficer = (officerId, irmId, centerId) => {
   return new Promise((resolve, reject) => {
     const sql = `
       UPDATE collectionofficer 
@@ -567,7 +567,7 @@ exports.createClaimOfficer = ( officerId, irmId, centerId) => {
   });
 }
 
-exports.disclaimOfficer = ( collectionOfficerId) => {
+exports.disclaimOfficer = (collectionOfficerId) => {
   console.log("DAO: disclaimOfficer", collectionOfficerId);
   return new Promise((resolve, reject) => {
     const sql = `
@@ -579,7 +579,7 @@ exports.disclaimOfficer = ( collectionOfficerId) => {
         id = ?
     `;
 
-    db.collectionofficer.query(sql, [ collectionOfficerId], (err, results) => {
+    db.collectionofficer.query(sql, [collectionOfficerId], (err, results) => {
       if (err) {
         return reject(err);
       }
@@ -594,7 +594,7 @@ exports.disclaimOfficer = ( collectionOfficerId) => {
 // GET farmer details for the managers report
 exports.GetFarmerReportDetailsDao = (userId, createdAtDate, farmerId) => {
   return new Promise((resolve, reject) => {
-      const query = `
+    const query = `
           SELECT 
               fpc.id AS id, 
               cg.cropNameEnglish AS cropName,
@@ -625,12 +625,12 @@ exports.GetFarmerReportDetailsDao = (userId, createdAtDate, farmerId) => {
               fpc.createdAt DESC
       `;
 
-      db.collectionofficer.query(query, [userId, createdAtDate, farmerId], (error, results) => {
-          if (error) {
-              return reject(error);
-          }
-          resolve(results);
-      });
+    db.collectionofficer.query(query, [userId, createdAtDate, farmerId], (error, results) => {
+      if (error) {
+        return reject(error);
+      }
+      resolve(results);
+    });
   });
 };
 
@@ -683,7 +683,9 @@ exports.getCollectionOfficers = async (managerId) => {
   const sql = `
     SELECT 
       empId, 
-      CONCAT(firstNameEnglish, ' ', lastNameEnglish) AS fullName,
+      CONCAT(firstNameEnglish, ' ', lastNameEnglish) AS fullNameEnglish,
+      CONCAT(firstNameSinhala, ' ', lastNameSinhala) AS fullNameSinhala,
+      CONCAT(firstNameTamil, ' ', lastNameTamil) AS fullNameTamil,
       phoneNumber01 AS phoneNumber1,
       phoneNumber02 AS phoneNumber2,
       id AS collectionOfficerId,
@@ -742,13 +744,13 @@ exports.getOfficerOnlineStatus = async (collectionOfficerId) => {
       WHERE 
         id = ?;
     `;
-    
+
     db.collectionofficer.query(sql, [collectionOfficerId], (err, results) => {
       if (err) {
         reject(new Error('Database query failed'));  // Reject the promise in case of error
         return;
       }
-      
+
       if (results.length > 0) {
         resolve(results[0]);  // Resolve the promise if data is found
       } else {
