@@ -6,9 +6,9 @@ const unRegisterdcropfamerEp = require('../end-point/unRegisteredCropFarmer-ep')
 
 router.post('/add-crops', auth, unRegisterdcropfamerEp.addCropDetails);
 router.post('/add-crops2', auth, unRegisterdcropfamerEp.addCropDetails2); 
-router.get('/get-crop-names', unRegisterdcropfamerEp.getAllCropNames);
+router.get('/get-crop-names',auth, unRegisterdcropfamerEp.getAllCropNames);
 // Route to get varieties by crop name
-router.get('/crops/varieties/:id',unRegisterdcropfamerEp.getVarietiesByCropId);
+router.get('/crops/varieties/:id',auth,unRegisterdcropfamerEp.getVarietiesByCropId);
 
 // Route to get unit prices by crop ID
 router.get('/unitPrices/:cropId',unRegisterdcropfamerEp.getUnitPricesByCropId);

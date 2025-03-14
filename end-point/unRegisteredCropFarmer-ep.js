@@ -352,7 +352,8 @@ exports.getCropDetailsByUserId= async (req, res) => {
 
 exports.getAllCropNames = async (req, res) => {
     try {
-        const cropNames = await cropDetailsDao.getAllCropNames();
+        const officerId = req.user.id;
+        const cropNames = await cropDetailsDao.getAllCropNames(officerId);
         res.status(200).json(cropNames);  // Sending the response as JSON
     } catch (error) {
         console.error('Error fetching crop names:', error);
@@ -363,10 +364,11 @@ exports.getAllCropNames = async (req, res) => {
 exports.getVarietiesByCropId = async (req, res) => {
     const cropId = req.params.id;  // Extract cropId from request parameters
     console.log(cropId);
+    const officerId = req.user.id;
     
 
     try {
-        const varieties = await cropDetailsDao.getVarietiesByCropId(cropId);
+        const varieties = await cropDetailsDao.getVarietiesByCropId(officerId,cropId);
         res.status(200).json(varieties);  // Return the varieties as JSON
     } catch (error) {
         console.error('Error fetching crop varieties:', error);  // Log the error for debugging
