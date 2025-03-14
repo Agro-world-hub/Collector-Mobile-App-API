@@ -2,21 +2,21 @@ const jwt = require("jsonwebtoken");
 const db = require("../startup/database");
 
 // Insert payment for a registered farmer
-exports.insertFarmerPayment = (farmerId, userId,invoiceNumber) => {
-    return new Promise((resolve, reject) => {
-        const paymentQuery = `
+exports.insertFarmerPayment = (farmerId, userId, invoiceNumber) => {
+  return new Promise((resolve, reject) => {
+    const paymentQuery = `
             INSERT INTO registeredfarmerpayments (userId, collectionOfficerId, InvNo) 
             VALUES (?, ?, ?)
         `;
-        const paymentValues = [farmerId, userId,invoiceNumber];
+    const paymentValues = [farmerId, userId, invoiceNumber];
 
-        db.collectionofficer.query(paymentQuery, paymentValues, (err, result) => {
-            if (err) {
-                return reject(err);
-            }
-            resolve(result.insertId); // Return the inserted farmer payment ID
-        });
+    db.collectionofficer.query(paymentQuery, paymentValues, (err, result) => {
+      if (err) {
+        return reject(err);
+      }
+      resolve(result.insertId); // Return the inserted farmer payment ID
     });
+  });
 };
 
 // Insert crop details
@@ -73,14 +73,14 @@ exports.insertFarmerPayment = (farmerId, userId,invoiceNumber) => {
 //         gradeCquan,
 //         imageUrl // Now using the S3 image URL instead of base64 data
 //       } = crop;
-  
+
 //       const cropQuery = `
 //         INSERT INTO farmerpaymentscrops (
 //           registerFarmerId, cropId, gradeAprice, gradeBprice, gradeCprice, 
 //           gradeAquan, gradeBquan, gradeCquan, image
 //         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 //       `;
-  
+
 //       const cropValues = [
 //         registeredFarmerId,
 //         varietyId,
@@ -92,7 +92,7 @@ exports.insertFarmerPayment = (farmerId, userId,invoiceNumber) => {
 //         gradeCquan || 0,
 //         imageUrl // Store the URL instead of binary data
 //       ];
-  
+
 //       db.collectionofficer.query(cropQuery, cropValues, (err, result) => {
 //         if (err) {
 //           return reject(err);
@@ -115,14 +115,14 @@ exports.insertCropDetails = (registeredFarmerId, crop, officerId, centerId) => {
       gradeCquan,
       imageUrl
     } = crop;
-    
+
     const cropQuery = `
       INSERT INTO farmerpaymentscrops (
         registerFarmerId, cropId, gradeAprice, gradeBprice, gradeCprice,
         gradeAquan, gradeBquan, gradeCquan, image
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
-    
+
     const cropValues = [
       registeredFarmerId,
       varietyId,
@@ -134,20 +134,20 @@ exports.insertCropDetails = (registeredFarmerId, crop, officerId, centerId) => {
       gradeCquan || 0,
       imageUrl
     ];
-    
+
     // Get a connection from the pool for transaction support
     db.collectionofficer.getConnection((err, connection) => {
       if (err) {
         return reject(err);
       }
-      
+
       // Begin transaction
       connection.beginTransaction((transactionErr) => {
         if (transactionErr) {
           connection.release();
           return reject(transactionErr);
         }
-        
+
         // First insert the crop details
         connection.query(cropQuery, cropValues, (insertErr, insertResult) => {
           if (insertErr) {
@@ -156,7 +156,7 @@ exports.insertCropDetails = (registeredFarmerId, crop, officerId, centerId) => {
               reject(insertErr);
             });
           }
-          
+
           // Update the complete column for each grade in officerdailytarget
           const updateOfficerQuery = `
             UPDATE officerdailytarget odt
@@ -176,7 +176,7 @@ exports.insertCropDetails = (registeredFarmerId, crop, officerId, centerId) => {
             AND CURRENT_DATE() BETWEEN dt.fromDate AND dt.toDate
             AND odt.complete < odt.target
           `;
-          
+
           const updateOfficerValues = [
             gradeAquan || 0,
             gradeBquan || 0,
@@ -184,7 +184,7 @@ exports.insertCropDetails = (registeredFarmerId, crop, officerId, centerId) => {
             varietyId,
             officerId
           ];
-          
+
           connection.query(updateOfficerQuery, updateOfficerValues, (updateOfficerErr, updateOfficerResult) => {
             if (updateOfficerErr) {
               return connection.rollback(() => {
@@ -192,7 +192,7 @@ exports.insertCropDetails = (registeredFarmerId, crop, officerId, centerId) => {
                 reject(updateOfficerErr);
               });
             }
-            
+
             // Now update the center dailytargetitems table
             // Assuming there are completeA, completeB, completeC columns or similar
             const updateCenterQuery = `
@@ -225,7 +225,7 @@ exports.insertCropDetails = (registeredFarmerId, crop, officerId, centerId) => {
                   (SELECT toDate FROM dailytarget WHERE id = odt.dailyTargetId)
               )
             `;
-            
+
             const updateCenterValues = [
               gradeAquan || 0,
               gradeBquan || 0,
@@ -235,7 +235,7 @@ exports.insertCropDetails = (registeredFarmerId, crop, officerId, centerId) => {
               varietyId,
               officerId
             ];
-            
+
             connection.query(updateCenterQuery, updateCenterValues, (updateCenterErr, updateCenterResult) => {
               if (updateCenterErr) {
                 return connection.rollback(() => {
@@ -243,7 +243,7 @@ exports.insertCropDetails = (registeredFarmerId, crop, officerId, centerId) => {
                   reject(updateCenterErr);
                 });
               }
-              
+
               // If everything succeeded, commit the transaction
               connection.commit((commitErr) => {
                 if (commitErr) {
@@ -252,7 +252,7 @@ exports.insertCropDetails = (registeredFarmerId, crop, officerId, centerId) => {
                     reject(commitErr);
                   });
                 }
-               
+
                 connection.release();
                 resolve({
                   cropInserted: true,
@@ -270,11 +270,11 @@ exports.insertCropDetails = (registeredFarmerId, crop, officerId, centerId) => {
     });
   });
 };
-  
+
 
 exports.getCropDetailsByUserAndFarmerId = (userId, registeredFarmerId) => {
-    return new Promise((resolve, reject) => {
-        const query = `
+  return new Promise((resolve, reject) => {
+    const query = `
             SELECT 
                 fpc.id AS id, 
                 cg.cropNameEnglish AS cropName,
@@ -303,27 +303,27 @@ exports.getCropDetailsByUserAndFarmerId = (userId, registeredFarmerId) => {
                 fpc.createdAt DESC
         `;
 
-        db.collectionofficer.query(query, [userId, registeredFarmerId], (error, results) => {
-            if (error) {
-                return reject(error);
-            }
-            resolve(results);
-        });
+    db.collectionofficer.query(query, [userId, registeredFarmerId], (error, results) => {
+      if (error) {
+        return reject(error);
+      }
+      resolve(results);
     });
+  });
 };
 
 
 // exports.getAllCropNames = () => {
 //     return new Promise((resolve, reject) => {
 //         const query = 'SELECT id, cropNameEnglish FROM cropgroup';
-        
+
 //         db.plantcare.query(query, (error, results) => {
 //             if (error) {
 //                 return reject(error);  // Rejecting the promise with the error
 //             }
 //             resolve(results);  // Resolving the promise with the results
 //         });
-        
+
 //     });
 // };
 
@@ -338,22 +338,60 @@ exports.getCropDetailsByUserAndFarmerId = (userId, registeredFarmerId) => {
 //             }
 //             resolve(results);  // Resolve with results
 //         });
-        
+
 //     });
 // };
 
 
-exports.getAllCropNames= (officerId) => {
-  return new Promise((resolve, reject) => {
-      if (!officerId) {
-          return reject(new Error("Officer ID is required"));
-      }
+// exports.getAllCropNames= (officerId) => {
+//   return new Promise((resolve, reject) => {
+//       if (!officerId) {
+//           return reject(new Error("Officer ID is required"));
+//       }
 
-      // This query gets unique crop groups for a specific officer
-      const cropQuery = `
+//       // This query gets unique crop groups for a specific officer
+//       const cropQuery = `
+//           SELECT DISTINCT
+//               cg.id,
+//               cg.cropNameEnglish
+//           FROM 
+//               officerdailytarget odt
+//           INNER JOIN
+//               plant_care.cropvariety cv ON odt.varietyId = cv.id
+//           INNER JOIN
+//               plant_care.cropgroup cg ON cv.cropGroupId = cg.id
+//           WHERE
+//               odt.officerId = ?
+//           ORDER BY
+//               cg.cropNameEnglish
+//       `;
+
+//       db.collectionofficer.query(cropQuery, [officerId], (error, results) => {
+//           if (error) {
+//               console.error("Error fetching officer crop details:", error);
+//               return reject(error);
+//           }
+
+//           // Format exactly matches what the frontend expects
+//           resolve(results);
+//       });
+//   });
+// };
+
+
+exports.getAllCropNames = (officerId) => {
+  return new Promise((resolve, reject) => {
+    if (!officerId) {
+      return reject(new Error("Officer ID is required"));
+    }
+
+    // This query gets unique crop groups for a specific officer
+    const cropQuery = `
           SELECT DISTINCT
               cg.id,
-              cg.cropNameEnglish
+              cg.cropNameEnglish,
+              cg.cropNameSinhala,
+              cg.cropNameTamil
           FROM 
               officerdailytarget odt
           INNER JOIN
@@ -363,32 +401,36 @@ exports.getAllCropNames= (officerId) => {
           WHERE
               odt.officerId = ?
           ORDER BY
-              cg.cropNameEnglish
+              cg.cropNameEnglish,
+              cg.cropNameSinhala,
+              cg.cropNameTamil
       `;
 
-      db.collectionofficer.query(cropQuery, [officerId], (error, results) => {
-          if (error) {
-              console.error("Error fetching officer crop details:", error);
-              return reject(error);
-          }
+    db.collectionofficer.query(cropQuery, [officerId], (error, results) => {
+      if (error) {
+        console.error("Error fetching officer crop details:", error);
+        return reject(error);
+      }
 
-          // Format exactly matches what the frontend expects
-          resolve(results);
-      });
+      // Format exactly matches what the frontend expects
+      resolve(results);
+    });
   });
 };
 
 exports.getVarietiesByCropId = (officerId, cropId) => {
   return new Promise((resolve, reject) => {
-      if (!officerId || !cropId) {
-          return reject(new Error("Officer ID and Crop ID are required"));
-      }
+    if (!officerId || !cropId) {
+      return reject(new Error("Officer ID and Crop ID are required"));
+    }
 
-      // This query gets varieties for a specific officer and crop group
-      const varietyQuery = `
+    // This query gets varieties for a specific officer and crop group
+    const varietyQuery = `
           SELECT DISTINCT
               cv.id,
-              cv.varietyNameEnglish
+              cv.varietyNameEnglish,
+              cv.varietyNameSinhala,
+              cv.varietyNameTamil
           FROM 
               officerdailytarget odt
           INNER JOIN
@@ -397,58 +439,62 @@ exports.getVarietiesByCropId = (officerId, cropId) => {
               odt.officerId = ?
               AND cv.cropGroupId = ?
           ORDER BY
-              cv.varietyNameEnglish
+              cv.varietyNameEnglish,
+              cv.varietyNameSinhala,
+              cv.varietyNameTamil
       `;
 
-      db.collectionofficer.query(varietyQuery, [officerId, cropId], (error, results) => {
-          if (error) {
-              console.error("Error fetching varieties for officer and crop:", error);
-              return reject(error);
-          }
+    db.collectionofficer.query(varietyQuery, [officerId, cropId], (error, results) => {
+      if (error) {
+        console.error("Error fetching varieties for officer and crop:", error);
+        return reject(error);
+      }
 
-          // Transform to match the frontend expected format
-          const formattedResults = results.map(variety => ({
-              id: variety.id,
-              variety: variety.varietyNameEnglish
-          }));
+      // Transform to match the frontend expected format
+      const formattedResults = results.map(variety => ({
+        id: variety.id,
+        varietyEnglish: variety.varietyNameEnglish,
+        varietySinhala: variety.varietyNameSinhala,
+        varietyTamil: variety.varietyNameTamil
+      }));
 
-          resolve(formattedResults);
-      });
+      resolve(formattedResults);
+    });
   });
 };
 
 
 
 exports.getMarketPricesByVarietyId = (varietyId) => {
-    return new Promise((resolve, reject) => {
-        const query = 'SELECT grade, price FROM marketprice WHERE varietyId = ?';
-        db.collectionofficer.query(query, [varietyId], (error, results) => {
-            if (error) {
-                return reject(error);  // Reject with error to be handled in the controller
-            }
-            resolve(results);  // Resolve with results
-        });
+  return new Promise((resolve, reject) => {
+    const query = 'SELECT grade, price FROM marketprice WHERE varietyId = ?';
+    db.collectionofficer.query(query, [varietyId], (error, results) => {
+      if (error) {
+        return reject(error);  // Reject with error to be handled in the controller
+      }
+      resolve(results);  // Resolve with results
     });
+  });
 };
 
 
 exports.getLatestInvoiceNumberDao = (empId, currentDate) => {
-    return new Promise((resolve, reject) => {
-      const query = `
+  return new Promise((resolve, reject) => {
+    const query = `
         SELECT invNo 
         FROM registeredfarmerpayments 
         WHERE invNo LIKE ? 
         ORDER BY id DESC 
         LIMIT 1
       `;
-  
-      const searchPattern = `${empId}${currentDate}%`; // Format: EMPIDYYMMDD%
-  
-      db.collectionofficer.query(query, [searchPattern], (error, results) => {
-        if (error) {
-          return reject(error);
-        }
-        resolve(results.length > 0 ? results[0] : null);
-      });
+
+    const searchPattern = `${empId}${currentDate}%`; // Format: EMPIDYYMMDD%
+
+    db.collectionofficer.query(query, [searchPattern], (error, results) => {
+      if (error) {
+        return reject(error);
+      }
+      resolve(results.length > 0 ? results[0] : null);
     });
-  };
+  });
+};
