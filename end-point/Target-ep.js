@@ -548,7 +548,6 @@ exports.getCenterTarget = async (req, res) => {
 
 
 
-
 exports.getTargetForOfficerManagerView = async (req, res) => {
   try {
     const officerId = req.user.id;
@@ -567,22 +566,26 @@ exports.getTargetForOfficerManagerView = async (req, res) => {
       return res.status(404).json({ message: "No targets found for this officer." });
     }
 
-        // Format officer targets
-        const formattedTargets = targets.map((target) => ({
-            varietyId: target.varietyId,
-            varietyName: target.varietyName,
-            grade: target.grade,
-            target: parseFloat(target.target),
-            todo: parseFloat(target.target) - parseFloat(target.complete),
-            complete: parseFloat(target.complete)
-        }));
+    // Format officer targets
+    const formattedTargets = targets.map((target) => ({
+      varietyId: target.varietyId,
+      varietyNameEnglish: target.varietyNameEnglish,
+      varietyNameSinhala: target.varietyNameSinhala,
+      varietyNameTamil: target.varietyNameTamil,
+      grade: target.grade,
+      target: parseFloat(target.target),
+      todo: parseFloat(target.target) - parseFloat(target.complete),
+      complete: parseFloat(target.complete)
+    }));
 
     // Fetch center targets for the same varieties & grades
     const centerTargets = await Promise.all(
       formattedTargets.map(async (target) => {
         const centerTargetData = await TargetDAO.getCenterTargetDao(centerId, target.varietyId, target.grade);
         return {
-          varietyId: target.varietyId,
+          varietyNameEnglish: target.varietyNameEnglish,
+          varietyNameSinhala: target.varietyNameSinhala,
+          varietyNameTamil: target.varietyNameTamil,
           grade: target.grade,
           centerTarget: centerTargetData.length > 0 ? centerTargetData[0] : null,
         };
@@ -606,6 +609,67 @@ exports.getTargetForOfficerManagerView = async (req, res) => {
     res.status(500).json({ error: "Failed to fetch target data." });
   }
 };
+
+
+
+// exports.getTargetForOfficerManagerView = async (req, res) => {
+//   try {
+//     const officerId = req.user.id;
+//     const centerId = req.user.centerId; // Get center ID from authenticated user session
+
+//     console.log("Received API Request - Officer ID:", officerId, "Center ID:", centerId);
+
+//     if (!officerId) {
+//       return res.status(400).json({ error: "Officer ID is required" });
+//     }
+
+//     // Fetch officer targets
+//     const targets = await TargetDAO.getTargetForOfficerDao(officerId);
+
+//     if (!targets.length) {
+//       return res.status(404).json({ message: "No targets found for this officer." });
+//     }
+
+//     // Format officer targets
+//     const formattedTargets = targets.map((target) => ({
+//       varietyId: target.varietyId,
+//       varietyName: target.varietyName,
+
+//       grade: target.grade,
+//       target: parseFloat(target.target),
+//       todo: parseFloat(target.target) - parseFloat(target.complete),
+//       complete: parseFloat(target.complete)
+//     }));
+
+//     // Fetch center targets for the same varieties & grades
+//     const centerTargets = await Promise.all(
+//       formattedTargets.map(async (target) => {
+//         const centerTargetData = await TargetDAO.getCenterTargetDao(centerId, target.varietyId, target.grade);
+//         return {
+//           varietyId: target.varietyId,
+//           grade: target.grade,
+//           centerTarget: centerTargetData.length > 0 ? centerTargetData[0] : null,
+//         };
+//       })
+//     );
+
+//     // Combine officer targets with center target data
+//     const combinedData = formattedTargets.map((target) => {
+//       const centerData = centerTargets.find(
+//         (ct) => ct.varietyId === target.varietyId && ct.grade === target.grade
+//       );
+//       return {
+//         ...target,
+//         centerTarget: centerData ? centerData.centerTarget : null,
+//       };
+//     });
+
+//     res.status(200).json({ success: true, data: combinedData });
+//   } catch (error) {
+//     console.error("Error fetching target data:", error);
+//     res.status(500).json({ error: "Failed to fetch target data." });
+//   }
+// };
 
 
 // exports.getTargetForOfficerManagerView = async (req, res) => {
@@ -667,7 +731,6 @@ exports.getTargetForOfficerManagerView = async (req, res) => {
 //   }
 // };
 
-
 exports.getTargetForOfficer = async (req, res) => {
   try {
     const { officerId } = req.params;
@@ -689,7 +752,9 @@ exports.getTargetForOfficer = async (req, res) => {
     // Format officer targets
     const formattedTargets = targets.map((target) => ({
       varietyId: target.varietyId,
-      varietyName: target.varietyName,
+      varietyNameEnglish: target.varietyNameEnglish,
+      varietyNameSinhala: target.varietyNameSinhala,
+      varietyNameTamil: target.varietyNameTamil,
       grade: target.grade,
       target: parseFloat(target.target),
       todo: parseFloat(target.target) - parseFloat(target.complete),
@@ -724,6 +789,64 @@ exports.getTargetForOfficer = async (req, res) => {
     res.status(500).json({ error: "Failed to fetch target data." });
   }
 };
+
+
+// exports.getTargetForOfficer = async (req, res) => {
+//   try {
+//     const { officerId } = req.params;
+//     const centerId = req.user.centerId; // Get center ID from authenticated user session
+
+//     console.log("Received API Request - Officer ID:", officerId, "Center ID:", centerId);
+
+//     if (!officerId) {
+//       return res.status(400).json({ error: "Officer ID is required" });
+//     }
+
+//     // Fetch officer targets
+//     const targets = await TargetDAO.getTargetForOfficerDao(officerId);
+
+//     if (!targets.length) {
+//       return res.status(404).json({ message: "No targets found for this officer." });
+//     }
+
+//     // Format officer targets
+//     const formattedTargets = targets.map((target) => ({
+//       varietyId: target.varietyId,
+//       varietyName: target.varietyName,
+//       grade: target.grade,
+//       target: parseFloat(target.target),
+//       todo: parseFloat(target.target) - parseFloat(target.complete),
+//     }));
+
+//     // Fetch center targets for the same varieties & grades
+//     const centerTargets = await Promise.all(
+//       formattedTargets.map(async (target) => {
+//         const centerTargetData = await TargetDAO.getCenterTargetDao(centerId, target.varietyId, target.grade);
+//         return {
+//           varietyId: target.varietyId,
+//           grade: target.grade,
+//           centerTarget: centerTargetData.length > 0 ? centerTargetData[0] : null,
+//         };
+//       })
+//     );
+
+//     // Combine officer targets with center target data
+//     const combinedData = formattedTargets.map((target) => {
+//       const centerData = centerTargets.find(
+//         (ct) => ct.varietyId === target.varietyId && ct.grade === target.grade
+//       );
+//       return {
+//         ...target,
+//         centerTarget: centerData ? centerData.centerTarget : null,
+//       };
+//     });
+
+//     res.status(200).json({ success: true, data: combinedData });
+//   } catch (error) {
+//     console.error("Error fetching target data:", error);
+//     res.status(500).json({ error: "Failed to fetch target data." });
+//   }
+// };
 
 
 exports.transferTarget = async (req, res) => {

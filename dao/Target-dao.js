@@ -148,14 +148,14 @@
 //                 return reject(err);
 //             }
 //             // console.log(results);
-            
+
 //             const transformedCompleteData = results.flatMap(item => [
 //                 { cropNameEnglish: item.cropNameEnglish, varietyNameEnglish: item.varietyNameEnglish, totA: item.totA, grade:"A", buyDate:item.createdAt },
 //                 { cropNameEnglish: item.cropNameEnglish, varietyNameEnglish: item.varietyNameEnglish, totB: item.totB, grade:"B", buyDate:item.createdAt },
 //                 { cropNameEnglish: item.cropNameEnglish, varietyNameEnglish: item.varietyNameEnglish, totC: item.totC, grade:"C", buyDate:item.createdAt }
 //             ]);
 //             // console.log(transformedCompleteData);
-            
+
 //             resolve(transformedCompleteData);
 //         });
 //     });
@@ -184,7 +184,7 @@
 //             ]);
 
 //             // console.log(transformedTargetData);
-            
+
 //             resolve(transformedTargetData);
 //         });
 //     });
@@ -208,14 +208,14 @@
 //                 return reject(err);
 //             }
 //             // console.log(results);
-            
+
 //             const transformedCompleteData = results.flatMap(item => [
 //                 { cropNameEnglish: item.cropNameEnglish, varietyNameEnglish: item.varietyNameEnglish, totA: item.totA, grade:"A", buyDate:item.createdAt },
 //                 { cropNameEnglish: item.cropNameEnglish, varietyNameEnglish: item.varietyNameEnglish, totB: item.totB, grade:"B", buyDate:item.createdAt },
 //                 { cropNameEnglish: item.cropNameEnglish, varietyNameEnglish: item.varietyNameEnglish, totC: item.totC, grade:"C", buyDate:item.createdAt }
 //             ]);
 //             // console.log(transformedCompleteData);
-            
+
 //             resolve(transformedCompleteData);
 //         });
 //     });
@@ -315,9 +315,9 @@
 //       });
 //     });
 //   };
-  
 
-  
+
+
 //   exports.getTargetForOfficerDao = (officerId) => {
 //     return new Promise((resolve, reject) => {
 //       const sql = `
@@ -346,7 +346,7 @@
 //             (CURTIME() >= dt.fromTime AND CURTIME() <= dt.toTime)
 //           )
 //       `;
-  
+
 //       collectionofficer.query(sql, [officerId], (err, results) => {
 //         if (err) {
 //           return reject(err);
@@ -356,9 +356,9 @@
 //       });
 //     });
 //   };
-  
-  
-  
+
+
+
 //   exports.getCenterTargetDao = async (centerId, varietyId, grade) => {
 //     return new Promise((resolve, reject) => {
 //         console.log("Received grade parameter:", grade);
@@ -419,13 +419,13 @@
 //         WHERE dt.centerId = ?
 //         GROUP BY dti.varietyId, cv.varietyNameEnglish;
 //       `;
-  
+
 //       // Execute the query
 //       collectionofficer.query(query, [centerId], (error, results) => {
 //         if (error) {
 //           return reject(error);
 //         }
-  
+
 //         // If no results are found, return an empty array
 //         if (results.length === 0) {
 //           resolve([]);
@@ -435,8 +435,8 @@
 //       });
 //     });
 //   };
-  
-  
+
+
 // exports.transferTargetDAO = (fromOfficerId, toOfficerId, varietyId, grade, amount) => {
 //     return new Promise((resolve, reject) => {
 //         const validGrades = ["A", "B", "C"];
@@ -716,9 +716,9 @@ exports.getAllDailyTargetDAO = (companyId, searchText) => {
                 return reject(err);
             }
             const transformedTargetData = results.flatMap(item => [
-                { cropNameEnglish: item.cropNameEnglish, varietyNameEnglish: item.varietyNameEnglish, toDate: item.toDate, toTime: item.toTime, toTime: item.fromTime, qtyA: item.qtyA, grade:"A" },
-                { cropNameEnglish: item.cropNameEnglish, varietyNameEnglish: item.varietyNameEnglish, toDate: item.toDate, toTime: item.toTime, toTime: item.fromTime, qtyB: item.qtyB, grade:"B" },
-                { cropNameEnglish: item.cropNameEnglish, varietyNameEnglish: item.varietyNameEnglish, toDate: item.toDate, toTime: item.toTime, toTime: item.fromTime, qtyC: item.qtyC, grade:"C" }
+                { cropNameEnglish: item.cropNameEnglish, varietyNameEnglish: item.varietyNameEnglish, toDate: item.toDate, toTime: item.toTime, toTime: item.fromTime, qtyA: item.qtyA, grade: "A" },
+                { cropNameEnglish: item.cropNameEnglish, varietyNameEnglish: item.varietyNameEnglish, toDate: item.toDate, toTime: item.toTime, toTime: item.fromTime, qtyB: item.qtyB, grade: "B" },
+                { cropNameEnglish: item.cropNameEnglish, varietyNameEnglish: item.varietyNameEnglish, toDate: item.toDate, toTime: item.toTime, toTime: item.fromTime, qtyC: item.qtyC, grade: "C" }
             ]);
             resolve(transformedTargetData);
         });
@@ -752,14 +752,14 @@ exports.getAllDailyTargetCompleteDAO = (companyId, searchText) => {
                 return reject(err);
             }
             // console.log(results);
-            
+
             const transformedCompleteData = results.flatMap(item => [
-                { cropNameEnglish: item.cropNameEnglish, varietyNameEnglish: item.varietyNameEnglish, totA: item.totA, grade:"A", buyDate:item.createdAt },
-                { cropNameEnglish: item.cropNameEnglish, varietyNameEnglish: item.varietyNameEnglish, totB: item.totB, grade:"B", buyDate:item.createdAt },
-                { cropNameEnglish: item.cropNameEnglish, varietyNameEnglish: item.varietyNameEnglish, totC: item.totC, grade:"C", buyDate:item.createdAt }
+                { cropNameEnglish: item.cropNameEnglish, varietyNameEnglish: item.varietyNameEnglish, totA: item.totA, grade: "A", buyDate: item.createdAt },
+                { cropNameEnglish: item.cropNameEnglish, varietyNameEnglish: item.varietyNameEnglish, totB: item.totB, grade: "B", buyDate: item.createdAt },
+                { cropNameEnglish: item.cropNameEnglish, varietyNameEnglish: item.varietyNameEnglish, totC: item.totC, grade: "C", buyDate: item.createdAt }
             ]);
             // console.log(transformedCompleteData);
-            
+
             resolve(transformedCompleteData);
         });
     });
@@ -782,13 +782,13 @@ exports.downloadAllDailyTargetDao = (companyId, fromDate, toDate) => {
                 return reject(err);
             }
             const transformedTargetData = results.flatMap(item => [
-                { cropNameEnglish: item.cropNameEnglish, varietyNameEnglish: item.varietyNameEnglish, toDate: item.toDate, toTime: item.toTime, toTime: item.fromTime, qtyA: item.qtyA, grade:"A" },
-                { cropNameEnglish: item.cropNameEnglish, varietyNameEnglish: item.varietyNameEnglish, toDate: item.toDate, toTime: item.toTime, toTime: item.fromTime, qtyB: item.qtyB, grade:"B" },
-                { cropNameEnglish: item.cropNameEnglish, varietyNameEnglish: item.varietyNameEnglish, toDate: item.toDate, toTime: item.toTime, toTime: item.fromTime, qtyC: item.qtyC, grade:"C" }
+                { cropNameEnglish: item.cropNameEnglish, varietyNameEnglish: item.varietyNameEnglish, toDate: item.toDate, toTime: item.toTime, toTime: item.fromTime, qtyA: item.qtyA, grade: "A" },
+                { cropNameEnglish: item.cropNameEnglish, varietyNameEnglish: item.varietyNameEnglish, toDate: item.toDate, toTime: item.toTime, toTime: item.fromTime, qtyB: item.qtyB, grade: "B" },
+                { cropNameEnglish: item.cropNameEnglish, varietyNameEnglish: item.varietyNameEnglish, toDate: item.toDate, toTime: item.toTime, toTime: item.fromTime, qtyC: item.qtyC, grade: "C" }
             ]);
 
             // console.log(transformedTargetData);
-            
+
             resolve(transformedTargetData);
         });
     });
@@ -812,14 +812,14 @@ exports.downloadAllDailyTargetCompleteDAO = (companyId, fromDate, toDate) => {
                 return reject(err);
             }
             // console.log(results);
-            
+
             const transformedCompleteData = results.flatMap(item => [
-                { cropNameEnglish: item.cropNameEnglish, varietyNameEnglish: item.varietyNameEnglish, totA: item.totA, grade:"A", buyDate:item.createdAt },
-                { cropNameEnglish: item.cropNameEnglish, varietyNameEnglish: item.varietyNameEnglish, totB: item.totB, grade:"B", buyDate:item.createdAt },
-                { cropNameEnglish: item.cropNameEnglish, varietyNameEnglish: item.varietyNameEnglish, totC: item.totC, grade:"C", buyDate:item.createdAt }
+                { cropNameEnglish: item.cropNameEnglish, varietyNameEnglish: item.varietyNameEnglish, totA: item.totA, grade: "A", buyDate: item.createdAt },
+                { cropNameEnglish: item.cropNameEnglish, varietyNameEnglish: item.varietyNameEnglish, totB: item.totB, grade: "B", buyDate: item.createdAt },
+                { cropNameEnglish: item.cropNameEnglish, varietyNameEnglish: item.varietyNameEnglish, totC: item.totC, grade: "C", buyDate: item.createdAt }
             ]);
             // console.log(transformedCompleteData);
-            
+
             resolve(transformedCompleteData);
         });
     });
@@ -881,7 +881,7 @@ exports.getAllTargetsDao = () => {
 
 exports.getTargetsByCompanyIdDao = (centerId) => {
     return new Promise((resolve, reject) => {
-      const sql = `
+        const sql = `
         SELECT 
           dt.id AS targetId, 
           dt.centerId, 
@@ -911,18 +911,56 @@ exports.getTargetsByCompanyIdDao = (centerId) => {
         GROUP BY 
           dti.id, dt.id
       `;
-      collectionofficer.query(sql, [centerId], (err, results) => {
-        if (err) {
-          return reject(err);
-        }
-        resolve(results);
-      });
+        collectionofficer.query(sql, [centerId], (err, results) => {
+            if (err) {
+                return reject(err);
+            }
+            resolve(results);
+        });
     });
-  };
-  
+};
 
-  
-  exports.getTargetForOfficerDao = (officerId) => {
+
+
+// exports.getTargetForOfficerDao = (officerId) => {
+//     return new Promise((resolve, reject) => {
+//         if (!officerId) {
+//             return reject(new Error("Officer ID is missing or invalid"));
+//         }
+//         const sql = `
+//             SELECT
+//                 odt.varietyId,
+//                 cv.varietyNameEnglish AS varietyName,
+//                 odt.grade,
+//                 odt.target,
+//                 odt.complete,
+//                 dt.fromDate,
+//                 dt.toDate,
+//                 dt.fromTime,
+//                 dt.toTime,
+//                 odt.createdAt
+//             FROM
+//                 officerdailytarget odt
+//             INNER JOIN
+//                 plant_care.cropvariety cv ON odt.varietyId = cv.id
+//             INNER JOIN
+//                 dailytarget dt ON odt.dailyTargetId = dt.id
+//             WHERE
+//                 odt.officerId = ?
+//                 AND NOW() BETWEEN CONCAT(dt.fromDate, ' ', dt.fromTime) AND CONCAT(dt.toDate, ' ', dt.toTime)
+//         `;
+//         collectionofficer.query(sql, [officerId], (err, results) => {
+//             if (err) {
+//                 console.error("Error executing query:", err);
+//                 return reject(err);
+//             }
+//             console.log("Targets found:", results);
+//             resolve(results);
+//         });
+//     });
+// };
+
+exports.getTargetForOfficerDao = (officerId) => {
     return new Promise((resolve, reject) => {
         if (!officerId) {
             return reject(new Error("Officer ID is missing or invalid"));
@@ -930,7 +968,9 @@ exports.getTargetsByCompanyIdDao = (centerId) => {
         const sql = `
             SELECT
                 odt.varietyId,
-                cv.varietyNameEnglish AS varietyName,
+                cv.varietyNameEnglish AS varietyNameEnglish,
+                cv.varietyNameSinhala AS varietyNameSinhala,
+                cv.varietyNameTamil AS varietyNameTamil,
                 odt.grade,
                 odt.target,
                 odt.complete,
@@ -959,10 +999,10 @@ exports.getTargetsByCompanyIdDao = (centerId) => {
         });
     });
 };
-  
-  
-  
-  exports.getCenterTargetDao = async (centerId, varietyId, grade) => {
+
+
+
+exports.getCenterTargetDao = async (centerId, varietyId, grade) => {
     console.log('centerId', centerId);
     console.log('varietyId', varietyId);
     return new Promise((resolve, reject) => {
@@ -1007,8 +1047,8 @@ exports.getTargetsByCompanyIdDao = (centerId) => {
 
 exports.getCenterTarget = async (centerId) => {
     return new Promise((resolve, reject) => {
-      // Construct the query to get data for all grades (A, B, C)
-      const query = `
+        // Construct the query to get data for all grades (A, B, C)
+        const query = `
         SELECT 
           dti.varietyId,
           cv.varietyNameEnglish AS varietyNameEnglish,
@@ -1027,24 +1067,24 @@ exports.getCenterTarget = async (centerId) => {
           GROUP BY dti.varietyId, cv.varietyNameEnglish, cv.varietyNameSinhala, cv.varietyNameTamil;
 
       `;
-  
-      // Execute the query
-      collectionofficer.query(query, [centerId], (error, results) => {
-        if (error) {
-          return reject(error);
-        }
-  
-        // If no results are found, return an empty array
-        if (results.length === 0) {
-          resolve([]);
-        } else {
-          resolve(results);  // Return the query results
-        }
-      });
+
+        // Execute the query
+        collectionofficer.query(query, [centerId], (error, results) => {
+            if (error) {
+                return reject(error);
+            }
+
+            // If no results are found, return an empty array
+            if (results.length === 0) {
+                resolve([]);
+            } else {
+                resolve(results);  // Return the query results
+            }
+        });
     });
-  };
-  
-  
+};
+
+
 // exports.transferTargetDAO = (fromOfficerId, toOfficerId, varietyId, grade, amount) => {
 //     return new Promise((resolve, reject) => {
 //         const validGrades = ["A", "B", "C"];
@@ -1174,26 +1214,26 @@ exports.transferTargetDAO = (fromOfficerId, toOfficerId, varietyId, grade, amoun
             SET target = target - ?
             WHERE officerId = ? AND varietyId = ? AND grade = ? AND target >= ?;
         `;
-        
+
         const checkReceiverSql = `
             SELECT COUNT(*) as recordExists
             FROM officerdailytarget
             WHERE officerId = ? AND varietyId = ? AND grade = ?;
         `;
-        
+
         const incrementSql = `
             UPDATE officerdailytarget
             SET target = target + ?
             WHERE officerId = ? AND varietyId = ? AND grade = ?;
         `;
-        
+
         const getFromOfficerDetailsSql = `
             SELECT dailyTargetId
             FROM officerdailytarget
             WHERE officerId = ? AND varietyId = ? AND grade = ?
             LIMIT 1;
         `;
-        
+
         const createNewRecordSql = `
             INSERT INTO officerdailytarget
             (dailyTargetId, varietyId, officerId, grade, target, complete)
@@ -1203,7 +1243,7 @@ exports.transferTargetDAO = (fromOfficerId, toOfficerId, varietyId, grade, amoun
         // Get a connection from the pool
         collectionofficer.getConnection((err, connection) => {
             if (err) return reject(err);
-            
+
             connection.beginTransaction((err) => {
                 if (err) {
                     connection.release();
@@ -1218,9 +1258,9 @@ exports.transferTargetDAO = (fromOfficerId, toOfficerId, varietyId, grade, amoun
                             reject(err || new Error("Insufficient target balance or record not found"));
                         });
                     }
-                    
+
                     console.log(`✅ Deducted ${amount} from officer ${fromOfficerId}'s target`);
-                    
+
                     // Step 2: Check if receiving officer has a record for this variety and grade
                     connection.query(checkReceiverSql, [toOfficerId, varietyId, grade], (err, results) => {
                         if (err) {
@@ -1229,9 +1269,9 @@ exports.transferTargetDAO = (fromOfficerId, toOfficerId, varietyId, grade, amoun
                                 reject(err);
                             });
                         }
-                        
+
                         const receiverHasRecord = results[0].recordExists > 0;
-                        
+
                         if (receiverHasRecord) {
                             // Step 3A: If record exists, just update it
                             connection.query(incrementSql, [amount, toOfficerId, varietyId, grade], (err, result) => {
@@ -1241,9 +1281,9 @@ exports.transferTargetDAO = (fromOfficerId, toOfficerId, varietyId, grade, amoun
                                         reject(err);
                                     });
                                 }
-                                
+
                                 console.log(`✅ Added ${amount} to officer ${toOfficerId}'s target`);
-                                
+
                                 // Commit transaction
                                 connection.commit((err) => {
                                     if (err) {
@@ -1252,7 +1292,7 @@ exports.transferTargetDAO = (fromOfficerId, toOfficerId, varietyId, grade, amoun
                                             reject(err);
                                         });
                                     }
-                                    
+
                                     connection.release();
                                     resolve({ message: "Target transferred successfully" });
                                 });
@@ -1266,9 +1306,9 @@ exports.transferTargetDAO = (fromOfficerId, toOfficerId, varietyId, grade, amoun
                                         reject(err || new Error("Source officer record not found"));
                                     });
                                 }
-                                
+
                                 const dailyTargetId = results[0].dailyTargetId;
-                                
+
                                 // Step 3C: Create a new record for the receiving officer
                                 connection.query(createNewRecordSql, [dailyTargetId, varietyId, toOfficerId, grade, amount], (err, result) => {
                                     if (err) {
@@ -1277,9 +1317,9 @@ exports.transferTargetDAO = (fromOfficerId, toOfficerId, varietyId, grade, amoun
                                             reject(err);
                                         });
                                     }
-                                    
+
                                     console.log(`✅ Created new record for officer ${toOfficerId} with target ${amount}`);
-                                    
+
                                     // Commit transaction
                                     connection.commit((err) => {
                                         if (err) {
@@ -1288,7 +1328,7 @@ exports.transferTargetDAO = (fromOfficerId, toOfficerId, varietyId, grade, amoun
                                                 reject(err);
                                             });
                                         }
-                                        
+
                                         connection.release();
                                         resolve({ message: "Target transferred successfully with new record creation" });
                                     });
