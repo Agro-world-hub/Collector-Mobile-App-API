@@ -192,6 +192,7 @@ exports.getOfficerDetailsById = (officerId) => {
       SELECT 
         co.*, 
         co.empId,
+        cc.regCode,
         cc.centerName AS collectionCenterName,
         cc.contact01 AS centerContact01,
         cc.contact02 AS centerContact02,
