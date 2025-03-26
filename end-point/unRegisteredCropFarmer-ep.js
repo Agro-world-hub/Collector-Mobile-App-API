@@ -124,87 +124,84 @@ const s3middleware = require('../Middlewares/s3upload');
 
 
 // exports.addCropDetails = async (req, res) => {
-//     console.log("Request body:", req.body);
-//     const { crops, farmerId, invoiceNumber } = req.body;
-//     console.log('invoiceNumber:', invoiceNumber);
-//     const userId = req.user.id;
-  
-//     // Step 1: Validate the request body using Joi
-//     const { error } = cropDetailsSchema.validate(req.body);
-  
-//     if (error) {
-//       // Log the full Joi error details for debugging
-//       console.error('Joi Validation Error:', error.details);
-  
-//       // Send a detailed error response with the first validation error message
-//       return res.status(400).json({
-//         status: 'error',
-//         message: error.details[0].message,  // Send only the first error message
-//         details: error.details              // Optionally include all error details in the response
-//       });
-//     }
-  
-//     // Get a connection from the pool
-//     const connection = await collectionofficer.promise().getConnection();
-  
-//     try {
-//       // Step 2: Start a transaction
-//       await connection.beginTransaction();
-  
-//       // Step 3: Insert registered farmer payment
-//       const registeredFarmerId = await cropDetailsDao.insertFarmerPayment(farmerId, userId, invoiceNumber);
-  
-//       // Step 4: Insert crop details
-//       const cropPromises = crops.map(crop => cropDetailsDao.insertCropDetails(registeredFarmerId, crop));
-//       await Promise.all(cropPromises);
-  
-//       // Step 5: Commit the transaction
-//       await connection.commit();
-  
-//       // Return success response
-//       res.status(201).json({
-//         message: 'Crop payment records added successfully',
-//         registeredFarmerId
-//       });
-//     } catch (err) {
-//       console.error('Error processing request:', err);
+//   console.log("Request body:", req.body);
+//   const { crops, farmerId, invoiceNumber } = req.body;
+//   console.log('invoiceNumber:', invoiceNumber);
+//   const userId = req.user.id;
+
+//   // Step 1: Validate the request body using Joi
+//   const { error } = cropDetailsSchema.validate(req.body);
+
+//   if (error) {
+//     // Log the full Joi error details for debugging
+//     console.error('Joi Validation Error:', error.details);
+
+//     // Send a detailed error response with the first validation error message
+//     return res.status(400).json({
+//       status: 'error',
+//       message: error.details[0].message,  // Send only the first error message
+//       details: error.details              // Optionally include all error details in the response
+//     });
+//   }
+
+//   // Get a connection from the pool
+//   const connection = await collectionofficer.promise().getConnection();
+
+//   try {
+//     // Step 2: Start a transaction
+//     await connection.beginTransaction();
+
+//     // Step 3: Insert registered farmer payment
+//     const registeredFarmerId = await cropDetailsDao.insertFarmerPayment(farmerId, userId, invoiceNumber);
+
+//     // Step 4: Process and insert crop details with S3 image uploads
+//     const cropPromises = crops.map(async (crop) => {
+//       // Process image if provided in base64 format
+//       let imageUrl = null;
+//       if (crop.image) {
+//         try {
+//           // Convert base64 to buffer
+//           const fileBuffer = Buffer.from(crop.image, 'base64');
+//           // Generate a unique filename
+//           const fileName = `crop_${Date.now()}_${Math.floor(Math.random() * 1000)}.jpg`;
+//           // Upload to S3 and get the URL
+//           imageUrl = await s3middleware(fileBuffer, fileName, "crops-collection/images");
+//         } catch (uploadError) {
+//           console.error('Error uploading image to S3:', uploadError);
+//           throw uploadError;
+//         }
+//       }
       
-//       // Rollback the transaction if an error occurs
-//       await connection.rollback();
-      
-//       // Return error response
-//       res.status(500).json({ error: 'Internal Server Error' });
-//     } finally {
-//       // Release the connection back to the pool
-//       connection.release();
-//     }
-//   };
-  
-// exports.addCropDetails2 = async (req, res) => {
-//     console.log("Request body:", req.body.crops);
-//     const { crops, farmerId,invoiceNumber } = req.body;
-//     console.log('invoiceNumber:', invoiceNumber);
-//     const userId = req.user.id;
+//       // Update the crop object with the S3 image URL
+//       const cropWithImageUrl = { ...crop, imageUrl };
+//       const officerId = userId;
+//       const centerId = req.user.centerId;
+//       return cropDetailsDao.insertCropDetails(registeredFarmerId, cropWithImageUrl,officerId ,centerId);
+//     });
+    
+//     await Promise.all(cropPromises);
 
-//     if (!crops || typeof crops !== 'object') {
-//         return res.status(400).json({ error: 'Crops data is required and must be an object' });
-//     }
+//     // Step 5: Commit the transaction
+//     await connection.commit();
 
-//     try {
-//         const registeredFarmerId = await cropDetailsDao.insertFarmerPayment(farmerId, userId ,invoiceNumber);
-//         await cropDetailsDao.insertCropDetails(registeredFarmerId, crops);
-
-//         res.status(201).json({
-//             message: 'Crop payment records added successfully',
-//             registeredFarmerId
-//         });
-//     } catch (err) {
-//         console.error('Error processing request:', err);
-//         res.status(500).json({ error: 'Internal Server Error' });
-//     }
+//     // Return success response
+//     res.status(201).json({
+//       message: 'Crop payment records added successfully',
+//       registeredFarmerId
+//     });
+//   } catch (err) {
+//     console.error('Error processing request:', err);
+    
+//     // Rollback the transaction if an error occurs
+//     await connection.rollback();
+    
+//     // Return error response
+//     res.status(500).json({ error: 'Internal Server Error' });
+//   } finally {
+//     // Release the connection back to the pool
+//     connection.release();
+//   }
 // };
-
-
 exports.addCropDetails = async (req, res) => {
   console.log("Request body:", req.body);
   const { crops, farmerId, invoiceNumber } = req.body;
@@ -239,26 +236,53 @@ exports.addCropDetails = async (req, res) => {
     // Step 4: Process and insert crop details with S3 image uploads
     const cropPromises = crops.map(async (crop) => {
       // Process image if provided in base64 format
-      let imageUrl = null;
-      if (crop.image) {
+      let imageAUrl = null, imageBUrl = null, imageCUrl = null;
+      
+      // Upload image for grade A
+      if (crop.imageA) {
         try {
-          // Convert base64 to buffer
-          const fileBuffer = Buffer.from(crop.image, 'base64');
-          // Generate a unique filename
-          const fileName = `crop_${Date.now()}_${Math.floor(Math.random() * 1000)}.jpg`;
-          // Upload to S3 and get the URL
-          imageUrl = await s3middleware(fileBuffer, fileName, "crops-collection/images");
+          const fileBufferA = Buffer.from(crop.imageA, 'base64');
+          const fileNameA = `crop_${Date.now()}_${Math.floor(Math.random() * 1000)}_A.jpg`;
+          imageAUrl = await s3middleware(fileBufferA, fileNameA, "crops-collection/images");
         } catch (uploadError) {
-          console.error('Error uploading image to S3:', uploadError);
+          console.error('Error uploading image A to S3:', uploadError);
+          throw uploadError;
+        }
+      }
+
+      // Upload image for grade B
+      if (crop.imageB) {
+        try {
+          const fileBufferB = Buffer.from(crop.imageB, 'base64');
+          const fileNameB = `crop_${Date.now()}_${Math.floor(Math.random() * 1000)}_B.jpg`;
+          imageBUrl = await s3middleware(fileBufferB, fileNameB, "crops-collection/images");
+        } catch (uploadError) {
+          console.error('Error uploading image B to S3:', uploadError);
+          throw uploadError;
+        }
+      }
+
+      // Upload image for grade C
+      if (crop.imageC) {
+        try {
+          const fileBufferC = Buffer.from(crop.imageC, 'base64');
+          const fileNameC = `crop_${Date.now()}_${Math.floor(Math.random() * 1000)}_C.jpg`;
+          imageCUrl = await s3middleware(fileBufferC, fileNameC, "crops-collection/images");
+        } catch (uploadError) {
+          console.error('Error uploading image C to S3:', uploadError);
           throw uploadError;
         }
       }
       
       // Update the crop object with the S3 image URL
-      const cropWithImageUrl = { ...crop, imageUrl };
-      const officerId = userId;
+      const cropWithImageUrls = { 
+        ...crop, 
+        imageAUrl, 
+        imageBUrl, 
+        imageCUrl 
+      };      const officerId = userId;
       const centerId = req.user.centerId;
-      return cropDetailsDao.insertCropDetails(registeredFarmerId, cropWithImageUrl,officerId ,centerId);
+      return cropDetailsDao.insertCropDetails(registeredFarmerId, cropWithImageUrls,officerId ,centerId);
     });
     
     await Promise.all(cropPromises);
@@ -286,7 +310,57 @@ exports.addCropDetails = async (req, res) => {
 };
 
 
-// Simplified version
+// // Simplified version
+// exports.addCropDetails2 = async (req, res) => {
+//   console.log("Request body:", req.body.crops);
+//   const { crops, farmerId, invoiceNumber } = req.body;
+//   console.log('invoiceNumber:', invoiceNumber);
+//   const userId = req.user.id;
+
+//   if (!crops || typeof crops !== 'object') {
+//     return res.status(400).json({ error: 'Crops data is required and must be an object' });
+//   }
+
+//   try {
+//     // Process image if provided
+//     let imageUrl = null;
+//     if (crops.image) {
+//       try {
+//         // Convert base64 to buffer
+//         const fileBuffer = Buffer.from(crops.image, 'base64');
+//         // Generate a unique filename
+//         const fileName = `crop_${Date.now()}_${Math.floor(Math.random() * 1000)}.jpg`;
+//         // Upload to S3 and get the URL
+//         imageUrl = await uploadFileToS3(fileBuffer, fileName, "crops-collection/images");
+//       } catch (uploadError) {
+//         console.error('Error uploading image to S3:', uploadError);
+//         throw uploadError;
+//       }
+//     }
+    
+//     // Update the crop object with the S3 image URL
+//     const cropsWithImageUrl = { ...crops, imageUrl };
+    
+//     const registeredFarmerId = await cropDetailsDao.insertFarmerPayment(farmerId, userId, invoiceNumber);
+//     const officerId = userId;
+//     const centerId = req.user.centerId;
+//     await cropDetailsDao.insertCropDetails(registeredFarmerId, cropsWithImageUrl,officerId,centerId);
+
+//     res.status(201).json({
+//       message: 'Crop payment records added successfully',
+//       registeredFarmerId
+//     });
+//   } catch (err) {
+//     console.error('Error processing request:', err);
+    
+//     if (err.message === "Validation error") {
+//       return res.status(400).json({ error: err.message });
+//     }
+    
+//     res.status(500).json({ error: 'Internal Server Error' });
+//   }
+// };
+
 exports.addCropDetails2 = async (req, res) => {
   console.log("Request body:", req.body.crops);
   const { crops, farmerId, invoiceNumber } = req.body;
@@ -299,28 +373,56 @@ exports.addCropDetails2 = async (req, res) => {
 
   try {
     // Process image if provided
-    let imageUrl = null;
-    if (crops.image) {
+    let imageAUrl = null;
+    let imageBUrl = null;
+    let imageCUrl = null;
+
+    // Handle image uploads for grade A, B, and C if provided
+    if (crops.imageA) {
       try {
-        // Convert base64 to buffer
-        const fileBuffer = Buffer.from(crops.image, 'base64');
-        // Generate a unique filename
-        const fileName = `crop_${Date.now()}_${Math.floor(Math.random() * 1000)}.jpg`;
-        // Upload to S3 and get the URL
-        imageUrl = await uploadFileToS3(fileBuffer, fileName, "crops-collection/images");
+        const fileBufferA = Buffer.from(crops.imageA, 'base64');
+        const fileNameA = `crop_A_${Date.now()}_${Math.floor(Math.random() * 1000)}.jpg`;
+        imageAUrl = await s3middleware(fileBufferA, fileNameA, "crops-collection/images");
       } catch (uploadError) {
-        console.error('Error uploading image to S3:', uploadError);
+        console.error('Error uploading image A to S3:', uploadError);
         throw uploadError;
       }
     }
-    
-    // Update the crop object with the S3 image URL
-    const cropsWithImageUrl = { ...crops, imageUrl };
+
+    if (crops.imageB) {
+      try {
+        const fileBufferB = Buffer.from(crops.imageB, 'base64');
+        const fileNameB = `crop_B_${Date.now()}_${Math.floor(Math.random() * 1000)}.jpg`;
+        imageBUrl = await s3middleware(fileBufferB, fileNameB, "crops-collection/images");
+      } catch (uploadError) {
+        console.error('Error uploading image B to S3:', uploadError);
+        throw uploadError;
+      }
+    }
+
+    if (crops.imageC) {
+      try {
+        const fileBufferC = Buffer.from(crops.imageC, 'base64');
+        const fileNameC = `crop_C_${Date.now()}_${Math.floor(Math.random() * 1000)}.jpg`;
+        imageCUrl = await s3middleware(fileBufferC, fileNameC, "crops-collection/images");
+      } catch (uploadError) {
+        console.error('Error uploading image C to S3:', uploadError);
+        throw uploadError;
+      }
+    }
+
+    // Update the crop object with the S3 image URLs
+    const cropsWithImageUrls = {
+      ...crops,
+      imageAUrl,
+      imageBUrl,
+      imageCUrl
+    };
     
     const registeredFarmerId = await cropDetailsDao.insertFarmerPayment(farmerId, userId, invoiceNumber);
     const officerId = userId;
     const centerId = req.user.centerId;
-    await cropDetailsDao.insertCropDetails(registeredFarmerId, cropsWithImageUrl,officerId,centerId);
+    await cropDetailsDao.insertCropDetails(registeredFarmerId, cropsWithImageUrls,officerId,centerId);
 
     res.status(201).json({
       message: 'Crop payment records added successfully',
