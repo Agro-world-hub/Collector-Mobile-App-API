@@ -176,15 +176,15 @@ exports.createQrCode = async (userId, callback) => {
             qrCodeBase64.replace(/^data:image\/png;base64,/, ""),
             'base64'
         );
-        const fileName =  `qrCode_${userId}.png`;
+        const fileName = `qrCode_${userId}.png`;
         const qrUrl = await uploadFileToS3(qrCodeBuffer, fileName, "users/farmerQr");
-        
+
         await farmerDao.updateQrCodePath(userId, qrUrl);
 
         // Return QR code details
-        return  qrUrl;
+        return qrUrl;
     } catch (err) {
-        return callback(err); 
+        return callback(err);
     }
 };
 
@@ -213,7 +213,7 @@ exports.createQrCode = async (userId, callback) => {
 //         if (user.farmerQr) {
 //             const qrCodePath = user.farmerQr.toString();
 //             console.log('QR Code Path:', qrCodePath);
-        
+
 //             try {
 //                 if (fs.existsSync(qrCodePath)) {
 //                     const qrCodeData = fs.readFileSync(qrCodePath);
@@ -226,7 +226,7 @@ exports.createQrCode = async (userId, callback) => {
 //                 console.error('Error processing QR code file:', err.message);
 //             }
 //         }
-        
+
 
 
 //         // Prepare the response data
@@ -311,7 +311,7 @@ exports.getRegisteredFarmerDetails = async (req, res) => {
 //         if (user.farmerQr) {
 //             const qrCodePath = user.farmerQr.toString();
 //             console.log('QR Code Path:', qrCodePath);
-        
+
 //             try {
 //                 if (fs.existsSync(qrCodePath)) {
 //                     const qrCodeData = fs.readFileSync(qrCodePath);
@@ -324,7 +324,7 @@ exports.getRegisteredFarmerDetails = async (req, res) => {
 //                 console.error('Error processing QR code file:', err.message);
 //             }
 //         }
-        
+
 
 //         // Prepare the response data
 //         const response = {
@@ -376,7 +376,7 @@ exports.getUserWithBankDetails = async (req, res) => {
             qrCodeBase64 = `data:image/png;base64,${user.farmerQr.toString('base64')}`;
             const qrCodePath = user.farmerQr.toString();
             console.log('QR Code Path:', qrCodePath);
-        
+
             try {
                 if (fs.existsSync(qrCodePath)) {
                     const qrCodeData = fs.readFileSync(qrCodePath);
@@ -389,7 +389,7 @@ exports.getUserWithBankDetails = async (req, res) => {
                 console.error('Error processing QR code file:', err.message);
             }
         }
-        
+
 
         // Prepare the response data
         const response = {
@@ -417,10 +417,10 @@ exports.getUserWithBankDetails = async (req, res) => {
 
 
 
-exports.signupChecker = async(req, res) => {
+exports.signupChecker = async (req, res) => {
     console.log("signupChecker");
     try {
-        const { phoneNumber, NICnumber } =req.body;
+        const { phoneNumber, NICnumber } = req.body;
         console.log("phoneNumber", phoneNumber);
 
         const results = await farmerDao.checkSignupDetails(phoneNumber, NICnumber);
@@ -463,3 +463,44 @@ exports.signupChecker = async(req, res) => {
         res.status(500).json({ message: "Internal Server Error!" });
     }
 };
+
+
+
+exports.addFarmer = asyncHandler(async (req, res) => {
+    const {
+        firstName,
+        lastName,
+        NICnumber,
+        phoneNumber,
+        district,
+    } = req.body;
+
+    // Validation: Check if all fields are filled
+    if (!firstName || !lastName || !NICnumber || !phoneNumber || !district) {
+        return res.status(400).json({ error: "All fields are required" });
+    }
+
+    const formattedPhoneNumber = `+${String(phoneNumber).replace(/^\+/, "")}`;
+    console.log("Formatted Phone Number:", formattedPhoneNumber);
+
+    try {
+        const userResult = await farmerDao.createUser(firstName, lastName, NICnumber, formattedPhoneNumber, district);
+        const userId = userResult.insertId;
+
+        // Success response (Removed QR code and paymentId)
+        res.status(200).json({
+            message: "User added successfully",
+            userId: userId,
+            NICnumber: NICnumber,
+        });
+    } catch (error) {
+        // Handle duplicate entry error
+        if (error.code === "ER_DUP_ENTRY") {
+            return res.status(409).json({ error: "Duplicate entry error: " + error.message });
+        }
+
+        // Generic error response
+        console.error("Error during user creation:", error);
+        res.status(500).json({ error: "An unexpected error occurred: " + error.message });
+    }
+});
