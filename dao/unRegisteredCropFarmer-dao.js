@@ -669,3 +669,243 @@ exports.getLatestInvoiceNumberDao = (empId, currentDate) => {
     });
   });
 };
+
+
+//Collection 
+exports.createCollection = (crop, variety, loadIn, routeNumber, buildingNo, streetName, city) => {
+  return new Promise((resolve, reject) => {
+    const sql =
+      "INSERT INTO geolocation (crop, variety, loadIn, , routeNumber, buildingNo, streetName, city, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Assigned')";
+
+    const values = [crop, variety, loadIn, , routeNumber, buildingNo, streetName, city];
+
+    db.collectionofficer.query(sql, values, (err, result) => {
+      if (err) {
+        return reject(err);
+      }
+      resolve(result);
+    });
+  });
+};
+
+
+
+exports.getAllCropNames = () => {
+  return new Promise((resolve, reject) => {
+    const query = 'SELECT id, cropNameEnglish FROM cropgroup';
+
+    db.plantcare.query(query, (error, results) => {
+      if (error) {
+        return reject(error);
+      }
+      resolve(results);
+    });
+
+  });
+};
+
+
+exports.getVarietiesByCropIdCollection = (officerId, cropId) => {
+  return new Promise((resolve, reject) => {
+    if (!officerId || !cropId) {
+      return reject(new Error("Officer ID and Crop ID are required"));
+    }
+
+    const varietyQuery = `
+      SELECT DISTINCT
+          cv.id,
+          cv.varietyNameEnglish AS varietyEnglish,
+          cv.varietyNameSinhala AS varietySinhala,
+          cv.varietyNameTamil AS varietyTamil
+      FROM 
+          plant_care.cropvariety cv
+      WHERE
+          cv.cropGroupId = ?
+      ORDER BY
+          cv.varietyNameEnglish
+    `;
+
+    console.log('Executing SQL Query:', {
+      query: varietyQuery,
+      cropId: cropId
+    });
+
+    db.collectionofficer.query(varietyQuery, [cropId], (error, results) => {
+      if (error) {
+        console.error("Detailed Query Error:", {
+          error: error,
+          sqlMessage: error.sqlMessage,
+          sqlState: error.sqlState,
+          code: error.code
+        });
+        return reject(error);
+      }
+
+      console.log('Query Results:', {
+        rowCount: results.length,
+        firstResult: results[0]
+      });
+
+      resolve(results);
+    });
+  });
+};
+
+
+// exports.getAllUsers = (officerId) => {
+//   return new Promise((resolve, reject) => {
+//     const userQuery = ` 
+//       SELECT 
+//         id, 
+//         firstName, 
+//         phoneNumber, 
+//         NICnumber, 
+//         profileImage, 
+//         farmerQr, 
+//         membership, 
+//         activeStatus, 
+//         houseNo, 
+//         streetName, 
+//         city, 
+//         district, 
+//         route,
+//         created_at
+//       FROM plant_care.users 
+//       WHERE activeStatus = 'active' 
+//     `;
+
+//     db.collectionofficer.query(userQuery, (error, results) => {
+//       if (error) {
+//         console.error("Error fetching users:", error);
+//         return reject(error);
+//       }
+
+//       const formattedUsers = results.map(user => ({
+//         id: user.id,
+//         firstName: user.firstName || '',
+//         phoneNumber: user.phoneNumber || '',
+//         nicNumber: user.NICnumber || '',
+//         profileImage: user.profileImage || null,
+//         farmerQr: user.farmerQr || null,
+//         membership: user.membership || '',
+//         activeStatus: user.activeStatus || '',
+//         address: {
+//           buildingNo: user.houseNo || null,
+//           streetName: user.streetName || null,
+//           city: user.city || null,
+//           district: user.district || null,
+//         },
+//         routeNumber: user.route || null,
+//         createdAt: user.created_at || null
+//       }));
+
+//       resolve(formattedUsers);
+//     });
+//   });
+// };
+
+exports.getAllUsers = (officerId, nicNumber = null) => {
+  return new Promise((resolve, reject) => {
+    let userQuery = `
+      SELECT 
+        id, 
+        firstName, 
+        phoneNumber, 
+        NICnumber, 
+        profileImage, 
+        farmerQr, 
+        membership, 
+        activeStatus, 
+        houseNo, 
+        streetName, 
+        city, 
+        district, 
+        route,
+        created_at
+      FROM plant_care.users 
+      WHERE activeStatus = 'active'
+    `;
+
+    // Add NIC number filter if provided
+    const queryParams = [];
+    if (nicNumber) {
+      userQuery += ` AND NICnumber = ?`;
+      queryParams.push(nicNumber);
+    }
+
+    db.collectionofficer.query(userQuery, queryParams, (error, results) => {
+      if (error) {
+        console.error("Error fetching users:", error);
+        return reject(error);
+      }
+
+      const formattedUsers = results.map(user => ({
+        id: user.id,
+        firstName: user.firstName || '',
+        phoneNumber: user.phoneNumber || '',
+        nicNumber: user.NICnumber || '',
+        profileImage: user.profileImage || null,
+        farmerQr: user.farmerQr || null,
+        membership: user.membership || '',
+        activeStatus: user.activeStatus || '',
+        address: {
+          buildingNo: user.houseNo || null,
+          streetName: user.streetName || null,
+          city: user.city || null,
+          district: user.district || null,
+        },
+        routeNumber: user.route || null,
+        createdAt: user.created_at || null
+      }));
+
+      resolve(formattedUsers);
+    });
+  });
+};
+
+
+// DAO method to update user address in the plant_care database
+// DAO method to update user address in the plant_care.users table
+exports.updateUserAddress = (userId, routeNumber, buildingNo, streetName, city) => {
+  return new Promise((resolve, reject) => {
+    const sql = `
+      UPDATE plant_care.users
+      SET
+        route = ?,
+        houseNo = ?,
+        streetName = ?,
+        city = ?
+      WHERE id = ?
+    `;
+
+    db.plantcare.query(
+      sql,
+      [routeNumber, buildingNo, streetName, city, userId],
+      (err, result) => {
+        if (err) return reject(err);
+        resolve(result);
+      }
+    );
+  });
+};
+
+
+// DAO method to create collection request in the collection_officer database
+exports.createCollectionRequest = (farmerId, cmId, crop, variety, loadIn, centerId, companyId) => {
+  return new Promise((resolve, reject) => {
+    const sql = `
+      INSERT INTO collection_officer.collectionrequest
+      (farmerId, cmId , cropId, varietyId, loadWeight, centerId, companyId, createdAt)
+      VALUES (?, ?, ? ,?, ?, ?, ?, NOW())
+    `;
+
+    db.plantcare.query(
+      sql,
+      [farmerId, cmId, crop, variety, loadIn, centerId, companyId],
+      (err, result) => {
+        if (err) return reject(err);
+        resolve(result);
+      }
+    );
+  });
+};
