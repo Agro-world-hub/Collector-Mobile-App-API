@@ -751,29 +751,126 @@ exports.updateUserAddress = async (req, res) => {
 };
 
 
+// exports.submitCollectionRequest = async (req, res) => {
+//   const { farmerId, crop, variety, loadIn } = req.body;
+
+
+
+//   if (!farmerId || !crop || !variety || !loadIn) {
+//     return res.status(400).json({ error: 'All fields are required' });
+//   }
+
+//   try {
+//     const centerId = req.user.centerId; // Should be set from the authentication middleware
+//     const companyId = req.user.companyId; // Should also be set from authentication middleware
+//     const cmId = req.user.id
+
+//     const collectionRequestResult = await cropDetailsDao.createCollectionRequest(
+//       farmerId, cmId, crop, variety, loadIn, centerId, companyId
+//     );
+
+//     res.status(200).json({
+//       message: 'Collection request submitted successfully',
+//       requestId: collectionRequestResult.insertId, // Assuming the insertId is returned from DAO
+//     });
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// };
+
+// exports.submitCollectionRequest = async (req, res) => {
+//   const { farmerId, crop, variety, loadIn } = req.body;
+
+//   if (!farmerId || !crop || !variety || !loadIn) {
+//     return res.status(400).json({ error: 'All fields are required' });
+//   }
+
+//   try {
+//     const centerId = req.user.centerId; // Should be set from authentication middleware
+//     const companyId = req.user.companyId;
+//     const cmId = req.user.id;
+
+//     const collectionRequestResult = await cropDetailsDao.createCollectionRequest(
+//       farmerId, cmId, crop, variety, loadIn, centerId, companyId
+//     );
+
+//     res.status(200).json({
+//       message: 'Collection request submitted successfully',
+//       requestId: collectionRequestResult.insertId, // Assuming the insertId is returned from DAO
+//     });
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// };
+
 exports.submitCollectionRequest = async (req, res) => {
-  const { farmerId, crop, variety, loadIn } = req.body;
+  const { requests } = req.body;
 
-
-
-  if (!farmerId || !crop || !variety || !loadIn) {
-    return res.status(400).json({ error: 'All fields are required' });
+  // Validate that requests array is provided and not empty
+  if (!requests || !Array.isArray(requests) || requests.length === 0) {
+    return res.status(400).json({ error: 'No collection requests provided' });
   }
 
   try {
-    const centerId = req.user.centerId; // Should be set from the authentication middleware
-    const companyId = req.user.companyId; // Should also be set from authentication middleware
-    const cmId = req.user.id
-
-    const collectionRequestResult = await cropDetailsDao.createCollectionRequest(
-      farmerId, cmId, crop, variety, loadIn, centerId, companyId
+    // Validate each request has required fields
+    const invalidRequests = requests.filter(
+      request => !request.farmerId || !request.crop ||
+        !request.variety || !request.loadIn
     );
 
+    if (invalidRequests.length > 0) {
+      return res.status(400).json({
+        error: 'Some requests are missing required fields',
+        invalidRequests
+      });
+    }
+
+    const centerId = req.user.centerId;
+    const companyId = req.user.companyId;
+    const cmId = req.user.id;
+
+    // Array to store all inserted request IDs
+    const insertedRequestDetails = [];
+
+    // Process each request
+    for (const request of requests) {
+      // 1. Insert into collectionrequest table
+      const collectionRequestResult = await cropDetailsDao.createCollectionRequest(
+        request.farmerId,
+        cmId,
+        request.crop,
+        request.variety,
+        request.loadIn,
+        centerId,
+        companyId,
+        request.scheduleDate
+      );
+
+      const requestId = collectionRequestResult.insertId;
+
+      // 2. Insert into collectionrequestitems table
+      const collectionRequestItemResult = await cropDetailsDao.createCollectionRequestItems(
+        requestId,
+        request.crop,
+        request.variety,
+        request.loadIn
+      );
+
+      insertedRequestDetails.push({
+        requestId,
+        farmerId: request.farmerId,
+        crop: request.crop
+      });
+    }
+
     res.status(200).json({
-      message: 'Collection request submitted successfully',
-      requestId: collectionRequestResult.insertId, // Assuming the insertId is returned from DAO
+      message: 'Collection requests submitted successfully',
+      requestDetails: insertedRequestDetails
     });
+
   } catch (error) {
+    console.error('Error submitting collection requests:', error);
     res.status(500).json({ error: error.message });
   }
 };
+
