@@ -928,56 +928,17 @@ exports.updateUserAddress = (userId, routeNumber, buildingNo, streetName, city) 
 //     );
 //   });
 // };
-exports.createCollectionRequest = (farmerId, cmId, crop, variety, loadIn, centerId, companyId, scheduleDate) => {
-  return new Promise((resolve, reject) => {
-    const sql = `
-      INSERT INTO collection_officer.collectionrequest
-      (farmerId, cmId, centerId, companyId, requestStatus, assignedStatus, scheduleDate, createdAt)
-      VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
-    `;
-
-    db.plantcare.query(
-      sql,
-      [farmerId, cmId, centerId, companyId, "Not Assigned", "Not Assigned", scheduleDate],
-      (err, result) => {
-        if (err) return reject(err);
-        resolve(result);
-      }
-    );
-  });
-};
-
-// DAO method to insert into collectionrequestitems
-exports.createCollectionRequestItems = (requestId, cropId, varietyId, loadWeight) => {
-  return new Promise((resolve, reject) => {
-    const sql = `
-      INSERT INTO collection_officer.collectionrequestitems
-      (requestId, cropId, varietyId, loadWeight)
-      VALUES (?, ?, ?, ?)
-    `;
-
-    db.plantcare.query(
-      sql,
-      [requestId, cropId, varietyId, loadWeight],
-      (err, result) => {
-        if (err) return reject(err);
-        resolve(result);
-      }
-    );
-  });
-};
-
-// exports.createCollectionRequest = (farmerId, cmId, centerId, companyId, scheduleDate) => {
+// exports.createCollectionRequest = (farmerId, cmId, crop, variety, loadIn, centerId, companyId, scheduleDate) => {
 //   return new Promise((resolve, reject) => {
 //     const sql = `
 //       INSERT INTO collection_officer.collectionrequest
-//       (farmerId, cmId, centerId, companyId, requestStatus, assignedStatus, scheduleDate, createdAt)
-//       VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
+//       (farmerId, cmId, centerId, companyId, requestStatus, scheduleDate, createdAt)
+//       VALUES (?, ?, ?, ?, ?, ?, NOW())
 //     `;
 
 //     db.plantcare.query(
 //       sql,
-//       [farmerId, cmId, centerId, companyId, "Not Assigned", "Not Assigned", scheduleDate],
+//       [farmerId, cmId, centerId, companyId, "Not Assigned", scheduleDate],
 //       (err, result) => {
 //         if (err) return reject(err);
 //         resolve(result);
@@ -1005,3 +966,49 @@ exports.createCollectionRequestItems = (requestId, cropId, varietyId, loadWeight
 //     );
 //   });
 // };
+
+
+exports.createCollectionRequest = (farmerId, cmId, crop, variety, loadIn, centerId, companyId, scheduleDate) => {
+  return new Promise((resolve, reject) => {
+    const checkSql = `
+      SELECT id FROM collection_officer.collectionrequest
+      WHERE farmerId = ? AND cmId = ? AND centerId = ? AND companyId = ? AND scheduleDate = ?
+    `;
+
+    db.plantcare.query(checkSql, [farmerId, cmId, centerId, companyId, scheduleDate], (err, results) => {
+      if (err) return reject(err);
+
+      if (results.length > 0) {
+        // Request already exists, return its ID
+        resolve({ insertId: results[0].id });
+      } else {
+        // Insert new collection request
+        const insertSql = `
+          INSERT INTO collection_officer.collectionrequest
+          (farmerId, cmId, centerId, companyId, requestStatus, scheduleDate, createdAt)
+          VALUES (?, ?, ?, ?, ?, ?, NOW())
+        `;
+
+        db.plantcare.query(insertSql, [farmerId, cmId, centerId, companyId, "Not Assigned", scheduleDate], (err, result) => {
+          if (err) return reject(err);
+          resolve(result);
+        });
+      }
+    });
+  });
+};
+
+exports.createCollectionRequestItems = (requestId, cropId, varietyId, loadWeight) => {
+  return new Promise((resolve, reject) => {
+    const sql = `
+      INSERT INTO collection_officer.collectionrequestitems
+      (requestId, cropId, varietyId, loadWeight)
+      VALUES (?, ?, ?, ?)
+    `;
+
+    db.plantcare.query(sql, [requestId, cropId, varietyId, loadWeight], (err, result) => {
+      if (err) return reject(err);
+      resolve(result);
+    });
+  });
+};

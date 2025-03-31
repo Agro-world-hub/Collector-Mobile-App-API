@@ -33,3 +33,37 @@ exports.getAllCollectionRequest = async (req, res) => {
         });
     }
 };
+
+exports.getViewDetailsById = async (req, res) => {
+    try {
+        const { requestId } = req.params;
+
+        if (!requestId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Request ID is required'
+            });
+        }
+
+        const collectionRequest = await collectionDao.getViewDetailsById(requestId);
+
+        if (!collectionRequest) {
+            return res.status(404).json({
+                success: false,
+                message: 'Collection request not found'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: collectionRequest
+        });
+    } catch (error) {
+        console.error('Error fetching collection request details:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to retrieve collection request details',
+            details: error.message
+        });
+    }
+};

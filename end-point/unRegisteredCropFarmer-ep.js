@@ -803,16 +803,85 @@ exports.updateUserAddress = async (req, res) => {
 //   }
 // };
 
+// exports.submitCollectionRequest = async (req, res) => {
+//   const { requests } = req.body;
+
+//   // Validate that requests array is provided and not empty
+//   if (!requests || !Array.isArray(requests) || requests.length === 0) {
+//     return res.status(400).json({ error: 'No collection requests provided' });
+//   }
+
+//   try {
+//     // Validate each request has required fields
+//     const invalidRequests = requests.filter(
+//       request => !request.farmerId || !request.crop ||
+//         !request.variety || !request.loadIn
+//     );
+
+//     if (invalidRequests.length > 0) {
+//       return res.status(400).json({
+//         error: 'Some requests are missing required fields',
+//         invalidRequests
+//       });
+//     }
+
+//     const centerId = req.user.centerId;
+//     const companyId = req.user.companyId;
+//     const cmId = req.user.id;
+
+//     // Array to store all inserted request IDs
+//     const insertedRequestDetails = [];
+
+//     // Process each request
+//     for (const request of requests) {
+//       // 1. Insert into collectionrequest table
+//       const collectionRequestResult = await cropDetailsDao.createCollectionRequest(
+//         request.farmerId,
+//         cmId,
+//         request.crop,
+//         request.variety,
+//         request.loadIn,
+//         centerId,
+//         companyId,
+//         request.scheduleDate
+//       );
+
+//       const requestId = collectionRequestResult.insertId;
+
+//       // 2. Insert into collectionrequestitems table
+//       const collectionRequestItemResult = await cropDetailsDao.createCollectionRequestItems(
+//         requestId,
+//         request.crop,
+//         request.variety,
+//         request.loadIn
+//       );
+
+//       insertedRequestDetails.push({
+//         requestId,
+//         farmerId: request.farmerId,
+//         crop: request.crop
+//       });
+//     }
+
+//     res.status(200).json({
+//       message: 'Collection requests submitted successfully',
+//       requestDetails: insertedRequestDetails
+//     });
+
+//   } catch (error) {
+//     console.error('Error submitting collection requests:', error);
+//     res.status(500).json({ error: error.message });
+//   }
+// };
+
 exports.submitCollectionRequest = async (req, res) => {
   const { requests } = req.body;
 
-  // Validate that requests array is provided and not empty
   if (!requests || !Array.isArray(requests) || requests.length === 0) {
     return res.status(400).json({ error: 'No collection requests provided' });
   }
 
   try {
-    // Validate each request has required fields
     const invalidRequests = requests.filter(
       request => !request.farmerId || !request.crop ||
         !request.variety || !request.loadIn
@@ -828,32 +897,20 @@ exports.submitCollectionRequest = async (req, res) => {
     const centerId = req.user.centerId;
     const companyId = req.user.companyId;
     const cmId = req.user.id;
-
-    // Array to store all inserted request IDs
     const insertedRequestDetails = [];
 
-    // Process each request
     for (const request of requests) {
-      // 1. Insert into collectionrequest table
+      // Ensure we get an existing or new request ID
       const collectionRequestResult = await cropDetailsDao.createCollectionRequest(
-        request.farmerId,
-        cmId,
-        request.crop,
-        request.variety,
-        request.loadIn,
-        centerId,
-        companyId,
-        request.scheduleDate
+        request.farmerId, cmId, request.crop, request.variety,
+        request.loadIn, centerId, companyId, request.scheduleDate
       );
 
       const requestId = collectionRequestResult.insertId;
 
-      // 2. Insert into collectionrequestitems table
-      const collectionRequestItemResult = await cropDetailsDao.createCollectionRequestItems(
-        requestId,
-        request.crop,
-        request.variety,
-        request.loadIn
+      // Insert items using the obtained requestId
+      await cropDetailsDao.createCollectionRequestItems(
+        requestId, request.crop, request.variety, request.loadIn
       );
 
       insertedRequestDetails.push({
@@ -873,4 +930,7 @@ exports.submitCollectionRequest = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+
+
 

@@ -6,4 +6,8 @@ const auth = require('../Middlewares/auth.middleware');
 // Get collection requests, with optional filters
 router.get('/all-collectionrequest', auth, CollectionEp.getAllCollectionRequest);
 
+router.get('/view-details/:requestId', auth, CollectionEp.getViewDetailsById);
+
+
+
 module.exports = router;
