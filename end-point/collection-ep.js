@@ -67,3 +67,39 @@ exports.getViewDetailsById = async (req, res) => {
         });
     }
 };
+
+
+
+exports.cancellRequest = async (req, res) => {
+    try {
+        const { requestId, cancelReason } = req.body;
+
+        // Validate request parameters
+        if (!requestId || !cancelReason) {
+            return res.status(400).json({
+                success: false,
+                message: 'Request ID and cancellation reason are required'
+            });
+        }
+
+        // Get user ID from the authenticated request
+        const userId = req.user.id;
+
+        // Call the DAO function to cancel the request
+        const result = await collectionDao.cancelRequest(requestId, cancelReason, userId);
+
+        if (!result.success) {
+            return res.status(404).json(result);
+        }
+
+        // Return successful response
+        return res.status(200).json(result);
+    } catch (error) {
+        console.error('Error in cancellRequest endpoint:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'An error occurred while cancelling the collection request',
+            error: error.message
+        });
+    }
+};

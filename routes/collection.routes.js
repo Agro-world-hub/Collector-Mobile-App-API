@@ -8,6 +8,8 @@ router.get('/all-collectionrequest', auth, CollectionEp.getAllCollectionRequest)
 
 router.get('/view-details/:requestId', auth, CollectionEp.getViewDetailsById);
 
+router.put('/cancell-request/:requestId', auth, CollectionEp.cancellRequest);
+
 
 
 module.exports = router;

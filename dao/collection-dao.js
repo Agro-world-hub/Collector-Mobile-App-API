@@ -541,3 +541,53 @@ exports.getViewDetailsById = (requestId) => {
         });
     });
 };
+
+
+
+
+exports.cancelRequest = async (requestId, cancelReason, userId) => {
+    try {
+        // Check if the request exists
+        const checkQuery = "SELECT * FROM collection_officer.collectionrequest WHERE requestId = ?";
+
+        // Try using query instead of execute
+        const [rows] = await db.query(checkQuery, [requestId]);
+        // OR if using a pool:
+        // const [rows] = await pool.query(checkQuery, [requestId]);
+
+        if (rows.length === 0) {
+            return {
+                success: false,
+                message: 'Collection request not found'
+            };
+        }
+
+        // Update the request
+        const updateQuery = `
+            UPDATE collection_officer.collectionrequest 
+            SET cancelReason = ?, 
+                cancelState = 0, 
+                requestStatus = 'Assigned', 
+                assignedStatus = 'Cancelled',
+                cancelledBy = ?
+            WHERE requestId = ?
+        `;
+
+        // Use the same method here (query instead of execute)
+        await db.query(updateQuery, [cancelReason, userId, requestId]);
+        // OR if using a pool:
+        // await pool.query(updateQuery, [cancelReason, userId, requestId]);
+
+        return {
+            success: true,
+            message: 'Collection request cancelled successfully'
+        };
+    } catch (error) {
+        console.error('Error in cancelRequest DAO:', error);
+        return {
+            success: false,
+            message: 'Failed to cancel collection request',
+            error: error.message
+        };
+    }
+};
