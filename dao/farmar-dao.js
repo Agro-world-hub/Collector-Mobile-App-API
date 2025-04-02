@@ -1,11 +1,11 @@
 const db = require('../startup/database');
 
-exports.checkUserExistsPhoneNumber = ( phoneNumber) => {
+exports.checkUserExistsPhoneNumber = (phoneNumber) => {
     return new Promise((resolve, reject) => {
         const sql = `
             SELECT id FROM users WHERE phoneNumber = ?
         `;
-        db.plantcare.query(sql, [ phoneNumber], (err, result) => {
+        db.plantcare.query(sql, [phoneNumber], (err, result) => {
             if (err) return reject(err);
             resolve(result);
             console.log(result);
@@ -13,18 +13,18 @@ exports.checkUserExistsPhoneNumber = ( phoneNumber) => {
     });
 }
 
-exports.checkUserExistsNIC = ( NICnumber) => {
+exports.checkUserExistsNIC = (NICnumber) => {
     return new Promise((resolve, reject) => {
         const sql = `
             SELECT id FROM users WHERE NICnumber = ?
         `;
-        db.plantcare.query(sql, [ NICnumber], (err, result) => {
+        db.plantcare.query(sql, [NICnumber], (err, result) => {
             if (err) return reject(err);
             resolve(result);
             console.log(result);
         });
     });
-     
+
 }
 
 // Function to insert user data into the database
@@ -77,12 +77,12 @@ exports.getFarmerDetailsById = async (userId) => {
         FROM users 
         WHERE id = ?
     `;
-    
+
     return new Promise((resolve, reject) => {
         db.plantcare.query(userSql, [userId], (err, result) => {
             if (err) return reject(err);
             resolve(result);
-        
+
         });
     });
 };
@@ -107,7 +107,7 @@ exports.getUserWithBankDetailsById = async (userId) => {
         LEFT JOIN userbankdetails b ON u.id = b.userId
         WHERE u.id = ?;
     `;
-    
+
     return new Promise((resolve, reject) => {
         db.plantcare.query(query, [userId], (err, result) => {
             if (err) return reject(err);
@@ -141,6 +141,22 @@ exports.checkSignupDetails = (phoneNumber, NICnumber) => {
             } else {
                 resolve(results);
             }
+        });
+    });
+};
+
+
+
+exports.createFarmer = (firstName, lastName, NICnumber, formattedPhoneNumber, district) => {
+    console.log(firstName, lastName, NICnumber, formattedPhoneNumber, district);
+    return new Promise((resolve, reject) => {
+        const sql = `
+            INSERT INTO users (firstName, lastName, NICnumber, phoneNumber, district)
+            VALUES (?, ?, ?, ?, ?)
+        `;
+        db.plantcare.query(sql, [firstName, lastName, NICnumber, formattedPhoneNumber, district], (err, result) => {
+            if (err) return reject(err);
+            resolve(result);
         });
     });
 };
