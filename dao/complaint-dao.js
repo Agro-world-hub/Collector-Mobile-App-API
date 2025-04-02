@@ -66,7 +66,7 @@ exports.getAllComplaintsByUserId = async(userId) => {
 exports.getComplainCategories = async(appName) => {
     return new Promise((resolve, reject) => {
         const query = `
-                   SELECT cc.id, cc.roleId, cc.appId, cc.categoryEnglish, cc.categorySinhala, cc.categoryTamil, ssa.appName
+                    SELECT cc.id, cc.roleId, cc.appId, cc.categoryEnglish, cc.categorySinhala, cc.categoryTamil, ssa.appName
                 FROM complaincategory cc
                 JOIN systemapplications ssa ON cc.appId = ssa.id
                 WHERE ssa.appName = ?
