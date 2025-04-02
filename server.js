@@ -47,7 +47,7 @@
 // // //Socket.IO connection handler
 // // io.on("connection", (socket) => {
 // //   console.log(`${socket.id} user connected`);
-  
+
 
 
 // //   // Handle 'login' event to mark user as online
@@ -114,7 +114,7 @@
 // //   //   if (filteredOfficer) {
 // //   //     // Emit the officer's status (online/offline) to the requesting client
 // //   //     socket.emit("foundOfficer", filteredOfficer.status);
-      
+
 // //   //     console.log(`Employee ${empId} found with status: ${filteredOfficer.status}`);
 // //   //   } else {
 // //   //     socket.emit("foundOfficer", "offline"); // Default to offline if not found
@@ -251,6 +251,7 @@ const getUserdata = require('./routes/QRroutes');
 const complainRoutes = require('./routes/complains.routes');
 const priceUpdatesRoutes = require('./routes/price.routes');
 const managerRoutes = require('./routes/manager.routes');
+const collectionrequest = require('./routes/collection.routes')
 const { plantcare, collectionofficer, marketPlace, dash, admin } = require('./startup/database');
 const heathRoutes = require("./routes/heathRoutes");
 
@@ -344,6 +345,7 @@ const collectionOfficerRoutes = require('./routes/userroutes');
 mainApp.use(`${basePathMain}/api/collection-officer`, collectionOfficerRoutes);
 mainApp.use(`${basePathMain}/api/farmer`, farmerRoutes);
 mainApp.use(`${basePathMain}/api/unregisteredfarmercrop`, addCropDetails);
+
 mainApp.use(`${basePathMain}/api/getUserData`, getUserdata);
 const searchRoutes = require('./routes/search.routes');
 mainApp.use(`${basePathMain}/api/auth`, searchRoutes);
@@ -353,6 +355,7 @@ mainApp.use(`${basePathMain}/api/collection-manager`, managerRoutes);
 const targetRoutes = require('./routes/Target');
 mainApp.use(`${basePathMain}/api/target`, targetRoutes);
 mainApp.use(`${basePathMain}`, heathRoutes);
+mainApp.use(`${basePathMain}/api/collectionrequest`, collectionrequest);
 
 // Routes for status API (PORT 3005)
 const basePathStatus = '/agro-api/collection-status';
