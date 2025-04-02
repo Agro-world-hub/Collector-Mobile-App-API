@@ -397,6 +397,8 @@ const PORT = process.env.PORT || 3000;
 //   });
 // });
 
+// this is the port defining code
+
 
 mainApp.listen(PORT, () => console.log(`Main API server running on port ${PORT} with base path ${basePathMain}`));
 // httpsServer.listen(PORT2, () => {

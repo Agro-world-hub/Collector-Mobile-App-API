@@ -4,6 +4,7 @@ const authenticate = require('../Middlewares/auth.middleware');
 const managerEp = require('../end-point/manager-ep');
 const TargetEP = require('../end-point/Target-ep')
 const  upload  = require('../Middlewares/multer.middleware') ;
+const driverEp = require('../end-point/Driver-ep')
 
 // Route to get collection officers under a specific manager
 router.get('/collection-officers', authenticate, managerEp.getCollectionOfficers);
@@ -69,6 +70,11 @@ router.get(
 router.get("/targets", TargetEP.getAllTargets);
 
 router.get("/get-officer-online/:collectionOfficerId", managerEp.getofficeronline);
+
+
+// ------------- Driver Routes ------------- //
+
+router.post('/driver/add', authenticate, driverEp.createDriverWithVehicle );
 
 
 module.exports = router;

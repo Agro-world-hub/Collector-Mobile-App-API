@@ -187,9 +187,13 @@ exports.getForCreateId = async (req, res) => {
   try {
     const { role } = req.params; 
     console.log("Role:", role);
-    let rolePrefix
-    if(role === 'Collection Officer'){
-      rolePrefix = 'COO'
+    let rolePrefix;
+
+    // Determine the role prefix based on the role
+    if (role === 'Collection Officer') {
+      rolePrefix = 'COO';
+    } else if (role === 'Driver') {
+      rolePrefix = 'DVR';
     }
 
     const results = await collectionofficerDao.getForCreateId(rolePrefix);
@@ -205,6 +209,7 @@ exports.getForCreateId = async (req, res) => {
     res.status(500).send("An error occurred while fetching data.");
   }
 };
+
 
 
 //transaction details
