@@ -352,7 +352,7 @@ mainApp.use(`${basePathMain}/api/auth`, searchRoutes);
 mainApp.use(`${basePathMain}/api/complain`, complainRoutes);
 mainApp.use(`${basePathMain}/api/auth`, priceUpdatesRoutes);
 mainApp.use(`${basePathMain}/api/collection-manager`, managerRoutes);
-const targetRoutes = require('./routes/Target');
+const targetRoutes = require('./routes/TargetNew-routes');
 mainApp.use(`${basePathMain}/api/target`, targetRoutes);
 mainApp.use(`${basePathMain}`, heathRoutes);
 mainApp.use(`${basePathMain}/api/collectionrequest`, collectionrequest);

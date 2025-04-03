@@ -960,6 +960,47 @@ exports.getTargetsByCompanyIdDao = (centerId) => {
 //     });
 // };
 
+// exports.getTargetForOfficerDao = (officerId) => {
+//     return new Promise((resolve, reject) => {
+//         if (!officerId) {
+//             return reject(new Error("Officer ID is missing or invalid"));
+//         }
+//         const sql = `
+//             SELECT
+//                 odt.varietyId,
+//                 cv.varietyNameEnglish AS varietyNameEnglish,
+//                 cv.varietyNameSinhala AS varietyNameSinhala,
+//                 cv.varietyNameTamil AS varietyNameTamil,
+//                 odt.grade,
+//                 odt.target,
+//                 odt.complete,
+//                 dt.fromDate,
+//                 dt.toDate,
+//                 dt.fromTime,
+//                 dt.toTime,
+//                 odt.createdAt
+//             FROM
+//                 officerdailytarget odt
+//             INNER JOIN
+//                 plant_care.cropvariety cv ON odt.varietyId = cv.id
+//             INNER JOIN
+//                 dailytarget dt ON odt.dailyTargetId = dt.id
+//             WHERE
+//                 odt.officerId = ?
+//                 AND NOW() BETWEEN CONCAT(dt.fromDate, ' ', dt.fromTime) AND CONCAT(dt.toDate, ' ', dt.toTime)
+//         `;
+//         collectionofficer.query(sql, [officerId], (err, results) => {
+//             if (err) {
+//                 console.error("Error executing query:", err);
+//                 return reject(err);
+//             }
+//             console.log("Targets found:", results);
+//             resolve(results);
+//         });
+//     });
+// };
+
+
 exports.getTargetForOfficerDao = (officerId) => {
     return new Promise((resolve, reject) => {
         if (!officerId) {
@@ -967,27 +1008,27 @@ exports.getTargetForOfficerDao = (officerId) => {
         }
         const sql = `
             SELECT
-                odt.varietyId,
+                dt.centerCropId AS varietyId,
                 cv.varietyNameEnglish AS varietyNameEnglish,
                 cv.varietyNameSinhala AS varietyNameSinhala,
                 cv.varietyNameTamil AS varietyNameTamil,
-                odt.grade,
-                odt.target,
-                odt.complete,
-                dt.fromDate,
-                dt.toDate,
-                dt.fromTime,
-                dt.toTime,
-                odt.createdAt
+                dt.grade AS grade,
+                ot.target AS target,
+                ot.complete AS complete,
+                DATE(dt.date) AS fromDate,
+                DATE(dt.date) AS toDate,
+                '00:00:00' AS fromTime,
+                '23:59:59' AS toTime,
+                ot.createdAt AS createdAt
             FROM
-                officerdailytarget odt
+                officertarget ot
             INNER JOIN
-                plant_care.cropvariety cv ON odt.varietyId = cv.id
+                dailytarget dt ON ot.dailyTargetId = dt.id
             INNER JOIN
-                dailytarget dt ON odt.dailyTargetId = dt.id
+                plant_care.cropvariety cv ON dt.centerCropId = cv.id
             WHERE
-                odt.officerId = ?
-                AND NOW() BETWEEN CONCAT(dt.fromDate, ' ', dt.fromTime) AND CONCAT(dt.toDate, ' ', dt.toTime)
+                ot.officerId = ?
+                AND dt.date = CURDATE()
         `;
         collectionofficer.query(sql, [officerId], (err, results) => {
             if (err) {
@@ -999,7 +1040,6 @@ exports.getTargetForOfficerDao = (officerId) => {
         });
     });
 };
-
 
 
 exports.getCenterTargetDao = async (centerId, varietyId, grade) => {
