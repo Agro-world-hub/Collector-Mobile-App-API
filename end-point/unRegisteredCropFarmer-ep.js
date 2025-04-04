@@ -447,6 +447,7 @@ exports.getCropDetailsByUserId = async (req, res) => {
   try {
     const cropDetails = await cropDetailsDao.getCropDetailsByUserAndFarmerId(userId, registeredFarmerId);
     res.status(200).json(cropDetails);
+    console.log('Crop details fetched successfully:', cropDetails);
   } catch (error) {
     console.error('Error fetching crop details:', error);
     res.status(500).json({ error: 'An error occurred while fetching crop details' });
