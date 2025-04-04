@@ -159,6 +159,43 @@ exports.addUserAndPaymentDetails = asyncHandler(async (req, res) => {
     }
 });
 
+exports.addFarmerBankDetails = async (req, res) => {
+    console.log("addFarmerBankDetails");
+    const { userId, NICnumber, accNumber, accHolderName, bankName, branchName } = req.body;
+    console.log("userId", userId, "NICnumber", NICnumber, "accNumber", accNumber, "accHolderName", accHolderName, "bankName", bankName, "branchName", branchName);
+
+    // Validation: Check if all fields are filled
+    if (!userId || !accNumber || !accHolderName || !bankName || !branchName) {
+        return res.status(400).json({ error: "All fields are required" });
+    }
+
+    try {
+        // Insert into the 'userbankdetails' table
+        const paymentResult = await farmerDao.createPaymentDetails(userId, accNumber, accHolderName, bankName, branchName);
+        const paymentId = paymentResult.insertId;
+        const qrUrl = await exports.createQrCode(userId);
+
+        // Success response
+        res.status(200).json({
+            message: "User, bank details, and QR code added successfully",
+            userId: userId,
+            paymentId: paymentId,
+            qrCodeUrl: qrUrl,
+            NICnumber: NICnumber,
+
+        });
+    } catch (error) {
+        // Handle duplicate entry error
+        if (error.code === "ER_DUP_ENTRY") {
+            return res.status(409).json({ error: "Duplicate entry error: " + error.message });
+        }
+
+        // Generic error response
+        console.error("Error during bank details creation:", error);
+        res.status(500).json({ error: "An unexpected error occurred: " + error.message });
+    }
+};
+
 
 
 exports.createQrCode = async (userId, callback) => {
@@ -504,3 +541,4 @@ exports.addFarmer = asyncHandler(async (req, res) => {
         res.status(500).json({ error: "An unexpected error occurred: " + error.message });
     }
 });
+
