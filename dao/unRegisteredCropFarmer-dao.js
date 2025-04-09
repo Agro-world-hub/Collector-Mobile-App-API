@@ -835,6 +835,7 @@ exports.getLatestInvoiceNumberDao = (empId, currentDate) => {
 
 //Collection 
 exports.createCollection = (crop, variety, loadIn, routeNumber, buildingNo, streetName, city) => {
+  console.log("hitt")
   return new Promise((resolve, reject) => {
     const sql =
       "INSERT INTO geolocation (crop, variety, loadIn, , routeNumber, buildingNo, streetName, city, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Assigned')";
@@ -1260,7 +1261,7 @@ exports.createCollectionRequest = (farmerId, cmId, empId, crop, variety, loadIn,
         } else {
           const insertSql = `
             INSERT INTO collection_officer.collectionrequest
-            (farmerId, cmId, centerId, companyId, requestId, requestStatus, scheduleDate, cancelState, createdAt)
+            (farmerId, cmId, centerId, companyId, requestId, requestStatus, scheduleDate,cancelStatus, createdAt)
             VALUES (?, ?, ?, ?, ?, ?, ?, 0, NOW())
           `;
 

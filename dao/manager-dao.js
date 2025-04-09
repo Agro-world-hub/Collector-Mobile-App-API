@@ -689,10 +689,11 @@ exports.getCollectionOfficers = async (managerId) => {
       phoneNumber01 AS phoneNumber1,
       phoneNumber02 AS phoneNumber2,
       id AS collectionOfficerId,
+      jobRole,
       status,
       image
     FROM collectionofficer
-    WHERE jobRole = 'Collection Officer' AND irmId = ?
+    WHERE jobRole IN ('Collection Officer', 'Driver') AND irmId = ?
   `;
   return db.collectionofficer.promise().query(sql, [managerId]);
 };
