@@ -566,7 +566,7 @@ exports.cancelRequest = async (requestId, cancelReason, userId) => {
         const updateQuery = `
             UPDATE collection_officer.collectionrequest 
             SET cancelReason = ?, 
-                cancelState = 0, 
+                cancelStatus = 0, 
                 requestStatus = 'Assigned', 
                 assignedStatus = 'Cancelled',
                 cancelledBy = ?

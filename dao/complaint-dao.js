@@ -47,7 +47,7 @@ exports.createOfficerComplaint = (coId, language, complain, category, status, re
 exports.getAllComplaintsByUserId = async(userId) => {
     return new Promise((resolve, reject) => {
         const query = `
-        SELECT id, language, complain, status, createdAt, complainCategory , reply
+        SELECT id, language, complain, status, createdAt, complainCategory , reply, refNo
         FROM officercomplains 
         WHERE officerId = ?
         ORDER BY createdAt DESC
