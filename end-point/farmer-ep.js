@@ -114,11 +114,12 @@ exports.addUserAndPaymentDetails = asyncHandler(async (req, res) => {
         accHolderName,
         bankName,
         branchName,
+        PreferdLanguage
     } = req.body;
 
 
     // Validation: Check if all fields are filled
-    if (!firstName || !lastName || !NICnumber || !phoneNumber || !district || !accNumber || !accHolderName || !bankName || !branchName) {
+    if (!firstName || !lastName || !NICnumber || !phoneNumber || !district || !accNumber || !accHolderName || !bankName || !branchName || !PreferdLanguage) {
         return res.status(400).json({ error: "All fields are required" });
     }
 
@@ -128,7 +129,7 @@ exports.addUserAndPaymentDetails = asyncHandler(async (req, res) => {
     console.log('Formatted Phone Number:', formattedPhoneNumber);
 
     try {
-        const userResult = await farmerDao.createUser(firstName, lastName, NICnumber, formattedPhoneNumber, district);
+        const userResult = await farmerDao.createUser(firstName, lastName, NICnumber, formattedPhoneNumber, district, PreferdLanguage);
         const userId = userResult.insertId;
 
         // Insert into the 'userbankdetails' table

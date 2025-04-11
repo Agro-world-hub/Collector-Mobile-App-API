@@ -28,14 +28,14 @@ exports.checkUserExistsNIC = (NICnumber) => {
 }
 
 // Function to insert user data into the database
-exports.createUser = (firstName, lastName, NICnumber, formattedPhoneNumber, district) => {
-    console.log(firstName, lastName, NICnumber, formattedPhoneNumber, district);
+exports.createUser = (firstName, lastName, NICnumber, formattedPhoneNumber, district, PreferdLanguage) => {
+    console.log(firstName, lastName, NICnumber, formattedPhoneNumber, district, PreferdLanguage);
     return new Promise((resolve, reject) => {
         const sql = `
-            INSERT INTO users (firstName, lastName, NICnumber, phoneNumber, district)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO users (firstName, lastName, NICnumber, phoneNumber, district, language)
+            VALUES (?, ?, ?, ?, ?, ?)
         `;
-        db.plantcare.query(sql, [firstName, lastName, NICnumber, formattedPhoneNumber, district], (err, result) => {
+        db.plantcare.query(sql, [firstName, lastName, NICnumber, formattedPhoneNumber, district, PreferdLanguage], (err, result) => {
             if (err) return reject(err);
             resolve(result);
         });
@@ -73,7 +73,7 @@ exports.updateQrCodePath = (userId, qrUrl) => {
 exports.getFarmerDetailsById = async (userId) => {
 
     const userSql = `
-        SELECT firstName, lastName, NICnumber, farmerQr, phoneNumber
+        SELECT firstName, lastName, NICnumber, farmerQr, phoneNumber, language
         FROM users 
         WHERE id = ?
     `;

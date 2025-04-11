@@ -15,7 +15,7 @@ exports.getAllUsers = () => {
 
 exports.getUsers = (nic) => {
     return new Promise((resolve, reject) => {
-        const sql = 'SELECT id, firstName, lastName, phoneNumber, NICnumber, farmerQr, created_at FROM users WHERE NICnumber = ?';
+        const sql = 'SELECT id, firstName, lastName, phoneNumber, NICnumber, farmerQr, language, created_at FROM users WHERE NICnumber = ?';
         db.plantcare.query(sql, [nic], (err, results) => {
             if (err) {
                 return reject(err); // If there's an error, reject the promise
