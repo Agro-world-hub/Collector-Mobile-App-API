@@ -160,3 +160,25 @@ exports.createFarmer = (firstName, lastName, NICnumber, formattedPhoneNumber, di
         });
     });
 };
+
+exports.getFarmersForSms = () => {
+    return new Promise((resolve, reject) => {
+      const query = `
+        SELECT pu.phoneNumber, pu.language
+        FROM collection_officer.collectionrequest cr
+        JOIN plant_care.users pu ON cr.farmerId = pu.id
+        WHERE cr.cancelStatus = 0
+          AND DATE(cr.scheduleDate) = DATE_ADD(CURRENT_DATE(), INTERVAL 1 DAY);
+      `;
+    
+      db.plantcare.query(query, (err, result) => {
+        if (err) {
+          console.error("Error fetching farmers for SMS:", err);
+          return reject(err); // Reject promise if error occurs
+        }
+        console.log("Farmers eligible for SMS:", result);
+        resolve(result); // Resolve promise with the result (list of farmers)
+      });
+    });
+  };
+  

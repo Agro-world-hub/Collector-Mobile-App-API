@@ -15,5 +15,4 @@ router.post('/farmer-register-checker', farmerEp.signupChecker);
 router.post('/farmer-register', farmerEp.addFarmer);
 router.post('/FarmerBankDetails', farmerEp.addFarmerBankDetails);
 
-
 module.exports = router;

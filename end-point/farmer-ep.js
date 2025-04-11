@@ -4,7 +4,7 @@ const path = require('path');
 const farmerDao = require('../dao/farmar-dao');
 const asyncHandler = require('express-async-handler');
 const uploadFileToS3 = require('../Middlewares/s3upload');
-
+const axios = require('axios');
 // Controller to handle user and payment details and QR code generation
 // exports.addUserAndPaymentDetails = asyncHandler(async (req, res) => {
 //     const {
@@ -543,3 +543,56 @@ exports.addFarmer = asyncHandler(async (req, res) => {
     }
 });
 
+exports.sendSMSToFarmers = asyncHandler(async (req, res) => {
+    console.log("sendSMSToFarmers");
+    try {
+      // Fetch farmers from the database
+      const farmers = await farmerDao.getFarmersForSms(); // A method in the DAO that fetches farmer details
+  
+      // Loop over each farmer and send SMS
+      for (const farmer of farmers) {
+        const message = generateSmsMessage(farmer.language); // Generate message based on the farmer's language
+        const formattedPhone = farmer.phoneNumber;
+  
+        const apiUrl = "https://api.getshoutout.com/coreservice/messages";
+        const headers = {
+          Authorization: `Apikey ${process.env.SHOUTOUT_API_KEY}`,
+          "Content-Type": "application/json",
+        };
+  
+        const body = {
+          source: "AgroWorld",
+          destinations: [formattedPhone],
+          content: { sms: message },
+          transports: ["sms"],
+        };
+  
+        // Send SMS
+        const response = await axios.post(apiUrl, body, { headers });
+  
+        // Check if the API response is valid and log success
+        if (response && response.status === 200) {
+          console.log(`SMS sent to: ${formattedPhone}`);
+        } else {
+          console.log(`Error sending SMS to ${formattedPhone}:`, response);
+        }
+      }
+  
+      res.status(200).json({ message: 'SMS notifications sent successfully!' });
+    } catch (error) {
+    }
+  });
+  
+  // Helper function to generate SMS message based on language
+  const generateSmsMessage = (language) => {
+    let message = '';
+    if (language === 'English') {
+      message = "As per your order, we will send a vehicle tomorrow for your produce collection. Driver will contact you.";
+    } else if (language === 'Sinhala') {
+      message = "ඇණවුම පරිදි, ඔබගේ නිෂ්පාදන එකතු කිරීම සඳහා අපි හෙට දින වාහනයක් එවන්නෙමු. රියදුරු ඔබව සම්බන්ධ කර ගනු ඇත.";
+    } else if (language === 'Tamil') {
+      message = "உங்கள் உத்தரவின்படி, உங்கள் விளைபொருட்களை சேகரிப்பதற்காக நாளை வாகனத்தை அனுப்புவோம். ஓட்டுநர் உங்களைத் தொடர்புகொள்வார்.";
+    }
+    return message;
+  };
+  

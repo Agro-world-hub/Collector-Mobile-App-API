@@ -244,6 +244,7 @@
 
 const express = require('express');
 const cors = require('cors');
+const cron = require('node-cron');
 const addCropDetails = require('./routes/unregisteredcropfarmer');
 const farmerRoutes = require('./routes/farmerrutes');
 const bodyParser = require('body-parser');
@@ -399,7 +400,25 @@ const PORT = process.env.PORT || 3000;
 
 // this is the port defining code
 
+// cron.schedule('0 0 * * *', async () => {
+//   console.log('Running SMS sending task at midnight');
+//   await farmerEp.sendSMSToFarmers();
+//     console.log('SMS sending task completed'); 
+// }, {
+//   scheduled: true,
+//   timezone: "Asia/Colombo", // Use your local timezone
+// });
 
+const farmerEp = require('./end-point/farmer-ep');
+
+cron.schedule('16 18 * * *', async () => {
+  console.log('Running SMS sending task at 17:14');
+  await farmerEp.sendSMSToFarmers();
+  console.log('SMS sending task completed');
+}, {
+  scheduled: true,
+  timezone: "Asia/Colombo", // Use your local timezone
+});
 mainApp.listen(PORT, () => console.log(`Main API server running on port ${PORT} with base path ${basePathMain}`));
 // httpsServer.listen(PORT2, () => {
 //   console.log(`Socket.IO server listening on port ${PORT2} with base path ${basePathStatus}`);
