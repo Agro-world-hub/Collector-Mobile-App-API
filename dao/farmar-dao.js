@@ -88,9 +88,9 @@ exports.getFarmerDetailsById = async (userId) => {
 };
 
 
-exports.getUserWithBankDetailsById = async (userId) => {
+exports.getUserWithBankDetailsById = async (userId, centerId, companyId) => {
     const query = `
-        SELECT 
+        SELECT
             u.id AS userId,
             u.firstName,
             u.lastName,
@@ -102,17 +102,21 @@ exports.getUserWithBankDetailsById = async (userId) => {
             b.accHolderName,
             b.bankName,
             b.branchName,
+            c.companyNameEnglish,
+            cc.centerName,
             b.createdAt
         FROM users u
         LEFT JOIN userbankdetails b ON u.id = b.userId
+        LEFT JOIN collection_officer.company c ON c.id = ?
+        LEFT JOIN collection_officer.collectioncenter cc ON cc.id = ?
         WHERE u.id = ?;
     `;
-    
+   
     return new Promise((resolve, reject) => {
-        db.plantcare.query(query, [userId], (err, result) => {
+        db.plantcare.query(query, [companyId, centerId, userId], (err, result) => {
             if (err) return reject(err);
             resolve(result);
-            console.log(result)
+            console.log(result);
         });
     });
 };
