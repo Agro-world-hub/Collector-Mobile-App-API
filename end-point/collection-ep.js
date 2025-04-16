@@ -103,3 +103,42 @@ exports.cancellRequest = async (req, res) => {
         });
     }
 };
+
+exports.updateCollectionRequest = async (req, res) => {
+    console.log('Update Collection Request Endpoint Hit');
+    try {
+      const { requestId } = req.params;
+      const { scheduleDate } = req.body;
+  
+      console.log('Request ID:', requestId);
+      console.log('Schedule Date:', scheduleDate);
+  
+      // Validate request parameters
+      if (!requestId || !scheduleDate) {
+        return res.status(400).json({
+          success: false,
+          message: 'Request ID and schedule date are required'
+        });
+      }
+  
+      const result = await collectionDao.updateCollectionRequest(requestId, scheduleDate);
+      console.log('Update Result:', result);
+  
+      // Check if the update was successful
+      if (!result.success) {
+        return res.status(404).json(result); 
+      }
+  
+      // Return successful response
+      return res.status(200).json(result); // Success response with message
+  
+    } catch (error) {
+      console.error('Error in updateCollectionRequest endpoint:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'An error occurred while updating the collection request',
+        error: error.message
+      });
+    }
+  };
+  

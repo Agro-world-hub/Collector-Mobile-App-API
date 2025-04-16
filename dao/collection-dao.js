@@ -475,7 +475,8 @@ exports.getViewDetailsById = (requestId) => {
                 cr.scheduleDate, 
                 cr.createdAt,  
                 cr.requestStatus,  
-                cr.assignedStatus 
+                cr.assignedStatus ,
+                cr.requestId AS reqId
             FROM collection_officer.collectionrequest cr 
             LEFT JOIN plant_care.users f ON cr.farmerId = f.id 
             WHERE cr.id = ? 
@@ -526,6 +527,7 @@ exports.getViewDetailsById = (requestId) => {
                     city: requestDetails.city,
                     streetName: requestDetails.streetName,
                     houseNo: requestDetails.houseNo,
+                    requestID : requestDetails.reqId,
                     items: itemsResults.map(item => ({
                         itemId: item.id,
                         cropId: item.cropId,
@@ -537,57 +539,59 @@ exports.getViewDetailsById = (requestId) => {
                 };
 
                 resolve(formattedResponse);
+                console.log('Formatted Response:', formattedResponse);
             });
         });
     });
 };
 
-
-
-
-exports.cancelRequest = async (requestId, cancelReason, userId) => {
-    try {
-        // Check if the request exists
-        const checkQuery = "SELECT * FROM collection_officer.collectionrequest WHERE requestId = ?";
-
-        // Try using query instead of execute
-        const [rows] = await db.query(checkQuery, [requestId]);
-        // OR if using a pool:
-        // const [rows] = await pool.query(checkQuery, [requestId]);
-
-        if (rows.length === 0) {
-            return {
-                success: false,
-                message: 'Collection request not found'
-            };
+exports.updateCollectionRequest = async (requestId, scheduleDate) => {
+    return new Promise((resolve, reject) => {
+      const updateQuery = `
+        UPDATE collectionrequest 
+        SET scheduleDate = ? 
+        WHERE id = ?
+      `;
+  
+      db.collectionofficer.query(updateQuery, [scheduleDate, requestId], (err, results) => {
+        if (err) {
+          console.error('Error updating schedule date:', err);
+          reject(new Error('Database query failed'));
+          return;
         }
+  
+        // Check if any rows were actually updated
+        // if (results.changedRows === 0) {
+        //   resolve({ success: false, message: 'Schedule date is already up-to-date.' });
+        //   return;
+        // }
+  
+        resolve({ success: true, message: 'Schedule date updated successfully.' });
+      });
+    });
+  };  
 
-        // Update the request
+
+
+  exports.cancelRequest = async (requestId, cancelReason, userId) => {
+    console.log('Cancel Request Function Hit', cancelReason, userId, requestId);
+    
+    return new Promise((resolve, reject) => {
         const updateQuery = `
-            UPDATE collection_officer.collectionrequest 
+            UPDATE collectionrequest 
             SET cancelReason = ?, 
-                cancelStatus = 0, 
-                requestStatus = 'Assigned', 
+                cancelStatus = 1, 
                 assignedStatus = 'Cancelled',
-                cancelledBy = ?
-            WHERE requestId = ?
+                cancelBy = ?
+            WHERE id = ?
         `;
 
-        // Use the same method here (query instead of execute)
-        await db.query(updateQuery, [cancelReason, userId, requestId]);
-        // OR if using a pool:
-        // await pool.query(updateQuery, [cancelReason, userId, requestId]);
-
-        return {
-            success: true,
-            message: 'Collection request cancelled successfully'
-        };
-    } catch (error) {
-        console.error('Error in cancelRequest DAO:', error);
-        return {
-            success: false,
-            message: 'Failed to cancel collection request',
-            error: error.message
-        };
-    }
+        db.collectionofficer.query(updateQuery, [cancelReason, userId, requestId], (err, result) => {
+            if (err) {
+                console.error('Query Error:', err);
+                return reject({ success: false, message: 'Database error', error: err });
+            }
+            resolve({ success: true, message: 'Request cancelled successfully.' });
+        });
+    });
 };

@@ -412,7 +412,7 @@ const PORT = process.env.PORT || 3000;
 const farmerEp = require('./end-point/farmer-ep');
 
 cron.schedule('16 18 * * *', async () => {
-  console.log('Running SMS sending task at 17:14');
+  console.log('Running SMS sending task at 18:00');
   await farmerEp.sendSMSToFarmers();
   console.log('SMS sending task completed');
 }, {

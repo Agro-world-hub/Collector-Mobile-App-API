@@ -10,6 +10,7 @@ router.get('/view-details/:requestId', auth, CollectionEp.getViewDetailsById);
 
 router.put('/cancell-request/:requestId', auth, CollectionEp.cancellRequest);
 
+router.post('/update-collectionrequest/:requestId', auth, CollectionEp.updateCollectionRequest);
 
 
 module.exports = router;

@@ -1030,6 +1030,7 @@ exports.getAllUsers = (officerId, nicNumber = null) => {
 // DAO method to update user address in the plant_care database
 // DAO method to update user address in the plant_care.users table
 exports.updateUserAddress = (userId, routeNumber, buildingNo, streetName, city) => {
+  console.log(city)
   return new Promise((resolve, reject) => {
     const sql = `
       UPDATE plant_care.users

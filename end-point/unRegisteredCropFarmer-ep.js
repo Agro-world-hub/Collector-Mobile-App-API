@@ -934,6 +934,8 @@ exports.updateUserAddress = async (req, res) => {
 
 exports.submitCollectionRequest = async (req, res) => {
   const { requests } = req.body;
+  console.log("req body", req.body)
+
 
   if (!requests || !Array.isArray(requests) || requests.length === 0) {
     return res.status(400).json({ error: 'No collection requests provided' });
@@ -960,7 +962,28 @@ exports.submitCollectionRequest = async (req, res) => {
 
     console.log("User empId:", empId);
 
+
     for (const request of requests) {
+      const { farmerId, buildingNo, streetName, city, routeNumber } = request;
+
+      // Update address for each request
+      try {
+        const updateAddress = await cropDetailsDao.updateUserAddress(
+          farmerId,
+          routeNumber,
+          buildingNo,
+          streetName,
+          city
+        );
+
+        if (!updateAddress) {
+          return res.status(400).json({ error: 'Failed to update farmer address' });
+        }
+        console.log(`Address updated successfully for farmerId ${farmerId}`);
+      } catch (error) {
+        console.error("Error updating farmer address:", error);
+        return res.status(500).json({ error: 'Failed to update farmer address' });
+      }
       // Ensure we get an existing or new request ID
       const collectionRequestResult = await cropDetailsDao.createCollectionRequest(
         request.farmerId, cmId, empId, request.crop, request.variety,
