@@ -441,16 +441,50 @@ exports.addCropDetails2 = async (req, res) => {
 };
 
 
-exports.getCropDetailsByUserId = async (req, res) => {
-  const { userId, registeredFarmerId } = req.params;
+// exports.getCropDetailsByUserId= async (req, res) => {
+//     const { userId, registeredFarmerId } = req.params;
 
+//     try {
+//         const cropDetails = await cropDetailsDao.getCropDetailsByUserAndFarmerId(userId, registeredFarmerId);
+//         res.status(200).json(cropDetails);
+//     } catch (error) {
+//         console.error('Error fetching crop details:', error);
+//         res.status(500).json({ error: 'An error occurred while fetching crop details' });
+//     }
+// };
+
+exports.getCropDetailsByUserId = async (req, res) => {
   try {
+    const { userId, registeredFarmerId } = req.params;
+    
+    console.log('------------------userId:', userId);
+    console.log('------registeredFarmerId:', registeredFarmerId);
+    
+    // Validate parameters
+    if (!userId || !registeredFarmerId) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Both userId and registeredFarmerId are required'
+      });
+    }
+
+    // Call the DAO function
     const cropDetails = await cropDetailsDao.getCropDetailsByUserAndFarmerId(userId, registeredFarmerId);
-    res.status(200).json(cropDetails);
-    console.log('Crop details fetched successfully:', cropDetails);
+    
+    res.status(200).json({
+      status: 'success',
+      data: cropDetails
+    });
+    
+    console.log('----------Final Crop details:', cropDetails);
+    
   } catch (error) {
     console.error('Error fetching crop details:', error);
-    res.status(500).json({ error: 'An error occurred while fetching crop details' });
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch crop details',
+      error: error.message
+    });
   }
 };
 

@@ -389,24 +389,32 @@ exports.getRegisteredFarmerDetails = async (req, res) => {
 // };
 
 exports.getUserWithBankDetails = async (req, res) => {
+    
+    console.log('route: /report-user-details/:id');
     const userId = req.params.id;
-
+    const centerId = req.user.centerId;
+    const companyId = req.user.companyId;
+    
+    console.log('userId:', userId); 
+    console.log('centerId:', centerId);
+    console.log('companyId:', companyId);
+    
     if (!userId) {
         return res.status(400).json({ error: "User ID is required" });
     }
-
+    
     try {
         // Fetch the raw user data with bank details from the DAO layer
-        const rows = await farmerDao.getUserWithBankDetailsById(userId);
+        const rows = await farmerDao.getUserWithBankDetailsById(userId, centerId, companyId);
         console.log('rows:', rows);
-
+        
         // If no user found, return a 404 response
         if (rows.length === 0) {
             return res.status(404).json({ message: 'User not found' });
         }
-
+        
         const user = rows[0];
-
+        
         // Convert the QR code from binary data (BLOB) to Base64
         let qrCodeBase64 = '';
         if (user.farmerQr) {
@@ -414,7 +422,7 @@ exports.getUserWithBankDetails = async (req, res) => {
             qrCodeBase64 = `data:image/png;base64,${user.farmerQr.toString('base64')}`;
             const qrCodePath = user.farmerQr.toString();
             console.log('QR Code Path:', qrCodePath);
-
+       
             try {
                 if (fs.existsSync(qrCodePath)) {
                     const qrCodeData = fs.readFileSync(qrCodePath);
@@ -427,9 +435,8 @@ exports.getUserWithBankDetails = async (req, res) => {
                 console.error('Error processing QR code file:', err.message);
             }
         }
-
-
-        // Prepare the response data
+       
+        // Prepare the response data with company and center details
         const response = {
             userId: user.userId,
             firstName: user.firstName,
@@ -443,15 +450,20 @@ exports.getUserWithBankDetails = async (req, res) => {
             accHolderName: user.accHolderName,
             bankName: user.bankName,
             branchName: user.branchName,
+            companyNameEnglish: user.companyNameEnglish,
+            centerName: user.centerName,
             createdAt: user.createdAt
         };
-
+        
+        console.log('response:', response);
         // Send the response
         res.status(200).json(response);
     } catch (error) {
         res.status(500).json({ error: "Failed to fetch user with bank details: " + error.message });
     }
 };
+
+
 
 
 
