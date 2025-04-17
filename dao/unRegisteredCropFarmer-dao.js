@@ -793,6 +793,7 @@ exports.getCropDetailsByUserAndFarmerId = async (userId, registeredFarmerId) => 
 
 exports.getAllCropNames = (officerId) => {
   return new Promise((resolve, reject) => {
+    console.log("Officer ID:", officerId);
     if (!officerId) {
       return reject(new Error("Officer ID is required"));
     }
@@ -826,6 +827,7 @@ exports.getAllCropNames = (officerId) => {
         return reject(error);
       }
       resolve(results);
+      console.log("Crop details fetched successfully:", results);
     });
   });
 };
@@ -933,19 +935,19 @@ exports.createCollection = (crop, variety, loadIn, routeNumber, buildingNo, stre
 
 
 
-exports.getAllCropNames = () => {
-  return new Promise((resolve, reject) => {
-    const query = 'SELECT id, cropNameEnglish FROM cropgroup';
+// exports.getAllCropNames = () => {
+//   return new Promise((resolve, reject) => {
+//     const query = 'SELECT id, cropNameEnglish FROM cropgroup';
 
-    db.plantcare.query(query, (error, results) => {
-      if (error) {
-        return reject(error);
-      }
-      resolve(results);
-    });
+//     db.plantcare.query(query, (error, results) => {
+//       if (error) {
+//         return reject(error);
+//       }
+//       resolve(results);
+//     });
 
-  });
-};
+//   });
+// };
 
 
 exports.getVarietiesByCropIdCollection = (officerId, cropId) => {

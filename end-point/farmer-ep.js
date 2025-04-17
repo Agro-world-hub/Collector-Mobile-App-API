@@ -313,6 +313,7 @@ exports.getRegisteredFarmerDetails = async (req, res) => {
             NICnumber: user.NICnumber,
             qrCode: user.farmerQr, // Send raw QR code (no Base64 conversion)
             phoneNumber: user.phoneNumber,
+            language: user.language,
         };
 
         console.log('response:', response);

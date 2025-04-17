@@ -489,6 +489,7 @@ exports.getCropDetailsByUserId = async (req, res) => {
 };
 
 exports.getAllCropNames = async (req, res) => {
+  console.log('Fetching all crop names');
   try {
     const officerId = req.user.id;
     const cropNames = await cropDetailsDao.getAllCropNames(officerId);
