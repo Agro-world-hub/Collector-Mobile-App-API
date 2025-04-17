@@ -3,6 +3,8 @@ const asyncHandler = require('express-async-handler');
 
 exports.getAllCollectionRequest = async (req, res) => {
     try {
+        const userId = req.user.id; // Get user ID from the authenticated request
+        console.log('User ID:', userId);
         // Use default values or empty strings if query params are undefined
         const status = req.query.status || '';
         const assignedStatus = req.query.assignedStatus || '';
@@ -14,7 +16,8 @@ exports.getAllCollectionRequest = async (req, res) => {
 
         const collectionRequests = await collectionDao.getAllCollectionRequest(
             status,
-            assignedStatus
+            assignedStatus,
+            userId
         );
 
         if (!collectionRequests || collectionRequests.length === 0) {

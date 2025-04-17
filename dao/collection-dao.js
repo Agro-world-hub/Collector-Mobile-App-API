@@ -265,7 +265,7 @@ const db = require("../startup/database");
 //     });
 // };
 
-exports.getAllCollectionRequest = (status, requestStatus) => {
+exports.getAllCollectionRequest = (status, requestStatus,  userId) => {
     return new Promise((resolve, reject) => {
         // Enhanced query to join farmer details
         let query = `
@@ -283,10 +283,10 @@ exports.getAllCollectionRequest = (status, requestStatus) => {
                 cr.assignedStatus
             FROM collection_officer.collectionrequest cr
             LEFT JOIN plant_care.users f ON cr.farmerId = f.id
-            WHERE 1=1
+            WHERE cr.cmId= ?
         `;
 
-        const queryParams = [];
+        const queryParams = [userId];
 
         // Add date filter to get only today's requests - REMOVING this filter to see all records
         // query += ` AND DATE(cr.createdAt) = CURDATE()`;
