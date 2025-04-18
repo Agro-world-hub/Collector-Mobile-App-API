@@ -935,19 +935,19 @@ exports.createCollection = (crop, variety, loadIn, routeNumber, buildingNo, stre
 
 
 
-// exports.getAllCropNames = () => {
-//   return new Promise((resolve, reject) => {
-//     const query = 'SELECT id, cropNameEnglish FROM cropgroup';
+exports.getAllCropNamesForCollection = () => {
+  return new Promise((resolve, reject) => {
+    const query = 'SELECT id, cropNameEnglish, cropNameSinhala, cropNameTamil FROM cropgroup';
 
-//     db.plantcare.query(query, (error, results) => {
-//       if (error) {
-//         return reject(error);
-//       }
-//       resolve(results);
-//     });
+    db.plantcare.query(query, (error, results) => {
+      if (error) {
+        return reject(error);
+      }
+      resolve(results);
+    });
 
-//   });
-// };
+  });
+};
 
 
 exports.getVarietiesByCropIdCollection = (officerId, cropId) => {

@@ -500,6 +500,17 @@ exports.getAllCropNames = async (req, res) => {
   }
 };
 
+exports.getAllCropNamesForCollection= async (req, res) => {
+  console.log('Fetching all crop names');
+  try {
+    const cropNames = await cropDetailsDao.getAllCropNamesForCollection();
+    res.status(200).json(cropNames);  // Sending the response as JSON
+  } catch (error) {
+    console.error('Error fetching crop names:', error);
+    res.status(500).json({ error: 'Failed to retrieve crop names' });
+  }
+};
+
 exports.getVarietiesByCropId = async (req, res) => {
   const cropId = req.params.id;  // Extract cropId from request parameters
   console.log(cropId);
