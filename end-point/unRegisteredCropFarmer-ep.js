@@ -441,23 +441,69 @@ exports.addCropDetails2 = async (req, res) => {
 };
 
 
-exports.getCropDetailsByUserId = async (req, res) => {
-  const { userId, registeredFarmerId } = req.params;
+// exports.getCropDetailsByUserId= async (req, res) => {
+//     const { userId, registeredFarmerId } = req.params;
 
+//     try {
+//         const cropDetails = await cropDetailsDao.getCropDetailsByUserAndFarmerId(userId, registeredFarmerId);
+//         res.status(200).json(cropDetails);
+//     } catch (error) {
+//         console.error('Error fetching crop details:', error);
+//         res.status(500).json({ error: 'An error occurred while fetching crop details' });
+//     }
+// };
+
+exports.getCropDetailsByUserId = async (req, res) => {
   try {
+    const { userId, registeredFarmerId } = req.params;
+    
+    console.log('------------------userId:', userId);
+    console.log('------registeredFarmerId:', registeredFarmerId);
+    
+    // Validate parameters
+    if (!userId || !registeredFarmerId) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Both userId and registeredFarmerId are required'
+      });
+    }
+
+    // Call the DAO function
     const cropDetails = await cropDetailsDao.getCropDetailsByUserAndFarmerId(userId, registeredFarmerId);
-    res.status(200).json(cropDetails);
-    console.log('Crop details fetched successfully:', cropDetails);
+    
+    res.status(200).json({
+      status: 'success',
+      data: cropDetails
+    });
+    
+    console.log('----------Final Crop details:', cropDetails);
+    
   } catch (error) {
     console.error('Error fetching crop details:', error);
-    res.status(500).json({ error: 'An error occurred while fetching crop details' });
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch crop details',
+      error: error.message
+    });
   }
 };
 
 exports.getAllCropNames = async (req, res) => {
+  console.log('Fetching all crop names');
   try {
     const officerId = req.user.id;
     const cropNames = await cropDetailsDao.getAllCropNames(officerId);
+    res.status(200).json(cropNames);  // Sending the response as JSON
+  } catch (error) {
+    console.error('Error fetching crop names:', error);
+    res.status(500).json({ error: 'Failed to retrieve crop names' });
+  }
+};
+
+exports.getAllCropNamesForCollection= async (req, res) => {
+  console.log('Fetching all crop names');
+  try {
+    const cropNames = await cropDetailsDao.getAllCropNamesForCollection();
     res.status(200).json(cropNames);  // Sending the response as JSON
   } catch (error) {
     console.error('Error fetching crop names:', error);
@@ -934,6 +980,8 @@ exports.updateUserAddress = async (req, res) => {
 
 exports.submitCollectionRequest = async (req, res) => {
   const { requests } = req.body;
+  console.log("req body", req.body)
+
 
   if (!requests || !Array.isArray(requests) || requests.length === 0) {
     return res.status(400).json({ error: 'No collection requests provided' });
@@ -960,7 +1008,28 @@ exports.submitCollectionRequest = async (req, res) => {
 
     console.log("User empId:", empId);
 
+
     for (const request of requests) {
+      const { farmerId, buildingNo, streetName, city, routeNumber } = request;
+
+      // Update address for each request
+      try {
+        const updateAddress = await cropDetailsDao.updateUserAddress(
+          farmerId,
+          routeNumber,
+          buildingNo,
+          streetName,
+          city
+        );
+
+        if (!updateAddress) {
+          return res.status(400).json({ error: 'Failed to update farmer address' });
+        }
+        console.log(`Address updated successfully for farmerId ${farmerId}`);
+      } catch (error) {
+        console.error("Error updating farmer address:", error);
+        return res.status(500).json({ error: 'Failed to update farmer address' });
+      }
       // Ensure we get an existing or new request ID
       const collectionRequestResult = await cropDetailsDao.createCollectionRequest(
         request.farmerId, cmId, empId, request.crop, request.variety,

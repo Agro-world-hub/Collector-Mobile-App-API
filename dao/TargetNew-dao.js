@@ -1,60 +1,6 @@
 const { plantcare, collectionofficer, marketPlace, dash } = require('../startup/database');
 
-// exports.getOfficerDailyTargets = (officerId) => {
-//   return new Promise((resolve, reject) => {
-//       if (!officerId) {
-//           return reject(new Error("Officer ID is required"));
-//       }
 
-//       const sql = `
-//           SELECT
-//               ot.id AS officerTargetId,
-//               dt.id AS dailyTargetId,
-//               dt.companyCenterId AS centerId,
-//               dt.varietyId,
-//               cv.varietyNameEnglish,
-//               cv.varietyNameSinhala,
-//               cv.varietyNameTamil,
-//               dt.grade,
-//               dt.target AS dailyTarget,
-//               ot.target AS officerTarget,
-//               ot.complete,
-//               (CAST(COALESCE(ot.target, '0') AS DECIMAL(15,2)) - 
-//               CAST(COALESCE(ot.complete, '0') AS DECIMAL(15,2))) AS todo,
-//               DATE_FORMAT(dt.date, '%Y-%m-%d') AS targetDate,
-//               dt.assignStatus
-//           FROM
-//               officertarget ot
-//           INNER JOIN
-//               dailytarget dt ON ot.dailyTargetId = dt.id
-//           INNER JOIN
-//               plant_care.cropvariety cv ON dt.varietyId = cv.id
-//           WHERE
-//               ot.officerId = ?
-//               AND DATE(dt.date) = CURDATE()
-//           ORDER BY
-//               dt.date DESC, dt.id DESC
-//       `;
-
-//       collectionofficer.query(sql, [officerId], (err, results) => {
-//           if (err) {
-//               console.error("Database error:", err);
-//               return reject(err);
-//           }
-          
-//           // Ensure numeric values
-//           const processedResults = results.map(target => ({
-//               ...target,
-//               dailyTarget: parseFloat(target.dailyTarget) || 0,
-//               officerTarget: parseFloat(target.officerTarget) || 0,
-//               complete: parseFloat(target.complete) || 0,
-//               todo: Math.max(0, parseFloat(target.todo) || 0) // Ensure todo isn't negative
-//           }));
-          
-//           resolve(processedResults);
-//       });
-//   });
-// };
 
 exports.getOfficerDailyTargets = (officerId) => {
   return new Promise((resolve, reject) => {
@@ -364,6 +310,7 @@ exports.transferTargetDAO = (fromOfficerId, toOfficerId, varietyId, grade, amoun
       });
   });
 };
+
 
 
 exports.receiveTargetDAO = (fromOfficerId, toOfficerId, varietyId, grade, amount) => {
