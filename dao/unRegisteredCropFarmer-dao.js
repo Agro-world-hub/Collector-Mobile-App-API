@@ -793,6 +793,7 @@ exports.getCropDetailsByUserAndFarmerId = async (userId, registeredFarmerId) => 
 
 exports.getAllCropNames = (officerId) => {
   return new Promise((resolve, reject) => {
+    console.log("Officer ID:", officerId);
     if (!officerId) {
       return reject(new Error("Officer ID is required"));
     }
@@ -826,6 +827,7 @@ exports.getAllCropNames = (officerId) => {
         return reject(error);
       }
       resolve(results);
+      console.log("Crop details fetched successfully:", results);
     });
   });
 };
@@ -911,3 +913,490 @@ exports.getLatestInvoiceNumberDao = (empId, currentDate) => {
     });
   });
 };
+
+
+//Collection 
+exports.createCollection = (crop, variety, loadIn, routeNumber, buildingNo, streetName, city) => {
+  console.log("hitt")
+  return new Promise((resolve, reject) => {
+    const sql =
+      "INSERT INTO geolocation (crop, variety, loadIn, , routeNumber, buildingNo, streetName, city, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Assigned')";
+
+    const values = [crop, variety, loadIn, , routeNumber, buildingNo, streetName, city];
+
+    db.collectionofficer.query(sql, values, (err, result) => {
+      if (err) {
+        return reject(err);
+      }
+      resolve(result);
+    });
+  });
+};
+
+
+
+exports.getAllCropNamesForCollection = () => {
+  return new Promise((resolve, reject) => {
+    const query = 'SELECT id, cropNameEnglish, cropNameSinhala, cropNameTamil FROM cropgroup';
+
+    db.plantcare.query(query, (error, results) => {
+      if (error) {
+        return reject(error);
+      }
+      resolve(results);
+    });
+
+  });
+};
+
+
+exports.getVarietiesByCropIdCollection = (officerId, cropId) => {
+  return new Promise((resolve, reject) => {
+    if (!officerId || !cropId) {
+      return reject(new Error("Officer ID and Crop ID are required"));
+    }
+
+    const varietyQuery = `
+      SELECT DISTINCT
+          cv.id,
+          cv.varietyNameEnglish AS varietyEnglish,
+          cv.varietyNameSinhala AS varietySinhala,
+          cv.varietyNameTamil AS varietyTamil
+      FROM 
+          plant_care.cropvariety cv
+      WHERE
+          cv.cropGroupId = ?
+      ORDER BY
+          cv.varietyNameEnglish
+    `;
+
+    console.log('Executing SQL Query:', {
+      query: varietyQuery,
+      cropId: cropId
+    });
+
+    db.collectionofficer.query(varietyQuery, [cropId], (error, results) => {
+      if (error) {
+        console.error("Detailed Query Error:", {
+          error: error,
+          sqlMessage: error.sqlMessage,
+          sqlState: error.sqlState,
+          code: error.code
+        });
+        return reject(error);
+      }
+
+      console.log('Query Results:', {
+        rowCount: results.length,
+        firstResult: results[0]
+      });
+
+      resolve(results);
+    });
+  });
+};
+
+
+// exports.getAllUsers = (officerId) => {
+//   return new Promise((resolve, reject) => {
+//     const userQuery = ` 
+//       SELECT 
+//         id, 
+//         firstName, 
+//         phoneNumber, 
+//         NICnumber, 
+//         profileImage, 
+//         farmerQr, 
+//         membership, 
+//         activeStatus, 
+//         houseNo, 
+//         streetName, 
+//         city, 
+//         district, 
+//         route,
+//         created_at
+//       FROM plant_care.users 
+//       WHERE activeStatus = 'active' 
+//     `;
+
+//     db.collectionofficer.query(userQuery, (error, results) => {
+//       if (error) {
+//         console.error("Error fetching users:", error);
+//         return reject(error);
+//       }
+
+//       const formattedUsers = results.map(user => ({
+//         id: user.id,
+//         firstName: user.firstName || '',
+//         phoneNumber: user.phoneNumber || '',
+//         nicNumber: user.NICnumber || '',
+//         profileImage: user.profileImage || null,
+//         farmerQr: user.farmerQr || null,
+//         membership: user.membership || '',
+//         activeStatus: user.activeStatus || '',
+//         address: {
+//           buildingNo: user.houseNo || null,
+//           streetName: user.streetName || null,
+//           city: user.city || null,
+//           district: user.district || null,
+//         },
+//         routeNumber: user.route || null,
+//         createdAt: user.created_at || null
+//       }));
+
+//       resolve(formattedUsers);
+//     });
+//   });
+// };
+
+exports.getAllUsers = (officerId, nicNumber = null) => {
+  return new Promise((resolve, reject) => {
+    let userQuery = `
+      SELECT 
+        id, 
+        firstName, 
+        phoneNumber, 
+        NICnumber, 
+        profileImage, 
+        farmerQr, 
+        membership, 
+        activeStatus, 
+        houseNo, 
+        streetName, 
+        city, 
+        district, 
+        route,
+        created_at
+      FROM plant_care.users 
+      WHERE activeStatus = 'active'
+    `;
+
+    // Add NIC number filter if provided
+    const queryParams = [];
+    if (nicNumber) {
+      userQuery += ` AND NICnumber = ?`;
+      queryParams.push(nicNumber);
+    }
+
+    db.collectionofficer.query(userQuery, queryParams, (error, results) => {
+      if (error) {
+        console.error("Error fetching users:", error);
+        return reject(error);
+      }
+
+      const formattedUsers = results.map(user => ({
+        id: user.id,
+        firstName: user.firstName || '',
+        phoneNumber: user.phoneNumber || '',
+        nicNumber: user.NICnumber || '',
+        profileImage: user.profileImage || null,
+        farmerQr: user.farmerQr || null,
+        membership: user.membership || '',
+        activeStatus: user.activeStatus || '',
+        address: {
+          buildingNo: user.houseNo || null,
+          streetName: user.streetName || null,
+          city: user.city || null,
+          district: user.district || null,
+        },
+        routeNumber: user.route || null,
+        createdAt: user.created_at || null
+      }));
+
+      resolve(formattedUsers);
+    });
+  });
+};
+
+
+// DAO method to update user address in the plant_care database
+// DAO method to update user address in the plant_care.users table
+exports.updateUserAddress = (userId, routeNumber, buildingNo, streetName, city) => {
+  console.log(city)
+  return new Promise((resolve, reject) => {
+    const sql = `
+      UPDATE plant_care.users
+      SET
+        route = ?,
+        houseNo = ?,
+        streetName = ?,
+        city = ?
+      WHERE id = ?
+    `;
+
+    db.plantcare.query(
+      sql,
+      [routeNumber, buildingNo, streetName, city, userId],
+      (err, result) => {
+        if (err) return reject(err);
+        resolve(result);
+      }
+    );
+  });
+};
+
+
+// DAO method to create collection request in the collection_officer database
+// exports.createCollectionRequest = (farmerId, cmId, crop, variety, loadIn, centerId, companyId) => {
+//   return new Promise((resolve, reject) => {
+//     const sql = `
+//       INSERT INTO collection_officer.collectionrequest
+//       (farmerId, cmId , cropId, varietyId, loadWeight, centerId, companyId, createdAt)
+//       VALUES (?, ?, ? ,?, ?, ?, ?, NOW())
+//     `;
+
+//     db.plantcare.query(
+//       sql,
+//       [farmerId, cmId, crop, variety, loadIn, centerId, companyId],
+//       (err, result) => {
+//         if (err) return reject(err);
+//         resolve(result);
+//       }
+//     );
+//   });
+// };
+
+// exports.createCollectionRequest = (farmerId, cmId, crop, variety, loadIn, centerId, companyId) => {
+//   return new Promise((resolve, reject) => {
+//     const sql = `
+//       INSERT INTO collection_officer.collectionrequest
+//       (farmerId, cmId, cropId, varietyId, loadWeight, centerId, companyId, createdAt, requestStatus)
+//       VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), ?)
+//     `;
+
+//     db.plantcare.query(
+//       sql,
+//       [farmerId, cmId, crop, variety, loadIn, centerId, companyId, "Not Assigned"],
+//       (err, result) => {
+//         if (err) return reject(err);
+//         resolve(result);
+//       }
+//     );
+//   });
+// };
+// exports.createCollectionRequest = (farmerId, cmId, crop, variety, loadIn, centerId, companyId, scheduleDate) => {
+//   return new Promise((resolve, reject) => {
+//     const sql = `
+//       INSERT INTO collection_officer.collectionrequest
+//       (farmerId, cmId, centerId, companyId, requestStatus, scheduleDate, createdAt)
+//       VALUES (?, ?, ?, ?, ?, ?, NOW())
+//     `;
+
+//     db.plantcare.query(
+//       sql,
+//       [farmerId, cmId, centerId, companyId, "Not Assigned", scheduleDate],
+//       (err, result) => {
+//         if (err) return reject(err);
+//         resolve(result);
+//       }
+//     );
+//   });
+// };
+
+// // DAO method to insert into collectionrequestitems
+// exports.createCollectionRequestItems = (requestId, cropId, varietyId, loadWeight) => {
+//   return new Promise((resolve, reject) => {
+//     const sql = `
+//       INSERT INTO collection_officer.collectionrequestitems
+//       (requestId, cropId, varietyId, loadWeight)
+//       VALUES (?, ?, ?, ?)
+//     `;
+
+//     db.plantcare.query(
+//       sql,
+//       [requestId, cropId, varietyId, loadWeight],
+//       (err, result) => {
+//         if (err) return reject(err);
+//         resolve(result);
+//       }
+//     );
+//   });
+// };
+
+
+// exports.createCollectionRequest = (farmerId, cmId, crop, variety, loadIn, centerId, companyId, scheduleDate) => {
+//   return new Promise((resolve, reject) => {
+//     const checkSql = `
+//       SELECT id FROM collection_officer.collectionrequest
+//       WHERE farmerId = ? AND cmId = ? AND centerId = ? AND companyId = ? AND scheduleDate = ?
+//     `;
+
+//     db.plantcare.query(checkSql, [farmerId, cmId, centerId, companyId, scheduleDate], (err, results) => {
+//       if (err) return reject(err);
+
+//       if (results.length > 0) {
+//         // Request already exists, return its ID
+//         resolve({ insertId: results[0].id });
+//       } else {
+//         // Insert new collection request
+//         const insertSql = `
+//           INSERT INTO collection_officer.collectionrequest
+//           (farmerId, cmId, centerId, companyId, requestStatus, scheduleDate, createdAt)
+//           VALUES (?, ?, ?, ?, ?, ?, NOW())
+//         `;
+
+//         db.plantcare.query(insertSql, [farmerId, cmId, centerId, companyId, "Not Assigned", scheduleDate], (err, result) => {
+//           if (err) return reject(err);
+//           resolve(result);
+//         });
+//       }
+//     });
+//   });
+// };
+
+// exports.createCollectionRequest = (farmerId, cmId, empId, crop, variety, loadIn, centerId, companyId, scheduleDate) => {
+//   return new Promise((resolve, reject) => {
+//     // First get the current date formatted as YY/MM/DD
+//     const today = new Date();
+//     const year = today.getFullYear().toString().substr(-2);
+//     const month = String(today.getMonth() + 1).padStart(2, '0');
+//     const day = String(today.getDate()).padStart(2, '0');
+//     const dateString = `${year}/${month}/${day}`;
+
+//     // Get the sequence number for today
+//     const sequenceSql = `
+//       SELECT COUNT(*) as count 
+//       FROM collection_officer.collectionrequest 
+//       WHERE DATE(createdAt) = CURDATE()
+//     `;
+
+//     db.plantcare.query(sequenceSql, [], (err, countResults) => {
+//       if (err) return reject(err);
+
+//       // Calculate the sequence number (add 1 because we're creating a new record)
+//       const sequenceNumber = countResults[0].count + 1;
+//       const sequenceString = String(sequenceNumber).padStart(5, '0'); // 00001, 00002, etc.
+
+//       // Generate the custom ID: CM + date + sequence
+//       const customId = `empId${year}${month}${day}${sequenceString}`;
+
+//       const checkSql = `
+//         SELECT id FROM collection_officer.collectionrequest
+//         WHERE farmerId = ? AND cmId = ? AND centerId = ? AND companyId = ? AND scheduleDate = ?
+//       `;
+
+//       db.plantcare.query(checkSql, [farmerId, cmId, centerId, companyId, scheduleDate], (err, results) => {
+//         if (err) return reject(err);
+
+//         if (results.length > 0) {
+//           // Request already exists, return its ID
+//           resolve({ insertId: results[0].id });
+//         } else {
+//           // Insert new collection request with the custom ID
+//           const insertSql = `
+//           INSERT INTO collection_officer.collectionrequest
+//           (farmerId, cmId, centerId, companyId, requestId, requestStatus, scheduleDate, cancelState, createdAt)
+//           VALUES (?, ?, ?, ?, ?, ?, ?, 0, NOW())
+//         `;
+//           db.plantcare.query(insertSql, [farmerId, cmId, centerId, companyId, customId, "Not Assigned", scheduleDate], (err, result) => {
+//             if (err) return reject(err);
+
+//             // Pass back the custom ID as well
+//             resolve({
+//               insertId: result.insertId,
+//               customId: customId
+//             });
+//           });
+//         }
+//       });
+//     });
+//   });
+// };
+
+exports.createCollectionRequest = (farmerId, cmId, empId, crop, variety, loadIn, centerId, companyId, scheduleDate) => {
+  return new Promise((resolve, reject) => {
+    const today = new Date();
+    const year = today.getFullYear().toString().substr(-2);
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+
+    // Generate the sequence number for the custom ID
+    const sequenceSql = `
+      SELECT COUNT(*) as count 
+      FROM collection_officer.collectionrequest
+      WHERE DATE(createdAt) = CURDATE()
+    `;
+
+    db.plantcare.query(sequenceSql, [], (err, countResults) => {
+      if (err) return reject(err);
+
+      const sequenceNumber = countResults[0].count + 1;
+      const sequenceString = String(sequenceNumber).padStart(5, '0');
+      const customId = `${empId}${year}${month}${day}${sequenceString}`;
+
+      console.log("Generated customId:", customId); // Debug log
+
+      const checkSql = `
+        SELECT id, requestId FROM collection_officer.collectionrequest
+        WHERE farmerId = ? AND cmId = ? AND centerId = ? AND companyId = ? AND scheduleDate = ?
+      `;
+
+      db.plantcare.query(checkSql, [farmerId, cmId, centerId, companyId, scheduleDate], (err, results) => {
+        if (err) return reject(err);
+
+        if (results.length > 0) {
+          console.log("Request already exists with ID:", results[0].id, "Request ID:", results[0].requestId);
+          // Return consistent property name (requestIdItem instead of requestId)
+          resolve({
+            requestIdItem: results[0].id,
+            customId: results[0].requestId
+          });
+        } else {
+          const insertSql = `
+            INSERT INTO collection_officer.collectionrequest
+            (farmerId, cmId, centerId, companyId, requestId, requestStatus, scheduleDate,cancelStatus, createdAt)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 0, NOW())
+          `;
+
+          db.plantcare.query(insertSql, [farmerId, cmId, centerId, companyId, customId, "Not Assigned", scheduleDate], (err, result) => {
+            if (err) return reject(err);
+
+            console.log("Inserted new collection request. ID:", result.insertId, "Custom ID:", customId);
+            resolve({
+              requestIdItem: result.insertId,
+              customId: customId
+            });
+          });
+        }
+      });
+    });
+  });
+};
+
+
+// exports.createCollectionRequestItems = (requestId, cropId, varietyId, loadWeight) => {
+//   return new Promise((resolve, reject) => {
+//     const sql = `
+//       INSERT INTO collection_officer.collectionrequestitems
+//       (requestId, cropId, varietyId, loadWeight)
+//       VALUES (?, ?, ?, ?)
+//     `;
+
+//     db.plantcare.query(sql, [requestId, cropId, varietyId, loadWeight], (err, result) => {
+//       if (err) return reject(err);
+//       resolve(result);
+//     });
+//   });
+// };
+
+exports.createCollectionRequestItems = (requestId, cropId, varietyId, loadWeight) => {
+  return new Promise((resolve, reject) => {
+    if (!requestId) {
+      return reject(new Error("Invalid requestId: Cannot insert into collectionrequestitems."));
+    }
+
+    const sql = `
+      INSERT INTO collection_officer.collectionrequestitems
+      (requestId, cropId, varietyId, loadWeight)
+      VALUES (?, ?, ?, ?)
+    `;
+
+    db.plantcare.query(sql, [requestId, cropId, varietyId, loadWeight], (err, result) => {
+      if (err) return reject(err);
+
+      console.log("Inserted collection request item for requestId:", requestId);
+      resolve(result);
+    });
+  });
+};
+
