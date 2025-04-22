@@ -47,7 +47,7 @@ exports.createOfficerComplaint = (coId, language, complain, category, status, re
 exports.getAllComplaintsByUserId = async(userId) => {
     return new Promise((resolve, reject) => {
         const query = `
-        SELECT id, language, complain, status, createdAt, complainCategory , reply
+        SELECT id, language, complain, status, createdAt, complainCategory , reply, refNo
         FROM officercomplains 
         WHERE officerId = ?
         ORDER BY createdAt DESC
@@ -66,9 +66,10 @@ exports.getAllComplaintsByUserId = async(userId) => {
 exports.getComplainCategories = async(appName) => {
     return new Promise((resolve, reject) => {
         const query = `
-                SELECT * FROM complaincategory cc
-        JOIN systemapplications ssa ON cc.appId = ssa.id
-        WHERE ssa.appName = ?
+                    SELECT cc.id, cc.roleId, cc.appId, cc.categoryEnglish, cc.categorySinhala, cc.categoryTamil, ssa.appName
+                FROM complaincategory cc
+                JOIN systemapplications ssa ON cc.appId = ssa.id
+                WHERE ssa.appName = ?
       `;
         db.admin.query(query , [appName], (error, results) => {
             if (error) {

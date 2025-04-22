@@ -4,7 +4,7 @@ const path = require('path');
 const farmerDao = require('../dao/farmar-dao');
 const asyncHandler = require('express-async-handler');
 const uploadFileToS3 = require('../Middlewares/s3upload');
-
+const axios = require('axios');
 // Controller to handle user and payment details and QR code generation
 // exports.addUserAndPaymentDetails = asyncHandler(async (req, res) => {
 //     const {
@@ -114,11 +114,12 @@ exports.addUserAndPaymentDetails = asyncHandler(async (req, res) => {
         accHolderName,
         bankName,
         branchName,
+        PreferdLanguage
     } = req.body;
 
 
     // Validation: Check if all fields are filled
-    if (!firstName || !lastName || !NICnumber || !phoneNumber || !district || !accNumber || !accHolderName || !bankName || !branchName) {
+    if (!firstName || !lastName || !NICnumber || !phoneNumber || !district || !accNumber || !accHolderName || !bankName || !branchName || !PreferdLanguage) {
         return res.status(400).json({ error: "All fields are required" });
     }
 
@@ -128,7 +129,7 @@ exports.addUserAndPaymentDetails = asyncHandler(async (req, res) => {
     console.log('Formatted Phone Number:', formattedPhoneNumber);
 
     try {
-        const userResult = await farmerDao.createUser(firstName, lastName, NICnumber, formattedPhoneNumber, district);
+        const userResult = await farmerDao.createUser(firstName, lastName, NICnumber, formattedPhoneNumber, district, PreferdLanguage);
         const userId = userResult.insertId;
 
         // Insert into the 'userbankdetails' table
@@ -158,6 +159,43 @@ exports.addUserAndPaymentDetails = asyncHandler(async (req, res) => {
         res.status(500).json({ error: "An unexpected error occurred: " + error.message });
     }
 });
+
+exports.addFarmerBankDetails = async (req, res) => {
+    console.log("addFarmerBankDetails");
+    const { userId, NICnumber, accNumber, accHolderName, bankName, branchName } = req.body;
+    console.log("userId", userId, "NICnumber", NICnumber, "accNumber", accNumber, "accHolderName", accHolderName, "bankName", bankName, "branchName", branchName);
+
+    // Validation: Check if all fields are filled
+    if (!userId || !accNumber || !accHolderName || !bankName || !branchName) {
+        return res.status(400).json({ error: "All fields are required" });
+    }
+
+    try {
+        // Insert into the 'userbankdetails' table
+        const paymentResult = await farmerDao.createPaymentDetails(userId, accNumber, accHolderName, bankName, branchName);
+        const paymentId = paymentResult.insertId;
+        const qrUrl = await exports.createQrCode(userId);
+
+        // Success response
+        res.status(200).json({
+            message: "User, bank details, and QR code added successfully",
+            userId: userId,
+            paymentId: paymentId,
+            qrCodeUrl: qrUrl,
+            NICnumber: NICnumber,
+
+        });
+    } catch (error) {
+        // Handle duplicate entry error
+        if (error.code === "ER_DUP_ENTRY") {
+            return res.status(409).json({ error: "Duplicate entry error: " + error.message });
+        }
+
+        // Generic error response
+        console.error("Error during bank details creation:", error);
+        res.status(500).json({ error: "An unexpected error occurred: " + error.message });
+    }
+};
 
 
 
@@ -275,6 +313,7 @@ exports.getRegisteredFarmerDetails = async (req, res) => {
             NICnumber: user.NICnumber,
             qrCode: user.farmerQr, // Send raw QR code (no Base64 conversion)
             phoneNumber: user.phoneNumber,
+            language: user.language,
         };
 
         console.log('response:', response);
@@ -351,24 +390,32 @@ exports.getRegisteredFarmerDetails = async (req, res) => {
 // };
 
 exports.getUserWithBankDetails = async (req, res) => {
+    
+    console.log('route: /report-user-details/:id');
     const userId = req.params.id;
-
+    const centerId = req.user.centerId;
+    const companyId = req.user.companyId;
+    
+    console.log('userId:', userId); 
+    console.log('centerId:', centerId);
+    console.log('companyId:', companyId);
+    
     if (!userId) {
         return res.status(400).json({ error: "User ID is required" });
     }
-
+    
     try {
         // Fetch the raw user data with bank details from the DAO layer
-        const rows = await farmerDao.getUserWithBankDetailsById(userId);
+        const rows = await farmerDao.getUserWithBankDetailsById(userId, centerId, companyId);
         console.log('rows:', rows);
-
+        
         // If no user found, return a 404 response
         if (rows.length === 0) {
             return res.status(404).json({ message: 'User not found' });
         }
-
+        
         const user = rows[0];
-
+        
         // Convert the QR code from binary data (BLOB) to Base64
         let qrCodeBase64 = '';
         if (user.farmerQr) {
@@ -376,7 +423,7 @@ exports.getUserWithBankDetails = async (req, res) => {
             qrCodeBase64 = `data:image/png;base64,${user.farmerQr.toString('base64')}`;
             const qrCodePath = user.farmerQr.toString();
             console.log('QR Code Path:', qrCodePath);
-
+       
             try {
                 if (fs.existsSync(qrCodePath)) {
                     const qrCodeData = fs.readFileSync(qrCodePath);
@@ -389,9 +436,8 @@ exports.getUserWithBankDetails = async (req, res) => {
                 console.error('Error processing QR code file:', err.message);
             }
         }
-
-
-        // Prepare the response data
+       
+        // Prepare the response data with company and center details
         const response = {
             userId: user.userId,
             firstName: user.firstName,
@@ -405,15 +451,20 @@ exports.getUserWithBankDetails = async (req, res) => {
             accHolderName: user.accHolderName,
             bankName: user.bankName,
             branchName: user.branchName,
+            companyNameEnglish: user.companyNameEnglish,
+            centerName: user.centerName,
             createdAt: user.createdAt
         };
-
+        
+        console.log('response:', response);
         // Send the response
         res.status(200).json(response);
     } catch (error) {
         res.status(500).json({ error: "Failed to fetch user with bank details: " + error.message });
     }
 };
+
+
 
 
 
@@ -504,3 +555,57 @@ exports.addFarmer = asyncHandler(async (req, res) => {
         res.status(500).json({ error: "An unexpected error occurred: " + error.message });
     }
 });
+
+exports.sendSMSToFarmers = asyncHandler(async (req, res) => {
+    console.log("sendSMSToFarmers");
+    try {
+      // Fetch farmers from the database
+      const farmers = await farmerDao.getFarmersForSms(); // A method in the DAO that fetches farmer details
+  
+      // Loop over each farmer and send SMS
+      for (const farmer of farmers) {
+        const message = generateSmsMessage(farmer.language); // Generate message based on the farmer's language
+        const formattedPhone = farmer.phoneNumber;
+  
+        const apiUrl = "https://api.getshoutout.com/coreservice/messages";
+        const headers = {
+          Authorization: `Apikey ${process.env.SHOUTOUT_API_KEY}`,
+          "Content-Type": "application/json",
+        };
+  
+        const body = {
+          source: "AgroWorld",
+          destinations: [formattedPhone],
+          content: { sms: message },
+          transports: ["sms"],
+        };
+  
+        // Send SMS
+        const response = await axios.post(apiUrl, body, { headers });
+  
+        // Check if the API response is valid and log success
+        if (response && response.status === 200) {
+          console.log(`SMS sent to: ${formattedPhone}`);
+        } else {
+          console.log(`Error sending SMS to ${formattedPhone}:`, response);
+        }
+      }
+  
+      res.status(200).json({ message: 'SMS notifications sent successfully!' });
+    } catch (error) {
+    }
+  });
+  
+  // Helper function to generate SMS message based on language
+  const generateSmsMessage = (language) => {
+    let message = '';
+    if (language === 'English') {
+      message = "As per your order, we will send a vehicle tomorrow for your produce collection. Driver will contact you.";
+    } else if (language === 'Sinhala') {
+      message = "ඇණවුම පරිදි, ඔබගේ නිෂ්පාදන එකතු කිරීම සඳහා අපි හෙට දින වාහනයක් එවන්නෙමු. රියදුරු ඔබව සම්බන්ධ කර ගනු ඇත.";
+    } else if (language === 'Tamil') {
+      message = "உங்கள் உத்தரவின்படி, உங்கள் விளைபொருட்களை சேகரிப்பதற்காக நாளை வாகனத்தை அனுப்புவோம். ஓட்டுநர் உங்களைத் தொடர்புகொள்வார்.";
+    }
+    return message;
+  };
+  
