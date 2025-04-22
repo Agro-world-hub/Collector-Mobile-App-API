@@ -650,7 +650,11 @@ exports.getCropDetailsByUserAndFarmerId = async (userId, registeredFarmerId) => 
     SELECT 
       fpc.id AS id, 
       cg.cropNameEnglish AS cropName,
+      cg.cropNameSinhala AS cropNameSinhala,
+      cg.cropNameTamil AS cropNameTamil,
       cv.varietyNameEnglish AS variety,
+      cv.varietyNameSinhala AS varietyNameSinhala,
+      cv.varietyNameTamil AS varietyNameTamil,
       fpc.gradeAprice AS unitPriceA,
       fpc.gradeAquan AS weightA,
       fpc.gradeBprice AS unitPriceB,
@@ -673,20 +677,24 @@ exports.getCropDetailsByUserAndFarmerId = async (userId, registeredFarmerId) => 
   `;
 
   return new Promise((resolve, reject) => {
-    
+
     console.log('@@@@@@@@ UserId:', userId);
     console.log('@@@@@@@@@   registeredFarmerId:', registeredFarmerId);
-    
+
     db.collectionofficer.query(query, [userId, registeredFarmerId], (error, results) => {
       if (error) return reject(error);
 
       const transformedResults = results.flatMap(row => {
         const entries = [];
-        
+
         if (row.weightA > 0) entries.push({
           id: row.id,
           cropName: row.cropName,
+          cropNameSinhala: row.cropNameSinhala,
+          cropNameTamil: row.cropNameTamil,
           variety: row.variety,
+          varietyNameSinhala: row.varietyNameSinhala,
+          varietyNameTamil: row.varietyNameTamil,
           grade: 'A',
           unitPrice: row.unitPriceA,
           quantity: row.weightA,
@@ -697,7 +705,11 @@ exports.getCropDetailsByUserAndFarmerId = async (userId, registeredFarmerId) => 
         if (row.weightB > 0) entries.push({
           id: row.id,
           cropName: row.cropName,
+          cropNameSinhala: row.cropNameSinhala,
+          cropNameTamil: row.cropNameTamil,
           variety: row.variety,
+          varietyNameSinhala: row.varietyNameSinhala,
+          varietyNameTamil: row.varietyNameTamil,
           grade: 'B',
           unitPrice: row.unitPriceB,
           quantity: row.weightB,
@@ -708,6 +720,10 @@ exports.getCropDetailsByUserAndFarmerId = async (userId, registeredFarmerId) => 
         if (row.weightC > 0) entries.push({
           id: row.id,
           cropName: row.cropName,
+          cropNameSinhala: row.cropNameSinhala,
+          cropNameTamil: row.cropNameTamil,
+          varietyNameSinhala: row.varietyNameSinhala,
+          varietyNameTamil: row.varietyNameTamil,
           variety: row.variety,
           grade: 'C',
           unitPrice: row.unitPriceC,
@@ -791,46 +807,109 @@ exports.getCropDetailsByUserAndFarmerId = async (userId, registeredFarmerId) => 
 // };
 
 
-exports.getAllCropNames = (officerId) => {
+// exports.getAllCropNames = (officerId) => {
+//   return new Promise((resolve, reject) => {
+//     console.log("Officer ID:", officerId);
+//     if (!officerId) {
+//       return reject(new Error("Officer ID is required"));
+//     }
+
+//     // Updated query for new table structure
+//     const cropQuery = `
+//       SELECT DISTINCT
+//           cg.id,
+//           cg.cropNameEnglish,
+//           cg.cropNameSinhala,
+//           cg.cropNameTamil
+//       FROM 
+//           officertarget ot
+//       INNER JOIN
+//           dailytarget dt ON ot.dailyTargetId = dt.id
+//       INNER JOIN
+//           plant_care.cropvariety cv ON dt.varietyId = cv.id
+//       INNER JOIN
+//           plant_care.cropgroup cg ON cv.cropGroupId = cg.id
+//       WHERE
+//           ot.officerId = ?
+//       ORDER BY
+//           cg.cropNameEnglish,
+//           cg.cropNameSinhala,
+//           cg.cropNameTamil
+//     `;
+
+//     db.collectionofficer.query(cropQuery, [officerId], (error, results) => {
+//       if (error) {
+//         console.error("Error fetching officer crop details:", error);
+//         return reject(error);
+//       }
+//       resolve(results);
+//       console.log("Crop details fetched successfully:", results);
+//     });
+//   });
+// };
+
+exports.getAllCropNames = (officerId, startDate = null, endDate = null) => {
   return new Promise((resolve, reject) => {
     console.log("Officer ID:", officerId);
+    console.log("Date range:", startDate, "to", endDate);
+
     if (!officerId) {
       return reject(new Error("Officer ID is required"));
     }
 
-    // Updated query for new table structure
-    const cropQuery = `
+    // Base query with parameters
+    let cropQuery = `
       SELECT DISTINCT
-          cg.id,
-          cg.cropNameEnglish,
-          cg.cropNameSinhala,
-          cg.cropNameTamil
+        cg.id,
+        cg.cropNameEnglish,
+        cg.cropNameSinhala,
+        cg.cropNameTamil
       FROM 
-          officertarget ot
+        collection_officer.officertarget ot
       INNER JOIN
-          dailytarget dt ON ot.dailyTargetId = dt.id
+        collection_officer.dailytarget dt ON ot.dailyTargetId = dt.id
       INNER JOIN
-          plant_care.cropvariety cv ON dt.varietyId = cv.id
+        plant_care.cropvariety cv ON dt.varietyId = cv.id
       INNER JOIN
-          plant_care.cropgroup cg ON cv.cropGroupId = cg.id
+        plant_care.cropgroup cg ON cv.cropGroupId = cg.id
       WHERE
-          ot.officerId = ?
-      ORDER BY
-          cg.cropNameEnglish,
-          cg.cropNameSinhala,
-          cg.cropNameTamil
+        ot.officerId = ?
     `;
 
-    db.collectionofficer.query(cropQuery, [officerId], (error, results) => {
+    // Parameters array, starting with officerId
+    const params = [officerId];
+
+    // Add date range filter if provided
+    if (startDate) {
+      cropQuery += ` AND DATE(dt.date) >= ?`;
+      params.push(startDate);
+    }
+
+    if (endDate) {
+      cropQuery += ` AND DATE(dt.date) <= ?`;
+      params.push(endDate);
+    }
+
+    // Add ORDER BY clause
+    cropQuery += `
+      ORDER BY
+        cg.cropNameEnglish,
+        cg.cropNameSinhala,
+        cg.cropNameTamil
+    `;
+
+    db.collectionofficer.query(cropQuery, params, (error, results) => {
       if (error) {
         console.error("Error fetching officer crop details:", error);
         return reject(error);
       }
-      resolve(results);
       console.log("Crop details fetched successfully:", results);
+      resolve(results);
     });
   });
 };
+
+
 
 exports.getVarietiesByCropId = (officerId, cropId) => {
   return new Promise((resolve, reject) => {

@@ -456,10 +456,10 @@ exports.addCropDetails2 = async (req, res) => {
 exports.getCropDetailsByUserId = async (req, res) => {
   try {
     const { userId, registeredFarmerId } = req.params;
-    
+
     console.log('------------------userId:', userId);
     console.log('------registeredFarmerId:', registeredFarmerId);
-    
+
     // Validate parameters
     if (!userId || !registeredFarmerId) {
       return res.status(400).json({
@@ -470,14 +470,14 @@ exports.getCropDetailsByUserId = async (req, res) => {
 
     // Call the DAO function
     const cropDetails = await cropDetailsDao.getCropDetailsByUserAndFarmerId(userId, registeredFarmerId);
-    
+
     res.status(200).json({
       status: 'success',
       data: cropDetails
     });
-    
+
     console.log('----------Final Crop details:', cropDetails);
-    
+
   } catch (error) {
     console.error('Error fetching crop details:', error);
     res.status(500).json({
@@ -488,19 +488,47 @@ exports.getCropDetailsByUserId = async (req, res) => {
   }
 };
 
+// exports.getAllCropNames = async (req, res) => {
+//   console.log('Fetching all crop names');
+//   try {
+//     const officerId = req.user.id;
+//     const cropNames = await cropDetailsDao.getAllCropNames(officerId);
+//     res.status(200).json(cropNames);  // Sending the response as JSON
+//   } catch (error) {
+//     console.error('Error fetching crop names:', error);
+//     res.status(500).json({ error: 'Failed to retrieve crop names' });
+//   }
+// };
+
 exports.getAllCropNames = async (req, res) => {
-  console.log('Fetching all crop names');
+  console.log('Fetching crop names for today');
   try {
     const officerId = req.user.id;
-    const cropNames = await cropDetailsDao.getAllCropNames(officerId);
-    res.status(200).json(cropNames);  // Sending the response as JSON
+
+    // Get today's date in YYYY-MM-DD format
+    const today = new Date().toISOString().split('T')[0];
+
+    // Use today as both start and end date if no date parameters are provided
+    const startDate = req.query.startDate || today;
+    const endDate = req.query.endDate || today;
+
+    console.log('Query parameters:', {
+      officerId,
+      startDate,
+      endDate
+    });
+
+    const cropNames = await cropDetailsDao.getAllCropNames(officerId, startDate, endDate);
+    res.status(200).json(cropNames);
   } catch (error) {
     console.error('Error fetching crop names:', error);
     res.status(500).json({ error: 'Failed to retrieve crop names' });
   }
 };
 
-exports.getAllCropNamesForCollection= async (req, res) => {
+
+
+exports.getAllCropNamesForCollection = async (req, res) => {
   console.log('Fetching all crop names');
   try {
     const cropNames = await cropDetailsDao.getAllCropNamesForCollection();
