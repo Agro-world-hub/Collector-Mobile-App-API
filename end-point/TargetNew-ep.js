@@ -68,6 +68,7 @@ exports.getCenterTarget = async (req, res) => {
       }
 
       const targets = await TargetDAO.getCenterTarget(centerId);
+      console.log('targets', targets)
       
       res.status(200).json({ 
           success: true,
