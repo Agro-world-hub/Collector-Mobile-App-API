@@ -540,6 +540,7 @@ exports.insertCropDetails = (registeredFarmerId, crop, officerId, centerId) => {
             // Update center targets (dailytarget table)
             const updateCenterQuery = `
               UPDATE dailytarget dt
+              JOIN companycenter cc ON dt.companyCenterId = cc.id 
               SET dt.complete = LEAST(
                 dt.target,
                 dt.complete + 
@@ -551,7 +552,7 @@ exports.insertCropDetails = (registeredFarmerId, crop, officerId, centerId) => {
                   END
               )
               WHERE dt.varietyId = ?
-              AND dt.companyCenterId = ?
+              AND cc.centerId = ? 
               AND DATE(dt.date) = CURDATE()
               AND EXISTS (
                 SELECT 1 FROM officertarget ot 
