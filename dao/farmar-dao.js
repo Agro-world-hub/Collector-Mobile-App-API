@@ -1,11 +1,11 @@
 const db = require('../startup/database');
 
-exports.checkUserExistsPhoneNumber = ( phoneNumber) => {
+exports.checkUserExistsPhoneNumber = (phoneNumber) => {
     return new Promise((resolve, reject) => {
         const sql = `
             SELECT id FROM users WHERE phoneNumber = ?
         `;
-        db.plantcare.query(sql, [ phoneNumber], (err, result) => {
+        db.plantcare.query(sql, [phoneNumber], (err, result) => {
             if (err) return reject(err);
             resolve(result);
             console.log(result);
@@ -13,29 +13,29 @@ exports.checkUserExistsPhoneNumber = ( phoneNumber) => {
     });
 }
 
-exports.checkUserExistsNIC = ( NICnumber) => {
+exports.checkUserExistsNIC = (NICnumber) => {
     return new Promise((resolve, reject) => {
         const sql = `
             SELECT id FROM users WHERE NICnumber = ?
         `;
-        db.plantcare.query(sql, [ NICnumber], (err, result) => {
+        db.plantcare.query(sql, [NICnumber], (err, result) => {
             if (err) return reject(err);
             resolve(result);
             console.log(result);
         });
     });
-     
+
 }
 
 // Function to insert user data into the database
-exports.createUser = (firstName, lastName, NICnumber, formattedPhoneNumber, district) => {
-    console.log(firstName, lastName, NICnumber, formattedPhoneNumber, district);
+exports.createUser = (firstName, lastName, NICnumber, formattedPhoneNumber, district, PreferdLanguage) => {
+    console.log(firstName, lastName, NICnumber, formattedPhoneNumber, district, PreferdLanguage);
     return new Promise((resolve, reject) => {
         const sql = `
-            INSERT INTO users (firstName, lastName, NICnumber, phoneNumber, district)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO users (firstName, lastName, NICnumber, phoneNumber, district, language)
+            VALUES (?, ?, ?, ?, ?, ?)
         `;
-        db.plantcare.query(sql, [firstName, lastName, NICnumber, formattedPhoneNumber, district], (err, result) => {
+        db.plantcare.query(sql, [firstName, lastName, NICnumber, formattedPhoneNumber, district, PreferdLanguage], (err, result) => {
             if (err) return reject(err);
             resolve(result);
         });
@@ -73,24 +73,24 @@ exports.updateQrCodePath = (userId, qrUrl) => {
 exports.getFarmerDetailsById = async (userId) => {
 
     const userSql = `
-        SELECT firstName, lastName, NICnumber, farmerQr, phoneNumber
+        SELECT firstName, lastName, NICnumber, farmerQr, phoneNumber, language
         FROM users 
         WHERE id = ?
     `;
-    
+
     return new Promise((resolve, reject) => {
         db.plantcare.query(userSql, [userId], (err, result) => {
             if (err) return reject(err);
             resolve(result);
-        
+
         });
     });
 };
 
 
-exports.getUserWithBankDetailsById = async (userId) => {
+exports.getUserWithBankDetailsById = async (userId, centerId, companyId) => {
     const query = `
-        SELECT 
+        SELECT
             u.id AS userId,
             u.firstName,
             u.lastName,
@@ -102,17 +102,21 @@ exports.getUserWithBankDetailsById = async (userId) => {
             b.accHolderName,
             b.bankName,
             b.branchName,
+            c.companyNameEnglish,
+            cc.centerName,
             b.createdAt
         FROM users u
         LEFT JOIN userbankdetails b ON u.id = b.userId
+        LEFT JOIN collection_officer.company c ON c.id = ?
+        LEFT JOIN collection_officer.collectioncenter cc ON cc.id = ?
         WHERE u.id = ?;
     `;
-    
+   
     return new Promise((resolve, reject) => {
-        db.plantcare.query(query, [userId], (err, result) => {
+        db.plantcare.query(query, [companyId, centerId, userId], (err, result) => {
             if (err) return reject(err);
             resolve(result);
-            console.log(result)
+            console.log(result);
         });
     });
 };
@@ -144,3 +148,41 @@ exports.checkSignupDetails = (phoneNumber, NICnumber) => {
         });
     });
 };
+
+
+
+exports.createFarmer = (firstName, lastName, NICnumber, formattedPhoneNumber, district) => {
+    console.log(firstName, lastName, NICnumber, formattedPhoneNumber, district);
+    return new Promise((resolve, reject) => {
+        const sql = `
+            INSERT INTO users (firstName, lastName, NICnumber, phoneNumber, district)
+            VALUES (?, ?, ?, ?, ?)
+        `;
+        db.plantcare.query(sql, [firstName, lastName, NICnumber, formattedPhoneNumber, district], (err, result) => {
+            if (err) return reject(err);
+            resolve(result);
+        });
+    });
+};
+
+exports.getFarmersForSms = () => {
+    return new Promise((resolve, reject) => {
+      const query = `
+        SELECT pu.phoneNumber, pu.language
+        FROM collection_officer.collectionrequest cr
+        JOIN plant_care.users pu ON cr.farmerId = pu.id
+        WHERE cr.cancelStatus = 0
+          AND DATE(cr.scheduleDate) = DATE_ADD(CURRENT_DATE(), INTERVAL 1 DAY);
+      `;
+    
+      db.plantcare.query(query, (err, result) => {
+        if (err) {
+          console.error("Error fetching farmers for SMS:", err);
+          return reject(err); // Reject promise if error occurs
+        }
+        console.log("Farmers eligible for SMS:", result);
+        resolve(result); // Resolve promise with the result (list of farmers)
+      });
+    });
+  };
+  

@@ -592,44 +592,122 @@ exports.disclaimOfficer = (collectionOfficerId) => {
 
 
 // GET farmer details for the managers report
-exports.GetFarmerReportDetailsDao = (userId, createdAtDate, farmerId) => {
-  return new Promise((resolve, reject) => {
-    const query = `
-          SELECT 
-              fpc.id AS id, 
-              cg.cropNameEnglish AS cropName,
-              cv.varietyNameEnglish AS variety,
-              fpc.gradeAprice AS unitPriceA,
-              fpc.gradeAquan AS weightA,
-              fpc.gradeBprice AS unitPriceB,
-              fpc.gradeBquan AS weightB,
-              fpc.gradeCprice AS unitPriceC,
-              fpc.gradeCquan AS weightC,
-              (COALESCE(fpc.gradeAprice * fpc.gradeAquan, 0) +
-               COALESCE(fpc.gradeBprice * fpc.gradeBquan, 0) +
-               COALESCE(fpc.gradeCprice * fpc.gradeCquan, 0)) AS total,
-               rfp.InvNo AS invoiceNumber
-          FROM 
-              farmerpaymentscrops fpc
-          INNER JOIN 
-              \`plant_care\`.\`cropvariety\` cv ON fpc.cropId = cv.id
-          INNER JOIN 
-              \`plant_care\`.\`cropgroup\` cg ON cv.cropGroupId = cg.id
-          INNER JOIN 
-              registeredfarmerpayments rfp ON fpc.registerFarmerId = rfp.id
-          WHERE 
-              rfp.userId = ? 
-              AND DATE(fpc.createdAt) = ? 
-              AND fpc.registerFarmerId = ?
-          ORDER BY 
-              fpc.createdAt DESC
-      `;
+// exports.GetFarmerReportDetailsDao = (userId, createdAtDate, farmerId) => {
+//   return new Promise((resolve, reject) => {
+//     const query = `
+//           SELECT 
+//               fpc.id AS id, 
+//               cg.cropNameEnglish AS cropName,
+//               cv.varietyNameEnglish AS variety,
+//               fpc.gradeAprice AS unitPriceA,
+//               fpc.gradeAquan AS weightA,
+//               fpc.gradeBprice AS unitPriceB,
+//               fpc.gradeBquan AS weightB,
+//               fpc.gradeCprice AS unitPriceC,
+//               fpc.gradeCquan AS weightC,
+//               (COALESCE(fpc.gradeAprice * fpc.gradeAquan, 0) +
+//                COALESCE(fpc.gradeBprice * fpc.gradeBquan, 0) +
+//                COALESCE(fpc.gradeCprice * fpc.gradeCquan, 0)) AS total,
+//                rfp.InvNo AS invoiceNumber
+//           FROM 
+//               farmerpaymentscrops fpc
+//           INNER JOIN 
+//               \`plant_care\`.\`cropvariety\` cv ON fpc.cropId = cv.id
+//           INNER JOIN 
+//               \`plant_care\`.\`cropgroup\` cg ON cv.cropGroupId = cg.id
+//           INNER JOIN 
+//               registeredfarmerpayments rfp ON fpc.registerFarmerId = rfp.id
+//           WHERE 
+//               rfp.userId = ? 
+//               AND DATE(fpc.createdAt) = ? 
+//               AND fpc.registerFarmerId = ?
+//           ORDER BY 
+//               fpc.createdAt DESC
+//       `;
 
-    db.collectionofficer.query(query, [userId, createdAtDate, farmerId], (error, results) => {
-      if (error) {
-        return reject(error);
-      }
-      resolve(results);
+//     db.collectionofficer.query(query, [userId, createdAtDate, farmerId], (error, results) => {
+//       if (error) {
+//         return reject(error);
+//       }
+//       resolve(results);
+//     });
+//   });
+// };
+
+
+exports.GetFarmerReportDetailsDao = async (userId, createdAtDate, registeredFarmerId) => {
+  const query = `
+    SELECT
+      fpc.id AS id,
+      cg.cropNameEnglish AS cropName,
+      cv.varietyNameEnglish AS variety,
+      fpc.gradeAprice AS unitPriceA,
+      fpc.gradeAquan AS weightA,
+      fpc.gradeBprice AS unitPriceB,
+      fpc.gradeBquan AS weightB,
+      fpc.gradeCprice AS unitPriceC,
+      fpc.gradeCquan AS weightC,
+      rfp.InvNo AS invoiceNumber
+    FROM
+      farmerpaymentscrops fpc
+    INNER JOIN
+      plant_care.cropvariety cv ON fpc.cropId = cv.id
+    INNER JOIN
+      plant_care.cropgroup cg ON cv.cropGroupId = cg.id
+    INNER JOIN
+      registeredfarmerpayments rfp ON fpc.registerFarmerId = rfp.id
+    WHERE
+      rfp.userId = ? 
+      AND fpc.registerFarmerId = ?
+      AND DATE(fpc.createdAt) = ?
+    ORDER BY
+      fpc.createdAt DESC
+  `;
+  return new Promise((resolve, reject) => {
+   
+    console.log('@@@@@@@@ UserId:', userId);
+    console.log('@@@@@@@@@   registeredFarmerId:', registeredFarmerId);
+    console.log('@@@@@@@@@   createdAtDate:', createdAtDate);
+   
+    db.collectionofficer.query(query, [userId, registeredFarmerId, createdAtDate], (error, results) => {
+      if (error) return reject(error);
+      const transformedResults = results.flatMap(row => {
+        const entries = [];
+       
+        if (row.weightA > 0) entries.push({
+          id: row.id,
+          cropName: row.cropName,
+          variety: row.variety,
+          grade: 'A',
+          unitPrice: row.unitPriceA,
+          quantity: row.weightA,
+          subTotal: (row.unitPriceA * row.weightA).toFixed(2),
+          invoiceNumber: row.invoiceNumber
+        });
+        if (row.weightB > 0) entries.push({
+          id: row.id,
+          cropName: row.cropName,
+          variety: row.variety,
+          grade: 'B',
+          unitPrice: row.unitPriceB,
+          quantity: row.weightB,
+          subTotal: (row.unitPriceB * row.weightB).toFixed(2),
+          invoiceNumber: row.invoiceNumber
+        });
+        if (row.weightC > 0) entries.push({
+          id: row.id,
+          cropName: row.cropName,
+          variety: row.variety,
+          grade: 'C',
+          unitPrice: row.unitPriceC,
+          quantity: row.weightC,
+          subTotal: (row.unitPriceC * row.weightC).toFixed(2),
+          invoiceNumber: row.invoiceNumber
+        });
+        return entries;
+      });
+      console.log('Transformed Results:', transformedResults);
+      resolve(transformedResults);
     });
   });
 };
@@ -689,10 +767,11 @@ exports.getCollectionOfficers = async (managerId) => {
       phoneNumber01 AS phoneNumber1,
       phoneNumber02 AS phoneNumber2,
       id AS collectionOfficerId,
+      jobRole,
       status,
       image
     FROM collectionofficer
-    WHERE jobRole = 'Collection Officer' AND irmId = ?
+    WHERE jobRole IN ('Collection Officer', 'Driver') AND irmId = ?
   `;
   return db.collectionofficer.promise().query(sql, [managerId]);
 };

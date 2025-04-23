@@ -47,7 +47,7 @@
 // // //Socket.IO connection handler
 // // io.on("connection", (socket) => {
 // //   console.log(`${socket.id} user connected`);
-  
+
 
 
 // //   // Handle 'login' event to mark user as online
@@ -114,7 +114,7 @@
 // //   //   if (filteredOfficer) {
 // //   //     // Emit the officer's status (online/offline) to the requesting client
 // //   //     socket.emit("foundOfficer", filteredOfficer.status);
-      
+
 // //   //     console.log(`Employee ${empId} found with status: ${filteredOfficer.status}`);
 // //   //   } else {
 // //   //     socket.emit("foundOfficer", "offline"); // Default to offline if not found
@@ -244,6 +244,7 @@
 
 const express = require('express');
 const cors = require('cors');
+const cron = require('node-cron');
 const addCropDetails = require('./routes/unregisteredcropfarmer');
 const farmerRoutes = require('./routes/farmerrutes');
 const bodyParser = require('body-parser');
@@ -251,6 +252,7 @@ const getUserdata = require('./routes/QRroutes');
 const complainRoutes = require('./routes/complains.routes');
 const priceUpdatesRoutes = require('./routes/price.routes');
 const managerRoutes = require('./routes/manager.routes');
+const collectionrequest = require('./routes/collection.routes')
 const { plantcare, collectionofficer, marketPlace, dash, admin } = require('./startup/database');
 const heathRoutes = require("./routes/heathRoutes");
 
@@ -344,15 +346,17 @@ const collectionOfficerRoutes = require('./routes/userroutes');
 mainApp.use(`${basePathMain}/api/collection-officer`, collectionOfficerRoutes);
 mainApp.use(`${basePathMain}/api/farmer`, farmerRoutes);
 mainApp.use(`${basePathMain}/api/unregisteredfarmercrop`, addCropDetails);
+
 mainApp.use(`${basePathMain}/api/getUserData`, getUserdata);
 const searchRoutes = require('./routes/search.routes');
 mainApp.use(`${basePathMain}/api/auth`, searchRoutes);
 mainApp.use(`${basePathMain}/api/complain`, complainRoutes);
 mainApp.use(`${basePathMain}/api/auth`, priceUpdatesRoutes);
 mainApp.use(`${basePathMain}/api/collection-manager`, managerRoutes);
-const targetRoutes = require('./routes/Target');
+const targetRoutes = require('./routes/TargetNew-routes');
 mainApp.use(`${basePathMain}/api/target`, targetRoutes);
 mainApp.use(`${basePathMain}`, heathRoutes);
+mainApp.use(`${basePathMain}/api/collectionrequest`, collectionrequest);
 
 // Routes for status API (PORT 3005)
 const basePathStatus = '/agro-api/collection-status';
@@ -394,7 +398,27 @@ const PORT = process.env.PORT || 3000;
 //   });
 // });
 
+// this is the port defining code
 
+// cron.schedule('0 0 * * *', async () => {
+//   console.log('Running SMS sending task at midnight');
+//   await farmerEp.sendSMSToFarmers();
+//     console.log('SMS sending task completed'); 
+// }, {
+//   scheduled: true,
+//   timezone: "Asia/Colombo", // Use your local timezone
+// });
+
+const farmerEp = require('./end-point/farmer-ep');
+
+cron.schedule('16 18 * * *', async () => {
+  console.log('Running SMS sending task at 18:00');
+  await farmerEp.sendSMSToFarmers();
+  console.log('SMS sending task completed');
+}, {
+  scheduled: true,
+  timezone: "Asia/Colombo", // Use your local timezone
+});
 mainApp.listen(PORT, () => console.log(`Main API server running on port ${PORT} with base path ${basePathMain}`));
 // httpsServer.listen(PORT2, () => {
 //   console.log(`Socket.IO server listening on port ${PORT2} with base path ${basePathStatus}`);

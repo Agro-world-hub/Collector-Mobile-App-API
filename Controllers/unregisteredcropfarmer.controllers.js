@@ -3,11 +3,11 @@ const db = require('../startup/database');
 
 const addCropDetails = (req, res) => {
     const { crops } = req.body;
-    const userId = req.user.id; 
+    const userId = req.user.id;
     const farmerId = req.body.farmerId;
 
     console.log(farmerId);
-    console.log(crops); 
+    console.log(crops);
 
     if (!Array.isArray(crops) || crops.length === 0) {
         return res.status(400).json({ error: 'Crops data is required and must be an array' });
@@ -185,7 +185,7 @@ const getVarietiesByCropId = (req, res) => {
 const getUnitPricesByCropId = (req, res) => {
     const { cropId } = req.params;
     console.log(cropId)
-        // Extract cropId from the URL parameters
+    // Extract cropId from the URL parameters
 
     console.log("Received cropId:", cropId); // Log to verify the cropId
 
