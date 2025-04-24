@@ -1,6 +1,8 @@
 const collectionDao = require('../dao/collection-dao');
 const asyncHandler = require('express-async-handler');
 
+//this is a endpoint
+
 exports.getAllCollectionRequest = async (req, res) => {
     try {
         const userId = req.user.id; // Get user ID from the authenticated request

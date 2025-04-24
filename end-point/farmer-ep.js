@@ -5,6 +5,7 @@ const farmerDao = require('../dao/farmar-dao');
 const asyncHandler = require('express-async-handler');
 const uploadFileToS3 = require('../Middlewares/s3upload');
 const axios = require('axios');
+const  userSchema  = require('../Validations/farmer-validation'); 
 // Controller to handle user and payment details and QR code generation
 // exports.addUserAndPaymentDetails = asyncHandler(async (req, res) => {
 //     const {
@@ -104,40 +105,63 @@ const axios = require('axios');
 // });
 
 exports.addUserAndPaymentDetails = asyncHandler(async (req, res) => {
-    const {
-        firstName,
-        lastName,
-        NICnumber,
-        phoneNumber,
-        district,
-        accNumber,
-        accHolderName,
-        bankName,
-        branchName,
-        PreferdLanguage
-    } = req.body;
-
-
-    // Validation: Check if all fields are filled
-    if (!firstName || !lastName || !NICnumber || !phoneNumber || !district || !accNumber || !accHolderName || !bankName || !branchName || !PreferdLanguage) {
-        return res.status(400).json({ error: "All fields are required" });
-    }
-
-    const formattedPhoneNumber = `+${String(phoneNumber).replace(/^\+/, "")}`;
-
-
-    console.log('Formatted Phone Number:', formattedPhoneNumber);
-
     try {
-        const userResult = await farmerDao.createUser(firstName, lastName, NICnumber, formattedPhoneNumber, district, PreferdLanguage);
+        
+        console.log("addUserAndPaymentDetails",req.body);
+        // Validate request body using Joi
+        const { error, value } = userSchema.userSchema.validate(req.body, { abortEarly: false });
+        
+        if (error) {
+            const validationErrors = error.details.map(detail => detail.message);
+            return res.status(400).json({ 
+                error: "Validation failed", 
+                details: validationErrors 
+            });
+        }
+        
+        const {
+            firstName,
+            lastName,
+            NICnumber,
+            phoneNumber,
+            district,
+            accNumber,
+            accHolderName,
+            bankName,
+            branchName,
+            PreferdLanguage
+        } = value;
+
+        // Format phone number (removing + if present, then adding it back)
+        const formattedPhoneNumber = `+${String(phoneNumber).replace(/^\+/, "")}`;
+        console.log('Formatted Phone Number:', formattedPhoneNumber);
+        
+        // Create user record
+        const userResult = await farmerDao.createUser(
+            firstName, 
+            lastName, 
+            NICnumber, 
+            formattedPhoneNumber, 
+            district, 
+            PreferdLanguage
+        );
+        
         const userId = userResult.insertId;
-
+        
         // Insert into the 'userbankdetails' table
-        const paymentResult = await farmerDao.createPaymentDetails(userId, accNumber, accHolderName, bankName, branchName);
+        const paymentResult = await farmerDao.createPaymentDetails(
+            userId, 
+            accNumber, 
+            accHolderName, 
+            bankName, 
+            branchName
+        );
+        
         const paymentId = paymentResult.insertId;
-
+        
         // Generate and update QR code for the user
         const qrUrl = await exports.createQrCode(userId);
+        
         // Success response
         res.status(200).json({
             message: "User, bank details, and QR code added successfully",
@@ -145,23 +169,39 @@ exports.addUserAndPaymentDetails = asyncHandler(async (req, res) => {
             paymentId: paymentId,
             qrCodeUrl: qrUrl,
             NICnumber: NICnumber,
-
         });
     } catch (error) {
         // Check for specific errors
         if (error.code === 'ER_DUP_ENTRY') {
             // Handle duplicate entry error from database
-            return res.status(409).json({ error: "Duplicate entry error: " + error.message });
+            return res.status(409).json({ 
+                error: "A user with this information already exists",
+                details: error.message 
+            });
         }
-
+        
         // Generic error response
         console.error("Error during user creation:", error);
-        res.status(500).json({ error: "An unexpected error occurred: " + error.message });
+        res.status(500).json({ 
+            error: "An unexpected error occurred", 
+            details: error.message 
+        });
     }
 });
 
 exports.addFarmerBankDetails = async (req, res) => {
-    console.log("addFarmerBankDetails");
+    console.log("addFarmerBankDetails", req.body);
+    
+    const { error, value } = userSchema.bankDetailsSchema.validate(req.body, { abortEarly: false });
+        
+    if (error) {
+        const validationErrors = error.details.map(detail => detail.message);
+        return res.status(400).json({ 
+            error: "Validation failed", 
+            details: validationErrors 
+        });
+    }
+    
     const { userId, NICnumber, accNumber, accHolderName, bankName, branchName } = req.body;
     console.log("userId", userId, "NICnumber", NICnumber, "accNumber", accNumber, "accHolderName", accHolderName, "bankName", bankName, "branchName", branchName);
 

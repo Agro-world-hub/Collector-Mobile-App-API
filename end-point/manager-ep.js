@@ -65,10 +65,26 @@ const uploadFileToS3  = require('../Middlewares/s3upload');
 //     });
 //   }
 // };
-
+const createCollectionOfficerSchema  = require ('../Validations/manager-validation')
 
 exports.createCollectionOfficer = async (req, res) => {
   try {
+    
+        // Validate request body using Joi
+        const { error, value } = createCollectionOfficerSchema.createCollectionOfficerSchema.validate(req.body, { 
+          abortEarly: false,  // Return all errors, not just the first one
+          stripUnknown: true  // Remove unknown keys
+        });
+        
+        if (error) {
+          const errorMessages = error.details.map(detail => detail.message);
+          return res.status(400).json({ 
+            error: "Validation failed", 
+            details: errorMessages 
+          });
+        }
+        
+        
     const { id: irmId } = req.user;
     
     // Get IRM details
