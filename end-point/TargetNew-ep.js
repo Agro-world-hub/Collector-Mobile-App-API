@@ -1,5 +1,7 @@
 const TargetDAO = require('../dao/TargetNew-dao');
 
+const targetValidation = require('../Validations/Target-validation');
+
 exports.getDailyTargetsForOfficer = async (req, res) => {
     try {
         const { officerId } = req.params;
@@ -86,12 +88,14 @@ exports.getCenterTarget = async (req, res) => {
 
 
 exports.transferTarget = async (req, res) => {
-  const { fromOfficerId, toOfficerId, varietyId, grade, amount } = req.body;
-  console.log('from officer---', fromOfficerId)
-
-  if (!fromOfficerId || !toOfficerId || !varietyId || !grade || !amount) {
-    return res.status(400).json({ error: "Missing required parameters" });
+  // Validate request body
+  const { error } = targetValidation.transferSchema.validate(req.body);
+  if (error) {
+    return res.status(400).json({ error: error.details[0].message });
   }
+
+  const { fromOfficerId, toOfficerId, varietyId, grade, amount } = req.body;
+  console.log('from officer---', fromOfficerId);
 
   try {
     const result = await TargetDAO.transferTargetDAO(fromOfficerId, toOfficerId, varietyId, grade, amount);
@@ -101,14 +105,15 @@ exports.transferTarget = async (req, res) => {
   }
 };
 
-
 exports.receiveTarget = async (req, res) => {
-  const { fromOfficerId, toOfficerId, varietyId, grade, amount } = req.body;
-  console.log('from officer---', fromOfficerId)
-
-  if (!fromOfficerId || !toOfficerId || !varietyId || !grade || !amount) {
-    return res.status(400).json({ error: "Missing required parameters" });
+  // Validate request body
+  const { error } = targetValidation.transferSchema.validate(req.body);
+  if (error) {
+    return res.status(400).json({ error: error.details[0].message });
   }
+
+  const { fromOfficerId, toOfficerId, varietyId, grade, amount } = req.body;
+  console.log('from officer---', fromOfficerId);
 
   try {
     const result = await TargetDAO.receiveTargetDAO(fromOfficerId, toOfficerId, varietyId, grade, amount);
@@ -120,14 +125,15 @@ exports.receiveTarget = async (req, res) => {
 
 exports.ManagertransferTarget = async (req, res) => {
   console.log('recieved pass target', req.body);
-  const { toOfficerId, varietyId, grade, amount } = req.body;
-
-  const fromOfficerId = req.user.id;
-
-
-  if (!fromOfficerId || !toOfficerId || !varietyId || !grade || !amount) {
-    return res.status(400).json({ error: "Missing required parameters" });
+  
+  // Validate request body
+  const { error } = targetValidation.managerTransferSchema.validate(req.body);
+  if (error) {
+    return res.status(400).json({ error: error.details[0].message });
   }
+
+  const { toOfficerId, varietyId, grade, amount } = req.body;
+  const fromOfficerId = req.user.id;
 
   try {
     const result = await TargetDAO.transferTargetDAO(fromOfficerId, toOfficerId, varietyId, grade, amount);
@@ -137,16 +143,17 @@ exports.ManagertransferTarget = async (req, res) => {
   }
 };
 
-
 exports.ManagereceiveTarget = async (req, res) => {
+  // Validate request body
+  const { error } = targetValidation.managerReceiveSchema.validate(req.body);
+  if (error) {
+    return res.status(400).json({ error: error.details[0].message });
+  }
+
   const { fromOfficerId, varietyId, grade, amount } = req.body;
   const toOfficerId = req.user.id;
 
   console.log('recieved pass target', req.body);
-
-  if (!fromOfficerId || !toOfficerId || !varietyId || !grade || !amount) {
-    return res.status(400).json({ error: "Missing required parameters" });
-  }
 
   try {
     const result = await TargetDAO.receiveTargetDAO(fromOfficerId, toOfficerId, varietyId, grade, amount);

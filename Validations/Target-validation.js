@@ -12,3 +12,27 @@ exports.downloadDailyTargetSchema = Joi.object({
     fromDate: Joi.date().required(),
     toDate: Joi.date().required()
 });
+
+
+// Define Joi schemas
+exports.transferSchema = Joi.object({
+    fromOfficerId: Joi.number().required(),
+    toOfficerId:  Joi.number().required(),
+    varietyId:  Joi.number().required(),
+    grade: Joi.string().required(),
+    amount: Joi.number().min(0).required()
+  });
+  
+exports.managerTransferSchema = Joi.object({
+    toOfficerId:  Joi.number().required(),
+    varietyId:  Joi.number().required(),
+    grade: Joi.string().required(),
+    amount: Joi.number().min(0).required()
+  });
+  
+  exports.managerReceiveSchema = Joi.object({
+    fromOfficerId:  Joi.number().required(),
+    varietyId:  Joi.number().required(),
+    grade: Joi.string().required(),
+    amount: Joi.number().min(0).required()
+  });

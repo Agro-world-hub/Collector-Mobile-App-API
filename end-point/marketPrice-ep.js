@@ -1,9 +1,26 @@
 const marketPriceDAO = require('../dao/marketPrice-dao'); // Import the DAO layer
+const  marketPriceRequestSchema  = require('../Validations/marketPrice-validation');
+
 
 exports.insertMarketPriceRequestBatch = async (req, res) => {
     try {
+        
+        console.log('Market Price Request Body:', req.body); // For debugging purposes
+        
+          // Validate the request body using Joi
+          const { error, value } = marketPriceRequestSchema.priceItemSchema.validate(req.body, { abortEarly: false });
+        
+          if (error) {
+              const validationErrors = error.details.map(detail => detail.message);
+              return res.status(400).json({ 
+                  message: 'Validation failed', 
+                  errors: validationErrors 
+              });
+          }
+          
+          
         const { prices } = req.body; // prices is an array of price update objects
-        console.log(prices);
+        console.log(req.body); // For debugging purposes
 
         if (!prices || prices.length === 0) {
             return res.status(400).json({ message: 'No prices provided for update.' });
