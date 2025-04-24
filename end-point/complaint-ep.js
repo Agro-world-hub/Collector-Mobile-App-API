@@ -11,10 +11,6 @@ exports.createFarmerComplaint = async (req, res) => {
 
         const { complain, language, userId, category } = req.body;
         const officerId = req.user.id;
-        // Validate required fields
-        if (!complain || !language || !userId || !category) {
-            return res.status(400).json({ message: 'All fields are required' });
-        }
 
         const userExists = await ComplaintDao.checkIfUserExists(userId);
         
@@ -49,6 +45,27 @@ exports.createOfficerComplain = asyncHandler(async(req, res) => {
         const coId = req.user.id;
 
         const { language, complain, category } = req.body;
+        let setlanguage;
+            if (language === 'en') {
+                setlanguage = 'English';
+            } else if (language === 'si') {
+                setlanguage = 'Sinhala';
+            } else if (language === 'ta') {
+                setlanguage = 'Tamil';
+            } 
+
+        const officerRole = req.user.role;
+        let assignedStatus ;
+        if(officerRole === 'Collection Center Manager' || officerRole === 'Driver'){
+            assignedStatus = 'CCH';
+        }
+        else if(officerRole === 'Collection Officer'){
+            assignedStatus = 'CCM';
+        }
+
+        console.log("Officer Role:", officerRole);
+        console.log("Assigned Status:", assignedStatus);
+    
         const status = "Opened";
 
         console.log("Creating complain:", { coId, language, complain, category, status });
@@ -61,11 +78,12 @@ exports.createOfficerComplain = asyncHandler(async(req, res) => {
 
         const newComplainId = await ComplaintDao.createOfficerComplaint(
             coId,
-            language,
+            setlanguage,
             complain,
             category,
             status,
-            referenceNumber
+            referenceNumber,
+            assignedStatus
         );
 
         res.status(201).json({
