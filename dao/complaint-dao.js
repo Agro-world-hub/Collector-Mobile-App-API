@@ -28,12 +28,12 @@ exports.checkIfUserExists = (userId) => {
     });
 };
 
-exports.createOfficerComplaint = (coId, language, complain, category, status, referenceNumber) => {
+exports.createOfficerComplaint = (coId, setlanguage, complain, category, status, referenceNumber,assignedStatus) => {
     return new Promise((resolve, reject) => {
         const sql = 
-           "INSERT INTO officercomplains (officerId,  language, complain, complainCategory, status, refNo, complainAssign) VALUES (?, ?, ?, ?, ?, ?, 'Assigned')";
+           "INSERT INTO officercomplains (officerId,  language, complain, complainCategory, status, refNo, complainAssign) VALUES (?, ?, ?, ?, ?, ?, ?)";
         
-        const values = [ coId,language,complain, category, status, referenceNumber];
+        const values = [ coId,setlanguage,complain, category, status, referenceNumber,assignedStatus];
 
         db.collectionofficer.query(sql, values, (err, result) => {
             if (err) {
