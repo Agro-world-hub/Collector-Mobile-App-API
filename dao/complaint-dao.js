@@ -28,30 +28,119 @@ exports.checkIfUserExists = (userId) => {
     });
 };
 
-exports.createOfficerComplaint = (coId, setlanguage, complain, category, status, referenceNumber,assignedStatus) => {
-    return new Promise((resolve, reject) => {
-        const sql = 
-           "INSERT INTO officercomplains (officerId,  language, complain, complainCategory, status, refNo, complainAssign) VALUES (?, ?, ?, ?, ?, ?, ?)";
+// exports.createOfficerComplaint = (coId, setlanguage, complain, category, status, referenceNumber,officerRole ) => {
+//     return new Promise((resolve, reject) => {
+//         const sql = 
+//            "INSERT INTO officercomplains (officerId,  language, complain, complainCategory, CCMStatus, refNo) VALUES (?, ?, ?, ?, ?, ?)";
         
-        const values = [ coId,setlanguage,complain, category, status, referenceNumber,assignedStatus];
+//         const values = [ coId,setlanguage,complain, category, status, referenceNumber,assignedStatus];
+
+//         db.collectionofficer.query(sql, values, (err, result) => {
+//             if (err) {
+//                 return reject(err);
+//             }
+//             resolve(result);
+//         });
+//     });
+// };
+exports.createOfficerComplaint = (
+    coId,
+    setlanguage,
+    complain,
+    category,
+    referenceNumber,
+    officerRole
+) => {
+    return new Promise((resolve, reject) => {
+        let CCMStatus, COOStatus, CCHStatus, complainAssign;
+
+        if (officerRole === 'Collection Center Manager' || officerRole === 'Driver') {
+            CCMStatus = 'Opened';
+            CCHStatus = 'Assigned';
+            COOStatus = null;
+            complainAssign = 'CCH';
+        } else if (officerRole === 'Collection Officer') {
+            CCMStatus = 'Assigned';
+            CCHStatus = null;
+            COOStatus = 'Opened';
+            complainAssign = 'CCM';
+        } else {
+            return reject(new Error('Invalid officer role'));
+        }
+
+        const sql = `
+            INSERT INTO officercomplains 
+            (officerId, language, complain, complainCategory, CCMStatus, COOStatus, CCHStatus, refNo, complainAssign) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+
+        const values = [
+            coId,
+            setlanguage,
+            complain,
+            category,
+            CCMStatus,
+            COOStatus,
+            CCHStatus,
+            referenceNumber,
+            complainAssign
+        ];
 
         db.collectionofficer.query(sql, values, (err, result) => {
             if (err) {
                 return reject(err);
             }
-            resolve(result);
+            resolve(result.insertId); // Return the inserted ID
         });
     });
 };
 
-exports.getAllComplaintsByUserId = async(userId) => {
+
+// exports.getAllComplaintsByUserId = async(userId) => {
+//     return new Promise((resolve, reject) => {
+//         const query = `
+//         SELECT id, language, complain, status, createdAt, complainCategory , reply, refNo
+//         FROM officercomplains 
+//         WHERE officerId = ?
+//         ORDER BY createdAt DESC
+//       `;
+//         db.collectionofficer.query(query, [userId], (error, results) => {
+//             if (error) {
+//                 console.error("Error fetching complaints:", error);
+//                 reject(error);
+//             } else {
+//                 resolve(results);
+//             }
+//         });
+//     });
+// };
+exports.getAllComplaintsByUserId = async (userId, officerRole) => {
     return new Promise((resolve, reject) => {
+        // Choose status column based on role
+        let statusColumn;
+        if (officerRole === 'Collection Officer') {
+            statusColumn = 'COOStatus';
+        } else if (officerRole === 'Collection Center Manager' || officerRole === 'Driver') {
+            statusColumn = 'CCMStatus';
+        } else {
+            return reject(new Error('Invalid officer role'));
+        }
+
         const query = `
-        SELECT id, language, complain, status, createdAt, complainCategory , reply, refNo
-        FROM officercomplains 
-        WHERE officerId = ?
-        ORDER BY createdAt DESC
-      `;
+            SELECT 
+                id, 
+                language, 
+                complain, 
+                ${statusColumn} AS status, 
+                createdAt, 
+                complainCategory, 
+                reply, 
+                refNo
+            FROM officercomplains 
+            WHERE officerId = ?
+            ORDER BY createdAt DESC
+        `;
+
         db.collectionofficer.query(query, [userId], (error, results) => {
             if (error) {
                 console.error("Error fetching complaints:", error);
@@ -62,6 +151,7 @@ exports.getAllComplaintsByUserId = async(userId) => {
         });
     });
 };
+
 
 exports.getComplainCategories = async(appName) => {
     return new Promise((resolve, reject) => {
