@@ -55,20 +55,11 @@ exports.createOfficerComplain = asyncHandler(async(req, res) => {
             } 
 
         const officerRole = req.user.role;
-        let assignedStatus ;
-        if(officerRole === 'Collection Center Manager' || officerRole === 'Driver'){
-            assignedStatus = 'CCH';
-        }
-        else if(officerRole === 'Collection Officer'){
-            assignedStatus = 'CCM';
-        }
 
         console.log("Officer Role:", officerRole);
-        console.log("Assigned Status:", assignedStatus);
-    
-        const status = "Opened";
+     
 
-        console.log("Creating complain:", { coId, language, complain, category, status });
+        console.log("Creating complain:", { coId, language, complain, category,  officerRole });
         const today = new Date();
         const YYMMDD = today.toISOString().slice(2, 10).replace(/-/g, ''); 
         const datePrefix = `CO${YYMMDD}`;
@@ -81,9 +72,8 @@ exports.createOfficerComplain = asyncHandler(async(req, res) => {
             setlanguage,
             complain,
             category,
-            status,
             referenceNumber,
-            assignedStatus
+            officerRole
         );
 
         res.status(201).json({
@@ -105,7 +95,8 @@ exports.getComplains = asyncHandler(async(req, res) => {
     console.log("Fetching complaints...");
     try {
         const userId = req.user.id;
-        const complains = await ComplaintDao.getAllComplaintsByUserId(userId);
+        const officerRole = req.user.role;
+        const complains = await ComplaintDao.getAllComplaintsByUserId(userId, officerRole);
 
         if (!complains || complains.length === 0) {
             return res.status(404).json({ message: "No complaints found" });
