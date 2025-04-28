@@ -2,10 +2,10 @@ const db = require('../startup/database');
 
 exports.createComplaint = (complain, language, farmerId, category, status, officerId, referenceNumber) => {
     return new Promise((resolve, reject) => {
-        const sql = 
-           "INSERT INTO farmercomplains (farmerId,  language, complain, complainCategory, status, coId, refNo , adminStatus) VALUES (?, ?, ?, ?, ?, ?, ?, 'Assigned')";
-        
-        const values = [ farmerId,language,complain, category, status, officerId, referenceNumber];
+        const sql =
+            "INSERT INTO farmercomplains (farmerId,  language, complain, complainCategory, status, coId, refNo , adminStatus) VALUES (?, ?, ?, ?, ?, ?, ?, 'Assigned')";
+
+        const values = [farmerId, language, complain, category, status, officerId, referenceNumber];
 
         db.collectionofficer.query(sql, values, (err, result) => {
             if (err) {
@@ -30,10 +30,10 @@ exports.checkIfUserExists = (userId) => {
 
 exports.createOfficerComplaint = (coId, language, complain, category, status, referenceNumber) => {
     return new Promise((resolve, reject) => {
-        const sql = 
-           "INSERT INTO officercomplains (officerId,  language, complain, complainCategory, status, refNo, complainAssign) VALUES (?, ?, ?, ?, ?, ?, 'Assigned')";
-        
-        const values = [ coId,language,complain, category, status, referenceNumber];
+        const sql =
+            "INSERT INTO officercomplains (officerId,  language, complain, complainCategory, status, refNo, complainAssign) VALUES (?, ?, ?, ?, ?, ?, 'Assigned')";
+
+        const values = [coId, language, complain, category, status, referenceNumber];
 
         db.collectionofficer.query(sql, values, (err, result) => {
             if (err) {
@@ -44,7 +44,7 @@ exports.createOfficerComplaint = (coId, language, complain, category, status, re
     });
 };
 
-exports.getAllComplaintsByUserId = async(userId) => {
+exports.getAllComplaintsByUserId = async (userId) => {
     return new Promise((resolve, reject) => {
         const query = `
         SELECT id, language, complain, status, createdAt, complainCategory , reply, refNo
@@ -63,7 +63,7 @@ exports.getAllComplaintsByUserId = async(userId) => {
     });
 };
 
-exports.getComplainCategories = async(appName) => {
+exports.getComplainCategories = async (appName) => {
     return new Promise((resolve, reject) => {
         const query = `
                     SELECT cc.id, cc.roleId, cc.appId, cc.categoryEnglish, cc.categorySinhala, cc.categoryTamil, ssa.appName
@@ -71,7 +71,7 @@ exports.getComplainCategories = async(appName) => {
                 JOIN systemapplications ssa ON cc.appId = ssa.id
                 WHERE ssa.appName = ?
       `;
-        db.admin.query(query , [appName], (error, results) => {
+        db.admin.query(query, [appName], (error, results) => {
             if (error) {
                 console.error("Error fetching complaints:", error);
                 reject(error);
