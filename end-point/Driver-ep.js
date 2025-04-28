@@ -1,41 +1,41 @@
 const driverDao = require('../dao/Driver-dao');
-const uploadFileToS3  = require('../Middlewares/s3upload'); // Adjust path as needed
-const { driverWithVehicleSchema } = require('../Validations/driver-validation'); 
+const uploadFileToS3 = require('../Middlewares/s3upload'); // Adjust path as needed
+const { driverWithVehicleSchema } = require('../Validations/driver-validation');
 
 exports.createDriverWithVehicle = async (req, res) => {
   try {
-    
-    console.log('driver req body ----',req.body)
-    
+
+    console.log('driver req body ----', req.body)
+
     // Validate request body using Joi
     const { error, value } = driverWithVehicleSchema.validate(req.body, { abortEarly: false });
-   
+
     if (error) {
       const errorMessages = error.details.map(detail => detail.message);
-      
+
       // Add clear console logging of the validation errors
       console.error('\x1b[31m%s\x1b[0m', '400 BAD REQUEST - Validation Failed:');
       errorMessages.forEach((msg, index) => {
         console.error(`  ${index + 1}. ${msg}`);
       });
-      
+
       return res.status(400).json({
         error: "Validation failed",
         details: errorMessages
       });
     }
-    
+
     const { id: irmId } = req.user;
 
     // Check if driver already exists
     const driverExists = await driverDao.checkDriverExists(
-      req.body.nic, 
+      req.body.nic,
       req.body.email
     );
 
     if (driverExists) {
-      return res.status(400).json({ 
-        error: "Driver with this NIC or email already exists" 
+      return res.status(400).json({
+        error: "Driver with this NIC or email already exists"
       });
     }
 
@@ -46,7 +46,7 @@ exports.createDriverWithVehicle = async (req, res) => {
         const base64Data = base64String.includes(';base64,')
           ? base64String.split(';base64,').pop()
           : base64String;
-       
+
         return Buffer.from(base64Data, 'base64');
       } catch (error) {
         console.error("Error converting base64 to buffer:", error);
@@ -58,13 +58,13 @@ exports.createDriverWithVehicle = async (req, res) => {
     const generateUniqueFileName = (originalName) => {
       const timestamp = Date.now();
       const randomStr = Math.random().toString(36).substring(2, 8);
-     
+
       // Extract extension from original filename or use default
       let fileExt = 'jpg';
       if (originalName && originalName.includes('.')) {
         fileExt = originalName.split('.').pop();
       }
-     
+
       return `${timestamp}-${randomStr}.${fileExt}`;
     };
 
@@ -75,7 +75,7 @@ exports.createDriverWithVehicle = async (req, res) => {
       try {
         const fileBuffer = convertBase64ToBuffer(base64Image);
         const fileName = generateUniqueFileName('image.jpg');
-        
+
         return await uploadFileToS3(fileBuffer, fileName, folderPath);
       } catch (uploadError) {
         console.error(`Error uploading image to S3:`, uploadError);
@@ -115,7 +115,7 @@ exports.createDriverWithVehicle = async (req, res) => {
       lastNameEnglish: req.body.lastNameEnglish,
       lastNameSinhala: req.body.lastNameSinhala,
       lastNameTamil: req.body.lastNameTamil,
-      
+
       // Contact Details
       nic: req.body.nic,
       email: req.body.email,
@@ -123,11 +123,11 @@ exports.createDriverWithVehicle = async (req, res) => {
       phoneNumber01: req.body.phoneNumber01,
       phoneCode02: req.body.phoneCode02,
       phoneNumber02: req.body.phoneNumber02,
-      
+
       // Employment Details
       empId: req.body.empId,
       empType: req.body.empType,
-      
+
       // Address Details
       houseNumber: req.body.houseNumber,
       streetName: req.body.streetName,
@@ -135,17 +135,17 @@ exports.createDriverWithVehicle = async (req, res) => {
       district: req.body.district,
       province: req.body.province,
       country: req.body.country,
-      
+
       // Additional Details
       languages: req.body.languages,
       profileImageUrl,
-      
+
       // Bank Details
       accHolderName: req.body.accHolderName,
       accNumber: req.body.accNumber,
       bankName: req.body.bankName,
       branchName: req.body.branchName,
-      
+
       // Vehicle Details
       licNo: req.body.licNo,
       insNo: req.body.insNo,
@@ -153,7 +153,7 @@ exports.createDriverWithVehicle = async (req, res) => {
       vType: req.body.vType,
       vCapacity: req.body.vCapacity,
       vRegNo: req.body.vRegNo,
-      
+
       // Vehicle Image URLs
       licFrontImg: licFrontImgUrl,
       licBackImg: licBackImgUrl,
@@ -167,17 +167,17 @@ exports.createDriverWithVehicle = async (req, res) => {
 
     // Get center and company ID from IRM (assumed to be in req.user or from a separate method)
     const { centerId, companyId } = req.user;
-    
+
     console.log('drivrerData:', driverData);
 
     // Create driver with vehicle
     const result = await driverDao.createDriverWithVehicle(
-      driverData, 
-      centerId, 
-      companyId, 
+      driverData,
+      centerId,
+      companyId,
       irmId
     );
-    
+
 
     // Respond with success
     return res.status(201).json({
@@ -190,6 +190,58 @@ exports.createDriverWithVehicle = async (req, res) => {
     console.error("Error creating driver with vehicle:", error);
     return res.status(500).json({
       error: "An error occurred while creating the driver and vehicle",
+      details: error.message
+    });
+  }
+};
+
+
+exports.checkPhoneExists = async (req, res) => {
+  try {
+    const phoneNumber = req.params.phoneNumber;
+
+    if (!phoneNumber) {
+      return res.status(400).json({
+        error: "Phone number is required"
+      });
+    }
+
+    const exists = await driverDao.checkPhoneExists(phoneNumber);
+
+    return res.status(200).json({
+      exists: exists
+    });
+  } catch (error) {
+    console.error("Error checking phone existence:", error);
+    return res.status(500).json({
+      error: "An error occurred while checking phone number",
+      details: error.message
+    });
+  }
+};
+
+
+
+
+exports.checkNicExists = async (req, res) => {
+  try {
+    const nicNumber = req.params.nicNumber;
+
+    if (!nicNumber) {
+      return res.status(400).json({
+        error: "NIC number is required" // Changed from "Phone number"
+      });
+    }
+
+    const exists = await driverDao.checkNICExists(nicNumber);
+
+    return res.status(200).json({
+      exists: exists
+    });
+  } catch (error) {
+    console.error("Error checking NIC existence:", error); // Changed error message
+    return res.status(500).json({
+      error: "An error occurred while checking NIC number", // Changed error message
       details: error.message
     });
   }
