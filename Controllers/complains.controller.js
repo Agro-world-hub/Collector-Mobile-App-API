@@ -2,7 +2,7 @@ const db = require('../startup/database'); // Adjust the path to your database c
 const { v4: uuidv4 } = require('uuid'); // To generate unique IDs
 
 
-const createFarmerComplaint = async(req, res) => {
+const createFarmerComplaint = async (req, res) => {
     try {
         const { farmerName, farmerPhone, complain, language } = req.body;
 

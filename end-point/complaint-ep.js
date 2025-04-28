@@ -7,32 +7,32 @@ const asyncHandler = require("express-async-handler");
 // Function to create a farmer complaint
 exports.createFarmerComplaint = async (req, res) => {
     try {
-        
+
 
         const { complain, language, userId, category } = req.body;
         const officerId = req.user.id;
 
         const userExists = await ComplaintDao.checkIfUserExists(userId);
-        
+
         if (!userExists) {
             return res.status(400).json({ message: 'User does not exist' });
-        }else{
+        } else {
             console.log('User exists');
         }
         farmerId = userExists.id;
         const today = new Date();
-    const YYMMDD = today.toISOString().slice(2, 10).replace(/-/g, ''); 
-    const datePrefix = `PC${YYMMDD}`;
+        const YYMMDD = today.toISOString().slice(2, 10).replace(/-/g, '');
+        const datePrefix = `PC${YYMMDD}`;
 
         const complaintsOnDate = 565322;
         const referenceNumber = `${datePrefix}${String(complaintsOnDate + 1).padStart(4, '0')}`;
         const status = 'Opened';
 
         // Call the DAO to insert the complaint into the database
-     const compain =   await ComplaintDao.createComplaint(complain, language, farmerId, category, status, officerId, referenceNumber);
-        console.log(compain )
+        const compain = await ComplaintDao.createComplaint(complain, language, farmerId, category, status, officerId, referenceNumber);
+        console.log(compain)
 
-        return res.status(201).json({ message: 'Complaint registered successfully'});
+        return res.status(201).json({ message: 'Complaint registered successfully' });
     } catch (error) {
         console.error('Error inserting complaint:', error);
         return res.status(500).json({ message: 'Internal Server Error' });
@@ -40,7 +40,7 @@ exports.createFarmerComplaint = async (req, res) => {
 };
 
 
-exports.createOfficerComplain = asyncHandler(async(req, res) => {
+exports.createOfficerComplain = asyncHandler(async (req, res) => {
     try {
         const coId = req.user.id;
 
@@ -61,11 +61,11 @@ exports.createOfficerComplain = asyncHandler(async(req, res) => {
 
         console.log("Creating complain:", { coId, language, complain, category,  officerRole });
         const today = new Date();
-        const YYMMDD = today.toISOString().slice(2, 10).replace(/-/g, ''); 
+        const YYMMDD = today.toISOString().slice(2, 10).replace(/-/g, '');
         const datePrefix = `CO${YYMMDD}`;
-    
-            const complaintsOnDate = await ComplaintDao.countOfiicerComplaintsByDate(today);
-            const referenceNumber = `${datePrefix}${String(complaintsOnDate + 1).padStart(4, '0')}`;
+
+        const complaintsOnDate = await ComplaintDao.countOfiicerComplaintsByDate(today);
+        const referenceNumber = `${datePrefix}${String(complaintsOnDate + 1).padStart(4, '0')}`;
 
         const newComplainId = await ComplaintDao.createOfficerComplaint(
             coId,
@@ -91,7 +91,7 @@ exports.createOfficerComplain = asyncHandler(async(req, res) => {
     }
 });
 
-exports.getComplains = asyncHandler(async(req, res) => {
+exports.getComplains = asyncHandler(async (req, res) => {
     console.log("Fetching complaints...");
     try {
         const userId = req.user.id;
@@ -126,7 +126,7 @@ exports.getComplains = asyncHandler(async(req, res) => {
 //     }
 // });
 
-exports.getComplainCategory = asyncHandler(async(req, res) => {
+exports.getComplainCategory = asyncHandler(async (req, res) => {
     try {
         const appName = req.params.appName;
         console.log("Fetching categories for app:", appName);
@@ -136,7 +136,7 @@ exports.getComplainCategory = asyncHandler(async(req, res) => {
             return res.status(404).json({ message: "No categories found" });
         }
 
-        res.status(200).json({ status: "success", data: categories }); 
+        res.status(200).json({ status: "success", data: categories });
     } catch (error) {
         console.error("Error fetching categories:", error);
         res.status(500).json({ message: "Failed to fetch categories" });
