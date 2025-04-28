@@ -423,3 +423,6 @@ mainApp.listen(PORT, () => console.log(`Main API server running on port ${PORT} 
 // httpsServer.listen(PORT2, () => {
 //   console.log(`Socket.IO server listening on port ${PORT2} with base path ${basePathStatus}`);
 // });
+
+
+module.exports = mainApp

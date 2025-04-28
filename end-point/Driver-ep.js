@@ -1,8 +1,30 @@
 const driverDao = require('../dao/Driver-dao');
 const uploadFileToS3  = require('../Middlewares/s3upload'); // Adjust path as needed
+const { driverWithVehicleSchema } = require('../Validations/driver-validation'); 
 
 exports.createDriverWithVehicle = async (req, res) => {
   try {
+    
+    console.log('driver req body ----',req.body)
+    
+    // Validate request body using Joi
+    const { error, value } = driverWithVehicleSchema.validate(req.body, { abortEarly: false });
+   
+    if (error) {
+      const errorMessages = error.details.map(detail => detail.message);
+      
+      // Add clear console logging of the validation errors
+      console.error('\x1b[31m%s\x1b[0m', '400 BAD REQUEST - Validation Failed:');
+      errorMessages.forEach((msg, index) => {
+        console.error(`  ${index + 1}. ${msg}`);
+      });
+      
+      return res.status(400).json({
+        error: "Validation failed",
+        details: errorMessages
+      });
+    }
+    
     const { id: irmId } = req.user;
 
     // Check if driver already exists

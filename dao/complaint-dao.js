@@ -28,30 +28,33 @@ exports.checkIfUserExists = (userId) => {
     });
 };
 
-exports.createOfficerComplaint = (coId, language, complain, category, status, referenceNumber) => {
+
     return new Promise((resolve, reject) => {
-        const sql =
-            "INSERT INTO officercomplains (officerId,  language, complain, complainCategory, status, refNo, complainAssign) VALUES (?, ?, ?, ?, ?, ?, 'Assigned')";
+        // Choose status column based on role
+        let statusColumn;
+        if (officerRole === 'Collection Officer') {
+            statusColumn = 'COOStatus';
+        } else if (officerRole === 'Collection Center Manager' || officerRole === 'Driver') {
+            statusColumn = 'CCMStatus';
+        } else {
+            return reject(new Error('Invalid officer role'));
+        }
 
-        const values = [coId, language, complain, category, status, referenceNumber];
-
-        db.collectionofficer.query(sql, values, (err, result) => {
-            if (err) {
-                return reject(err);
-            }
-            resolve(result);
-        });
-    });
-};
-
-exports.getAllComplaintsByUserId = async (userId) => {
-    return new Promise((resolve, reject) => {
         const query = `
-        SELECT id, language, complain, status, createdAt, complainCategory , reply, refNo
-        FROM officercomplains 
-        WHERE officerId = ?
-        ORDER BY createdAt DESC
-      `;
+            SELECT 
+                id, 
+                language, 
+                complain, 
+                ${statusColumn} AS status, 
+                createdAt, 
+                complainCategory, 
+                reply, 
+                refNo
+            FROM officercomplains 
+            WHERE officerId = ?
+            ORDER BY createdAt DESC
+        `;
+
         db.collectionofficer.query(query, [userId], (error, results) => {
             if (error) {
                 console.error("Error fetching complaints:", error);
@@ -63,10 +66,9 @@ exports.getAllComplaintsByUserId = async (userId) => {
     });
 };
 
-exports.getComplainCategories = async (appName) => {
     return new Promise((resolve, reject) => {
         const query = `
-                    SELECT cc.id, cc.roleId, cc.appId, cc.categoryEnglish, cc.categorySinhala, cc.categoryTamil, ssa.appName
+                   SELECT cc.id, cc.roleId, cc.appId, cc.categoryEnglish, cc.categorySinhala, cc.categoryTamil, ssa.appName
                 FROM complaincategory cc
                 JOIN systemapplications ssa ON cc.appId = ssa.id
                 WHERE ssa.appName = ?

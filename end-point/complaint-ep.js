@@ -11,10 +11,6 @@ exports.createFarmerComplaint = async (req, res) => {
 
         const { complain, language, userId, category } = req.body;
         const officerId = req.user.id;
-        // Validate required fields
-        if (!complain || !language || !userId || !category) {
-            return res.status(400).json({ message: 'All fields are required' });
-        }
 
         const userExists = await ComplaintDao.checkIfUserExists(userId);
 
@@ -49,9 +45,21 @@ exports.createOfficerComplain = asyncHandler(async (req, res) => {
         const coId = req.user.id;
 
         const { language, complain, category } = req.body;
-        const status = "Opened";
+        let setlanguage;
+            if (language === 'en') {
+                setlanguage = 'English';
+            } else if (language === 'si') {
+                setlanguage = 'Sinhala';
+            } else if (language === 'ta') {
+                setlanguage = 'Tamil';
+            } 
 
-        console.log("Creating complain:", { coId, language, complain, category, status });
+        const officerRole = req.user.role;
+
+        console.log("Officer Role:", officerRole);
+     
+
+        console.log("Creating complain:", { coId, language, complain, category,  officerRole });
         const today = new Date();
         const YYMMDD = today.toISOString().slice(2, 10).replace(/-/g, '');
         const datePrefix = `CO${YYMMDD}`;
@@ -61,11 +69,11 @@ exports.createOfficerComplain = asyncHandler(async (req, res) => {
 
         const newComplainId = await ComplaintDao.createOfficerComplaint(
             coId,
-            language,
+            setlanguage,
             complain,
             category,
-            status,
-            referenceNumber
+            referenceNumber,
+            officerRole
         );
 
         res.status(201).json({
@@ -87,7 +95,8 @@ exports.getComplains = asyncHandler(async (req, res) => {
     console.log("Fetching complaints...");
     try {
         const userId = req.user.id;
-        const complains = await ComplaintDao.getAllComplaintsByUserId(userId);
+        const officerRole = req.user.role;
+        const complains = await ComplaintDao.getAllComplaintsByUserId(userId, officerRole);
 
         if (!complains || complains.length === 0) {
             return res.status(404).json({ message: "No complaints found" });

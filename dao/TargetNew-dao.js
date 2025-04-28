@@ -88,8 +88,10 @@ exports.getCenterTarget = (centerId) => {
               dailytarget dt
           JOIN
               plant_care.cropvariety cv ON dt.varietyId = cv.id
+          JOIN
+              companycenter cc ON dt.companyCenterId = cc.id 
           WHERE 
-              dt.companyCenterId = ?
+              cc.centerId= ?
               AND DATE(dt.date) = CURDATE()
           ORDER BY
               dt.varietyId, dt.grade
@@ -100,6 +102,7 @@ exports.getCenterTarget = (centerId) => {
               console.error("Database error in getCenterTarget:", error);
               return reject(error);
           }
+
 
           const formattedResults = results.map(target => ({
               varietyId: target.varietyId,
