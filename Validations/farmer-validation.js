@@ -35,6 +35,5 @@ exports.bankDetailsSchema = Joi.object({
   branchName: Joi.string().required(),
   
   userId: Joi.number().required(),
-  NICnumber:Joi.string().required()
   
 });
