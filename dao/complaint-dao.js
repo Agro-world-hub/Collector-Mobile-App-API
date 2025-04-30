@@ -2,10 +2,10 @@ const db = require('../startup/database');
 
 exports.createComplaint = (complain, language, farmerId, category, status, officerId, referenceNumber) => {
     return new Promise((resolve, reject) => {
-        const sql = 
-           "INSERT INTO farmercomplains (farmerId,  language, complain, complainCategory, status, coId, refNo , adminStatus) VALUES (?, ?, ?, ?, ?, ?, ?, 'Assigned')";
-        
-        const values = [ farmerId,language,complain, category, status, officerId, referenceNumber];
+        const sql =
+            "INSERT INTO farmercomplains (farmerId,  language, complain, complainCategory, status, coId, refNo , adminStatus) VALUES (?, ?, ?, ?, ?, ?, ?, 'Assigned')";
+
+        const values = [farmerId, language, complain, category, status, officerId, referenceNumber];
 
         db.collectionofficer.query(sql, values, (err, result) => {
             if (err) {
@@ -32,7 +32,7 @@ exports.checkIfUserExists = (userId) => {
 //     return new Promise((resolve, reject) => {
 //         const sql = 
 //            "INSERT INTO officercomplains (officerId,  language, complain, complainCategory, CCMStatus, refNo) VALUES (?, ?, ?, ?, ?, ?)";
-        
+
 //         const values = [ coId,setlanguage,complain, category, status, referenceNumber,assignedStatus];
 
 //         db.collectionofficer.query(sql, values, (err, result) => {
@@ -153,7 +153,7 @@ exports.getAllComplaintsByUserId = async (userId, officerRole) => {
 };
 
 
-exports.getComplainCategories = async(appName) => {
+exports.getComplainCategories = async (appName) => {
     return new Promise((resolve, reject) => {
         const query = `
                    SELECT cc.id, cc.roleId, cc.appId, cc.categoryEnglish, cc.categorySinhala, cc.categoryTamil, ssa.appName
@@ -161,7 +161,7 @@ exports.getComplainCategories = async(appName) => {
                 JOIN systemapplications ssa ON cc.appId = ssa.id
                 WHERE ssa.appName = ?
       `;
-        db.admin.query(query , [appName], (error, results) => {
+        db.admin.query(query, [appName], (error, results) => {
             if (error) {
                 console.error("Error fetching complaints:", error);
                 reject(error);
@@ -206,4 +206,3 @@ exports.countOfiicerComplaintsByDate = async (date) => {
         });
     });
 };
-
