@@ -41,9 +41,29 @@ exports.getOfficerByEmpId = (empId) => {
 
 
 // DAO for fetching officer details by ID
+// exports.getOfficerPasswordById = (id) => {
+//   return new Promise((resolve, reject) => {
+//     const sql = "SELECT * FROM collectionofficer WHERE id = ?";
+//     db.collectionofficer.query(sql, [id], (err, results) => {
+//       if (err) {
+//         return reject(new Error("Database error"));
+//       }
+//       if (results.length === 0) {
+//         return reject(new Error("Invalid email or password"));
+//       }
+//       resolve(results);
+//       console.log("Results:", results);
+//     });
+//   });
+// };
 exports.getOfficerPasswordById = (id) => {
   return new Promise((resolve, reject) => {
-    const sql = "SELECT * FROM collectionofficer WHERE id = ?";
+    const sql = `SELECT co.*, cod.companyNameEnglish AS companyNameEnglish, cod.companyNameSinhala AS companyNameSinhala, cod.companyNameTamil AS companyNameTamil
+     FROM 
+        collectionofficer co
+      JOIN 
+        company cod ON co.companyId = cod.id
+     WHERE co.id = ?`;
     db.collectionofficer.query(sql, [id], (err, results) => {
       if (err) {
         return reject(new Error("Database error"));
@@ -52,9 +72,11 @@ exports.getOfficerPasswordById = (id) => {
         return reject(new Error("Invalid email or password"));
       }
       resolve(results);
+      console.log("Results:", results);
     });
   });
 };
+
 
 exports.updateLoginStatus = (collectionOfficerId, status) => {
   return new Promise((resolve, reject) => {

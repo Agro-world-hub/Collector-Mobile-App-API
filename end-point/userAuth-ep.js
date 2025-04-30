@@ -225,6 +225,9 @@ exports.loginUser = async (req, res) => {
       userId: officer.id,
       jobRole: jobRole,
       empId: officer.empId,
+      companyNameEnglish: officer.companyNameEnglish,
+      companyNameSinhala: officer.companyNameSinhala,
+      companyNameTamil: officer.companyNameTamil
     };
 
     res.status(200).json(response);
