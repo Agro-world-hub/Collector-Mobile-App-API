@@ -640,7 +640,11 @@ exports.GetFarmerReportDetailsDao = async (userId, createdAtDate, registeredFarm
     SELECT
       fpc.id AS id,
       cg.cropNameEnglish AS cropName,
+      cg.cropNameSinhala AS cropNameSinhala,
+      cg.cropNameTamil AS cropNameTamil,
       cv.varietyNameEnglish AS variety,
+      cv.varietyNameSinhala AS varietyNameSinhala,
+      cv.varietyNameTamil AS varietyNameTamil,
       fpc.gradeAprice AS unitPriceA,
       fpc.gradeAquan AS weightA,
       fpc.gradeBprice AS unitPriceB,
@@ -664,20 +668,24 @@ exports.GetFarmerReportDetailsDao = async (userId, createdAtDate, registeredFarm
       fpc.createdAt DESC
   `;
   return new Promise((resolve, reject) => {
-   
+
     console.log('@@@@@@@@ UserId:', userId);
     console.log('@@@@@@@@@   registeredFarmerId:', registeredFarmerId);
     console.log('@@@@@@@@@   createdAtDate:', createdAtDate);
-   
+
     db.collectionofficer.query(query, [userId, registeredFarmerId, createdAtDate], (error, results) => {
       if (error) return reject(error);
       const transformedResults = results.flatMap(row => {
         const entries = [];
-       
+
         if (row.weightA > 0) entries.push({
           id: row.id,
           cropName: row.cropName,
+          cropNameSinhala: row.cropNameSinhala,
+          cropNameTamil: row.cropNameTamil,
           variety: row.variety,
+          varietyNameSinhala: row.varietyNameSinhala,
+          varietyNameTamil: row.varietyNameTamil,
           grade: 'A',
           unitPrice: row.unitPriceA,
           quantity: row.weightA,
@@ -687,7 +695,11 @@ exports.GetFarmerReportDetailsDao = async (userId, createdAtDate, registeredFarm
         if (row.weightB > 0) entries.push({
           id: row.id,
           cropName: row.cropName,
+          cropNameSinhala: row.cropNameSinhala,
+          cropNameTamil: row.cropNameTamil,
           variety: row.variety,
+          varietyNameSinhala: row.varietyNameSinhala,
+          varietyNameTamil: row.varietyNameTamil,
           grade: 'B',
           unitPrice: row.unitPriceB,
           quantity: row.weightB,
@@ -697,7 +709,11 @@ exports.GetFarmerReportDetailsDao = async (userId, createdAtDate, registeredFarm
         if (row.weightC > 0) entries.push({
           id: row.id,
           cropName: row.cropName,
+          cropNameSinhala: row.cropNameSinhala,
+          cropNameTamil: row.cropNameTamil,
           variety: row.variety,
+          varietyNameSinhala: row.varietyNameSinhala,
+          varietyNameTamil: row.varietyNameTamil,
           grade: 'C',
           unitPrice: row.unitPriceC,
           quantity: row.weightC,

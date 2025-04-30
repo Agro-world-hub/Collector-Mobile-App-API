@@ -809,15 +809,33 @@ exports.getAllUsers = async (req, res) => {
 
 
 
+// exports.updateUserAddress = async (req, res) => {
+//   const { userId } = req.params;
+//   const { routeNumber, buildingNo, streetName, city } = req.body;
+
+//   if (!routeNumber || !buildingNo || !streetName || !city) {
+//     return res.status(400).json({ error: 'All fields are required' });
+//   }
+
+//   try {
+//     await cropDetailsDao.updateUserAddress(userId, routeNumber, buildingNo, streetName, city);
+//     res.status(200).json({ message: 'User address updated successfully' });
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// };
+
 exports.updateUserAddress = async (req, res) => {
   const { userId } = req.params;
   const { routeNumber, buildingNo, streetName, city } = req.body;
 
-  if (!routeNumber || !buildingNo || !streetName || !city) {
-    return res.status(400).json({ error: 'All fields are required' });
+  // Only check required fields, allow routeNumber to be null or empty
+  if (!buildingNo || !streetName || !city) {
+    return res.status(400).json({ error: 'Building number, street name, and city are required' });
   }
 
   try {
+    // Pass routeNumber as is (can be undefined, null, or empty string)
     await cropDetailsDao.updateUserAddress(userId, routeNumber, buildingNo, streetName, city);
     res.status(200).json({ message: 'User address updated successfully' });
   } catch (error) {
