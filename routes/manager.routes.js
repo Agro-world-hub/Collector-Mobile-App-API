@@ -79,4 +79,6 @@ router.get('/driver/check-phone/:phoneNumber', authenticate, driverEp.checkPhone
 
 router.get('/driver/check-nic/:nicNumber', authenticate, driverEp.checkNicExists);
 
+router.get('/driver/check-email/:email', authenticate, driverEp.checkemailExists);
+
 module.exports = router;
