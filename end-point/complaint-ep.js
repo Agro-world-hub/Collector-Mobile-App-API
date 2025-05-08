@@ -43,6 +43,7 @@ exports.createFarmerComplaint = async (req, res) => {
 exports.createOfficerComplain = asyncHandler(async (req, res) => {
     try {
         const coId = req.user.id;
+        const empId = req.user.empId
 
         const { language, complain, category } = req.body;
         let setlanguage;
@@ -62,10 +63,10 @@ exports.createOfficerComplain = asyncHandler(async (req, res) => {
         console.log("Creating complain:", { coId, language, complain, category,  officerRole });
         const today = new Date();
         const YYMMDD = today.toISOString().slice(2, 10).replace(/-/g, '');
-        const datePrefix = `CO${YYMMDD}`;
+        const datePrefix = `${empId}${YYMMDD}`;
 
         const complaintsOnDate = await ComplaintDao.countOfiicerComplaintsByDate(today);
-        const referenceNumber = `${datePrefix}${String(complaintsOnDate + 1).padStart(4, '0')}`;
+        const referenceNumber = `${datePrefix}${String(complaintsOnDate + 1).padStart(2, '0')}`;
 
         const newComplainId = await ComplaintDao.createOfficerComplaint(
             coId,
