@@ -523,23 +523,21 @@ exports.insertCropDetails = (registeredFarmerId, crop, officerId, centerId) => {
 
           const updateOfficerQuery = `
           UPDATE officertarget ot
-          JOIN dailytarget dt ON ot.dailyTargetId = dt.id
-          SET ot.complete = CAST(
-            LEAST(
-              CAST(ot.target AS DECIMAL(15,2)),
-              CAST(ot.complete AS DECIMAL(15,2)) + 
-                CASE dt.grade
-                  WHEN 'A' THEN ?
-                  WHEN 'B' THEN ?
-                  WHEN 'C' THEN ?
-                  ELSE 0
-                END
-            ) AS CHAR
-          )
-          WHERE dt.varietyId = ?
-          AND ot.officerId = ?
-          AND DATE(dt.date) = CURDATE()
-          AND CAST(ot.complete AS DECIMAL(15,2)) 
+JOIN dailytarget dt ON ot.dailyTargetId = dt.id
+SET ot.complete = CAST(
+  CAST(ot.complete AS DECIMAL(15,2)) + 
+    CASE dt.grade
+      WHEN 'A' THEN ?
+      WHEN 'B' THEN ?
+      WHEN 'C' THEN ?
+      ELSE 0
+    END
+  AS CHAR
+)
+WHERE dt.varietyId = ?
+AND ot.officerId = ?
+AND DATE(dt.date) = CURDATE()
+
         `;
 
           const updateOfficerValues = [
@@ -559,28 +557,51 @@ exports.insertCropDetails = (registeredFarmerId, crop, officerId, centerId) => {
             }
 
             // Update center targets (dailytarget table)
+            // const updateCenterQuery = `
+            //   UPDATE dailytarget dt
+            //   JOIN companycenter cc ON dt.companyCenterId = cc.id 
+            //   SET dt.complete = LEAST(
+            //     dt.target,
+            //     dt.complete + 
+            //       CASE dt.grade
+            //         WHEN 'A' THEN ?
+            //         WHEN 'B' THEN ?
+            //         WHEN 'C' THEN ?
+            //         ELSE 0
+            //       END
+            //   )
+            //   WHERE dt.varietyId = ?
+            //   AND cc.centerId = ? 
+            //   AND DATE(dt.date) = CURDATE()
+            //   AND EXISTS (
+            //     SELECT 1 FROM officertarget ot 
+            //     WHERE ot.dailyTargetId = dt.id
+            //     AND ot.officerId = ?
+            //   )
+            // `;
+
             const updateCenterQuery = `
-              UPDATE dailytarget dt
-              JOIN companycenter cc ON dt.companyCenterId = cc.id 
-              SET dt.complete = LEAST(
-                dt.target,
-                dt.complete + 
-                  CASE dt.grade
-                    WHEN 'A' THEN ?
-                    WHEN 'B' THEN ?
-                    WHEN 'C' THEN ?
-                    ELSE 0
-                  END
-              )
-              WHERE dt.varietyId = ?
-              AND cc.centerId = ? 
-              AND DATE(dt.date) = CURDATE()
-              AND EXISTS (
-                SELECT 1 FROM officertarget ot 
-                WHERE ot.dailyTargetId = dt.id
-                AND ot.officerId = ?
-              )
-            `;
+            UPDATE dailytarget dt
+JOIN companycenter cc ON dt.companyCenterId = cc.id 
+SET dt.complete = CAST(
+  CAST(dt.complete AS DECIMAL(15,2)) + 
+    CASE dt.grade
+      WHEN 'A' THEN ?
+      WHEN 'B' THEN ?
+      WHEN 'C' THEN ?
+      ELSE 0
+    END
+  AS CHAR
+)
+WHERE dt.varietyId = ?
+AND cc.centerId = ? 
+AND DATE(dt.date) = CURDATE()
+AND EXISTS (
+  SELECT 1 FROM officertarget ot 
+  WHERE ot.dailyTargetId = dt.id
+  AND ot.officerId = ?
+)
+          `;
 
             const updateCenterValues = [
               gradeAquan || 0,
