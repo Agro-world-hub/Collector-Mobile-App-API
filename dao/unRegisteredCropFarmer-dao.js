@@ -500,26 +500,47 @@ exports.insertCropDetails = (registeredFarmerId, crop, officerId, centerId) => {
           }
 
           // Update officer targets (VARCHAR fields need CAST)
+          // const updateOfficerQuery = `
+          //   UPDATE officertarget ot
+          //   JOIN dailytarget dt ON ot.dailyTargetId = dt.id
+          //   SET ot.complete = CAST(
+          //     LEAST(
+          //       CAST(ot.target AS DECIMAL(15,2)),
+          //       CAST(ot.complete AS DECIMAL(15,2)) + 
+          //         CASE dt.grade
+          //           WHEN 'A' THEN ?
+          //           WHEN 'B' THEN ?
+          //           WHEN 'C' THEN ?
+          //           ELSE 0
+          //         END
+          //     ) AS CHAR
+          //   )
+          //   WHERE dt.varietyId = ?
+          //   AND ot.officerId = ?
+          //   AND DATE(dt.date) = CURDATE()
+          //   AND CAST(ot.complete AS DECIMAL(15,2)) < CAST(ot.target AS DECIMAL(15,2))
+          // `;
+
           const updateOfficerQuery = `
-            UPDATE officertarget ot
-            JOIN dailytarget dt ON ot.dailyTargetId = dt.id
-            SET ot.complete = CAST(
-              LEAST(
-                CAST(ot.target AS DECIMAL(15,2)),
-                CAST(ot.complete AS DECIMAL(15,2)) + 
-                  CASE dt.grade
-                    WHEN 'A' THEN ?
-                    WHEN 'B' THEN ?
-                    WHEN 'C' THEN ?
-                    ELSE 0
-                  END
-              ) AS CHAR
-            )
-            WHERE dt.varietyId = ?
-            AND ot.officerId = ?
-            AND DATE(dt.date) = CURDATE()
-            AND CAST(ot.complete AS DECIMAL(15,2)) < CAST(ot.target AS DECIMAL(15,2))
-          `;
+          UPDATE officertarget ot
+          JOIN dailytarget dt ON ot.dailyTargetId = dt.id
+          SET ot.complete = CAST(
+            LEAST(
+              CAST(ot.target AS DECIMAL(15,2)),
+              CAST(ot.complete AS DECIMAL(15,2)) + 
+                CASE dt.grade
+                  WHEN 'A' THEN ?
+                  WHEN 'B' THEN ?
+                  WHEN 'C' THEN ?
+                  ELSE 0
+                END
+            ) AS CHAR
+          )
+          WHERE dt.varietyId = ?
+          AND ot.officerId = ?
+          AND DATE(dt.date) = CURDATE()
+          AND CAST(ot.complete AS DECIMAL(15,2)) 
+        `;
 
           const updateOfficerValues = [
             gradeAquan || 0,
