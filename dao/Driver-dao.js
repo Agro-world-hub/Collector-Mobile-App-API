@@ -178,3 +178,19 @@ exports.checkNICExists = (nicNumber) => {
     });
   });
 };
+
+
+exports.checkemailExists = (email) => {
+  return new Promise((resolve, reject) => {
+    // Simple direct comparison is better here
+    const sql = 'SELECT id FROM collectionofficer WHERE email = ?';
+
+    db.collectionofficer.query(sql, [email], (err, results) => {
+      if (err) {
+        console.error("Error checking Email existence:", err);
+        return reject(err);
+      }
+      resolve(results.length > 0);
+    });
+  });
+};
