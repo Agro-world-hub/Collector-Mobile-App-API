@@ -246,3 +246,28 @@ exports.checkNicExists = async (req, res) => {
     });
   }
 };
+
+exports.checkemailExists = async (req, res) => {
+  console.log('check email exists')
+  try {
+    const email = req.params.email;
+
+    if (!email) {
+      return res.status(400).json({
+        error: "Email is required" // Changed from "Phone number"
+      });
+    }
+
+    const exists = await driverDao.checkemailExists(email);
+
+    return res.status(200).json({
+      exists: exists
+    });
+  } catch (error) {
+    console.error("Error checking Email existence:", error); // Changed error message
+    return res.status(500).json({
+      error: "An error occurred while checking Email number", // Changed error message
+      details: error.message
+    });
+  }
+};
