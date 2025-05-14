@@ -248,6 +248,7 @@ exports.checkNicExists = async (req, res) => {
 };
 
 exports.checkemailExists = async (req, res) => {
+  console.log('check email exists')
   try {
     const email = req.params.email;
 

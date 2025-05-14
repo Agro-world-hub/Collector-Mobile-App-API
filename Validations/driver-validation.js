@@ -16,8 +16,7 @@ exports.driverWithVehicleSchema = Joi.object({
   phoneCode01: Joi.string().required(),
   phoneNumber01: Joi.string().required(),
   phoneCode02: Joi.string(),
-  phoneNumber02: Joi.string().optional(),
-
+  phoneNumber02: Joi.string().allow('').optional(),
   // Employment Details
   empId: Joi.string().required(),
   empType: Joi.string().required(),
