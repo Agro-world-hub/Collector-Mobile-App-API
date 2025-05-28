@@ -1,7 +1,7 @@
-const collectionofficerDao =require('../dao/manager-dao')
-const jwt = require('jsonwebtoken');const Joi = require('joi');
+const collectionofficerDao = require('../dao/manager-dao')
+const jwt = require('jsonwebtoken'); const Joi = require('joi');
 
-const uploadFileToS3  = require('../Middlewares/s3upload');
+const uploadFileToS3 = require('../Middlewares/s3upload');
 
 // exports.createCollectionOfficer = async (req, res) => {
 //   try {
@@ -65,57 +65,57 @@ const uploadFileToS3  = require('../Middlewares/s3upload');
 //     });
 //   }
 // };
-const createCollectionOfficerSchema  = require ('../Validations/manager-validation')
+const createCollectionOfficerSchema = require('../Validations/manager-validation')
 
 exports.createCollectionOfficer = async (req, res) => {
   try {
-    
-        // Validate request body using Joi
-        const { error, value } = createCollectionOfficerSchema.createCollectionOfficerSchema.validate(req.body, { 
-          abortEarly: false,  // Return all errors, not just the first one
-          stripUnknown: true  // Remove unknown keys
-        });
-        
-        if (error) {
-          const errorMessages = error.details.map(detail => detail.message);
-          return res.status(400).json({ 
-            error: "Validation failed", 
-            details: errorMessages 
-          });
-        }
-        
-        
+
+    // Validate request body using Joi
+    const { error, value } = createCollectionOfficerSchema.createCollectionOfficerSchema.validate(req.body, {
+      abortEarly: false,  // Return all errors, not just the first one
+      stripUnknown: true  // Remove unknown keys
+    });
+
+    if (error) {
+      const errorMessages = error.details.map(detail => detail.message);
+      return res.status(400).json({
+        error: "Validation failed",
+        details: errorMessages
+      });
+    }
+
+
     const { id: irmId } = req.user;
-    
+
     // Get IRM details
     const irmDetails = await collectionofficerDao.getIrmDetails(irmId);
     if (!irmDetails) {
       return res.status(404).json({ error: "IRM details not found" });
     }
     const { companyId, centerId } = irmDetails;
-    
+
     // Validate NIC
     console.log("NIC:", req.body.nicNumber);
     const nicExists = await collectionofficerDao.checkNICExist(req.body.nicNumber);
     if (nicExists) {
       return res.status(400).json({ error: "NIC or Email already exists" });
     }
-    
+
     // Validate Email
     console.log("Email:", req.body.email);
     const emailExists = await collectionofficerDao.checkEmailExist(req.body.email);
     if (emailExists) {
       return res.status(400).json({ error: "Email already exists." });
     }
-    
+
     // Helper function to convert base64 to buffer (defined inline)
     const convertBase64ToBuffer = (base64String) => {
       try {
         // Remove data:image/jpeg;base64, or similar prefix if present
-        const base64Data = base64String.includes(';base64,') 
-          ? base64String.split(';base64,').pop() 
+        const base64Data = base64String.includes(';base64,')
+          ? base64String.split(';base64,').pop()
           : base64String;
-        
+
         return Buffer.from(base64Data, 'base64');
       } catch (error) {
         console.error("Error converting base64 to buffer:", error);
@@ -127,26 +127,26 @@ exports.createCollectionOfficer = async (req, res) => {
     const generateUniqueFileName = (originalName) => {
       const timestamp = Date.now();
       const randomStr = Math.random().toString(36).substring(2, 8);
-      
+
       // Extract extension from original filename or use default
       let fileExt = 'jpg';
       if (originalName && originalName.includes('.')) {
         fileExt = originalName.split('.').pop();
       }
-      
+
       return `${timestamp}-${randomStr}.${fileExt}`;
     };
-    
+
     // Handle image upload from base64
     let profileImageUrl = null;
     if (req.body.profileImage) {
       try {
         // Convert base64 to buffer
         const fileBuffer = convertBase64ToBuffer(req.body.profileImage);
-        
+
         // Generate a unique filename
         const fileName = generateUniqueFileName('profile.jpg');
-        
+
         // Upload to S3
         profileImageUrl = await uploadFileToS3(
           fileBuffer,
@@ -158,7 +158,7 @@ exports.createCollectionOfficer = async (req, res) => {
         return res.status(400).json({ error: "Invalid image format or upload failed" });
       }
     }
-    
+
     // Map request body fields and include profile image URL if available
     const officerData = {
       ...req.body,
@@ -172,9 +172,9 @@ exports.createCollectionOfficer = async (req, res) => {
       phoneCode02: req.body.phoneCode2 || null,
       profileImageUrl, // Include the S3 URL for the image
     };
-    
+
     console.log("Mapped Officer Data:", officerData);
-    
+
     // Create the collection officer
     const resultsPersonal = await collectionofficerDao.createCollectionOfficerPersonal(
       officerData,
@@ -182,7 +182,7 @@ exports.createCollectionOfficer = async (req, res) => {
       companyId,
       irmId
     );
-    
+
     console.log("Collection Officer created successfully:", resultsPersonal);
     return res.status(201).json({
       message: "Collection Officer created successfully",
@@ -201,7 +201,7 @@ exports.createCollectionOfficer = async (req, res) => {
 
 exports.getForCreateId = async (req, res) => {
   try {
-    const { role } = req.params; 
+    const { role } = req.params;
     console.log("Role:", role);
     let rolePrefix;
 
@@ -233,20 +233,20 @@ exports.getFarmerListByCollectionOfficerAndDate = async (req, res) => {
   const { collectionOfficerId, date } = req.query;
 
   if (!collectionOfficerId || !date) {
-      return res.status(400).json({
-          error: 'Both collectionOfficerId and date are required.',
-      });
+    return res.status(400).json({
+      error: 'Both collectionOfficerId and date are required.',
+    });
   }
 
   try {
-      const farmers = await collectionofficerDao.getFarmerListByCollectionOfficerAndDate(
-          collectionOfficerId,
-          date
-      );
-      res.status(200).json(farmers);
+    const farmers = await collectionofficerDao.getFarmerListByCollectionOfficerAndDate(
+      collectionOfficerId,
+      date
+    );
+    res.status(200).json(farmers);
   } catch (error) {
-      console.error('Error fetching farmer list:', error);
-      res.status(500).json({ error: 'An error occurred while fetching the farmer list' });
+    console.error('Error fetching farmer list:', error);
+    res.status(500).json({ error: 'An error occurred while fetching the farmer list' });
   }
 };
 
@@ -254,33 +254,33 @@ exports.getFarmerListByCollectionOfficerAndDate = async (req, res) => {
 exports.getFarmerListByCollectionOfficerAndDateForManager = async (req, res) => {
   const { date } = req.query;
   const collectionOfficerId = req.user.id;
-  console.log('manager transcations officer id' ,collectionOfficerId) // Get the collectionOfficerId from authenticated user (req.user.id)
+  console.log('manager transcations officer id', collectionOfficerId) // Get the collectionOfficerId from authenticated user (req.user.id)
 
   // Check if the date is provided
   if (!date) {
-      return res.status(400).json({
-          error: 'Date is required.',
-      });
+    return res.status(400).json({
+      error: 'Date is required.',
+    });
   }
 
   try {
-      // Call the DAO function with collectionOfficerId and date
-      const farmers = await collectionofficerDao.getFarmerListByCollectionOfficerAndDate(
-          collectionOfficerId,
-          date
-      );
-      res.status(200).json(farmers);
-      console.log(farmers);
+    // Call the DAO function with collectionOfficerId and date
+    const farmers = await collectionofficerDao.getFarmerListByCollectionOfficerAndDate(
+      collectionOfficerId,
+      date
+    );
+    res.status(200).json(farmers);
+    // console.log(farmers);
   } catch (error) {
-      console.error('Error fetching farmer list:', error);
-      res.status(500).json({ error: 'An error occurred while fetching the farmer list' });
+    console.error('Error fetching farmer list:', error);
+    res.status(500).json({ error: 'An error occurred while fetching the farmer list' });
   }
 };
 
 
 exports.getClaimOfficer = async (req, res) => {
 
-  const {empID, jobRole} = req.body;
+  const { empID, jobRole } = req.body;
   try {
     const results = await collectionofficerDao.getClaimOfficer(empID, jobRole);
     res.status(200).json({ result: results, status: true });
@@ -347,15 +347,15 @@ exports.GetFarmerReportDetails = async (req, res) => {
   const { userId, createdAt, farmerId } = req.params; // Extract userId, createdAt, and farmerId from params
 
   try {
-      if (!userId || !createdAt || !farmerId) {
-          return res.status(400).json({ error: 'userId, createdAt, and farmerId parameters are required.' });
-      }
+    if (!userId || !createdAt || !farmerId) {
+      return res.status(400).json({ error: 'userId, createdAt, and farmerId parameters are required.' });
+    }
 
-      const cropDetails = await collectionofficerDao.GetFarmerReportDetailsDao(userId, createdAt, farmerId);
-      res.status(200).json(cropDetails);
+    const cropDetails = await collectionofficerDao.GetFarmerReportDetailsDao(userId, createdAt, farmerId);
+    res.status(200).json(cropDetails);
   } catch (error) {
-      console.error('Error fetching crop details:', error);
-      res.status(500).json({ error: 'An error occurred while fetching crop details' });
+    console.error('Error fetching crop details:', error);
+    res.status(500).json({ error: 'An error occurred while fetching crop details' });
   }
 };
 
