@@ -255,6 +255,7 @@ const managerRoutes = require('./routes/manager.routes');
 const collectionrequest = require('./routes/collection.routes')
 const { plantcare, collectionofficer, marketPlace, dash, admin } = require('./startup/database');
 const heathRoutes = require("./routes/heathRoutes");
+const distribution = require('./routes/distribution.routes')
 
 const socketIo = require('socket.io');
 require('dotenv').config();
@@ -357,6 +358,7 @@ const targetRoutes = require('./routes/TargetNew-routes');
 mainApp.use(`${basePathMain}/api/target`, targetRoutes);
 mainApp.use(`${basePathMain}`, heathRoutes);
 mainApp.use(`${basePathMain}/api/collectionrequest`, collectionrequest);
+mainApp.use(`${basePathMain}/api/distribution`, distribution);
 
 // Routes for status API (PORT 3005)
 const basePathStatus = '/agro-api/collection-status';
