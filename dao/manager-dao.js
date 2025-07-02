@@ -823,6 +823,7 @@ exports.GetFarmerReportDetailsDao = async (userId, createdAtDate, registeredFarm
 
 //get the collection officer list for the manager and the daos for the monthly report of a collection officer
 exports.getCollectionOfficers = async (managerId) => {
+  console.log("manager id", managerId)
   const sql = `
     SELECT 
       empId, 
@@ -836,7 +837,7 @@ exports.getCollectionOfficers = async (managerId) => {
       status,
       image
     FROM collectionofficer
-    WHERE jobRole IN ('Collection Officer', 'Driver') AND irmId = ?
+    WHERE jobRole IN ('Collection Officer', 'Driver', 'Distribution Officer') AND irmId = ?
   `;
   return db.collectionofficer.promise().query(sql, [managerId]);
 };

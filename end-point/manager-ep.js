@@ -208,8 +208,8 @@ exports.getForCreateId = async (req, res) => {
     // Determine the role prefix based on the role
     if (role === 'Collection Officer') {
       rolePrefix = 'COO';
-    } else if (role === 'Driver') {
-      rolePrefix = 'DVR';
+    } else if (role === 'Distribution Officer') {
+      rolePrefix = 'DIO';
     }
 
     const results = await collectionofficerDao.getForCreateId(rolePrefix);
@@ -367,6 +367,7 @@ exports.getCollectionOfficers = async (req, res) => {
   try {
     const managerId = req.user.id;
     const [rows] = await collectionofficerDao.getCollectionOfficers(managerId);
+    console.log(rows)
 
     if (rows.length === 0) {
       return res.status(404).json({
