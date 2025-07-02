@@ -256,82 +256,90 @@ exports.getTargetForOfficerDao = (officerId) => {
                 o.sheduleDate,
                 o.sheduleTime,
 
-                -- Count total additional items for this order
+                -- Additional item counts
                 COALESCE(additional_item_counts.total_items, 0) AS totalAdditionalItems,
-
-                -- Count packed additional items
                 COALESCE(additional_item_counts.packed_items, 0) AS packedAdditionalItems,
-
-                -- Count pending additional items
                 COALESCE(additional_item_counts.pending_items, 0) AS pendingAdditionalItems,
 
                 -- Additional item status
                 CASE 
                     WHEN COALESCE(additional_item_counts.total_items, 0) = 0 THEN NULL
                     WHEN COALESCE(additional_item_counts.packed_items, 0) = 0 THEN 'Pending'
-                    WHEN COALESCE(additional_item_counts.packed_items, 0) > 0 AND COALESCE(additional_item_counts.packed_items, 0) < COALESCE(additional_item_counts.total_items, 0) THEN 'Opened'
+                    WHEN COALESCE(additional_item_counts.packed_items, 0) > 0 AND 
+                         COALESCE(additional_item_counts.packed_items, 0) < COALESCE(additional_item_counts.total_items, 0) THEN 'Opened'
                     WHEN COALESCE(additional_item_counts.packed_items, 0) = COALESCE(additional_item_counts.total_items, 0) THEN 'Completed'
                     ELSE NULL
                 END AS additionalItemStatus,
 
-                -- Package item counts (only for isPackage = 1)
-                CASE WHEN o.isPackage = 1 THEN COALESCE(package_item_counts.total_items, 0) ELSE NULL END AS totalPackageItems,
-                CASE WHEN o.isPackage = 1 THEN COALESCE(package_item_counts.packed_items, 0) ELSE NULL END AS packedPackageItems,
-                CASE WHEN o.isPackage = 1 THEN COALESCE(package_item_counts.pending_items, 0) ELSE NULL END AS pendingPackageItems,
+                -- Package item counts (only for packages)
+                COALESCE(package_item_counts.total_items, 0) AS totalPackageItems,
+                COALESCE(package_item_counts.packed_items, 0) AS packedPackageItems,
+                COALESCE(package_item_counts.pending_items, 0) AS pendingPackageItems,
 
-                -- Package isLock status (only for isPackage = 1)
-                CASE WHEN o.isPackage = 1 THEN package_item_counts.isLock ELSE NULL END AS packageIsLock,
+                -- Package details
+                package_item_counts.isLock AS packageIsLock,
+                package_item_counts.packingStatus AS packagePackingStatus,
+                package_item_counts.packageId AS packageId,
 
-                -- Package item status (only for isPackage = 1)
+                -- Package item status
                 CASE 
                     WHEN o.isPackage = 0 THEN NULL
-                    WHEN o.isPackage = 1 AND COALESCE(package_item_counts.total_items, 0) = 0 THEN 'Pending'
-                    WHEN o.isPackage = 1 AND COALESCE(package_item_counts.packed_items, 0) = 0 THEN 'Pending'
-                    WHEN o.isPackage = 1 AND COALESCE(package_item_counts.packed_items, 0) > 0 AND COALESCE(package_item_counts.packed_items, 0) < COALESCE(package_item_counts.total_items, 0) THEN 'Opened'
-                    WHEN o.isPackage = 1 AND COALESCE(package_item_counts.packed_items, 0) = COALESCE(package_item_counts.total_items, 0) THEN 'Completed'
+                    WHEN COALESCE(package_item_counts.total_items, 0) = 0 THEN 'Pending'
+                    WHEN COALESCE(package_item_counts.packed_items, 0) = 0 THEN 'Pending'
+                    WHEN COALESCE(package_item_counts.packed_items, 0) > 0 AND 
+                         COALESCE(package_item_counts.packed_items, 0) < COALESCE(package_item_counts.total_items, 0) THEN 'Opened'
+                    WHEN COALESCE(package_item_counts.packed_items, 0) = COALESCE(package_item_counts.total_items, 0) THEN 'Completed'
                     ELSE NULL
                 END AS packageItemStatus,
 
-                -- Overall status logic based on isPackage
+                -- Overall status - FIXED to require BOTH additional and package items to be completed when they exist
                 CASE 
-                    -- For isPackage = 0: Only check additional items
+                    -- For non-package orders (only check additional items)
                     WHEN o.isPackage = 0 THEN
                         CASE 
                             WHEN COALESCE(additional_item_counts.total_items, 0) = 0 THEN 'Pending'
                             WHEN COALESCE(additional_item_counts.packed_items, 0) = 0 THEN 'Pending'
-                            WHEN COALESCE(additional_item_counts.packed_items, 0) > 0 AND COALESCE(additional_item_counts.packed_items, 0) < COALESCE(additional_item_counts.total_items, 0) THEN 'Opened'
+                            WHEN COALESCE(additional_item_counts.packed_items, 0) > 0 AND 
+                                 COALESCE(additional_item_counts.packed_items, 0) < COALESCE(additional_item_counts.total_items, 0) THEN 'Opened'
                             WHEN COALESCE(additional_item_counts.packed_items, 0) = COALESCE(additional_item_counts.total_items, 0) THEN 'Completed'
                             ELSE 'Pending'
                         END
-                    -- For isPackage = 1: Check both additional items and package items
+                    
+                    -- For package orders (check both additional and package items)
                     WHEN o.isPackage = 1 THEN
                         CASE 
-                            -- If no additional items and no package items
-                            WHEN COALESCE(additional_item_counts.total_items, 0) = 0 AND COALESCE(package_item_counts.total_items, 0) = 0 THEN 'Pending'
-                            -- If both have items, both must be completed for overall completion
-                            WHEN COALESCE(additional_item_counts.total_items, 0) > 0 AND COALESCE(package_item_counts.total_items, 0) > 0 THEN
+                            -- When both additional and package items exist
+                            WHEN COALESCE(additional_item_counts.total_items, 0) > 0 AND 
+                                 COALESCE(package_item_counts.total_items, 0) > 0 THEN
                                 CASE 
-                                    WHEN COALESCE(additional_item_counts.packed_items, 0) = COALESCE(additional_item_counts.total_items, 0) 
-                                         AND COALESCE(package_item_counts.packed_items, 0) = COALESCE(package_item_counts.total_items, 0) THEN 'Completed'
-                                    WHEN COALESCE(additional_item_counts.packed_items, 0) > 0 OR COALESCE(package_item_counts.packed_items, 0) > 0 THEN 'Opened'
+                                    WHEN COALESCE(additional_item_counts.packed_items, 0) = COALESCE(additional_item_counts.total_items, 0) AND
+                                         COALESCE(package_item_counts.packed_items, 0) = COALESCE(package_item_counts.total_items, 0) THEN 'Completed'
+                                    WHEN COALESCE(additional_item_counts.packed_items, 0) > 0 OR 
+                                         COALESCE(package_item_counts.packed_items, 0) > 0 THEN 'Opened'
                                     ELSE 'Pending'
                                 END
-                            -- If only additional items exist
-                            WHEN COALESCE(additional_item_counts.total_items, 0) > 0 AND COALESCE(package_item_counts.total_items, 0) = 0 THEN
+                            
+                            -- When only additional items exist
+                            WHEN COALESCE(additional_item_counts.total_items, 0) > 0 THEN
                                 CASE 
                                     WHEN COALESCE(additional_item_counts.packed_items, 0) = 0 THEN 'Pending'
-                                    WHEN COALESCE(additional_item_counts.packed_items, 0) > 0 AND COALESCE(additional_item_counts.packed_items, 0) < COALESCE(additional_item_counts.total_items, 0) THEN 'Opened'
+                                    WHEN COALESCE(additional_item_counts.packed_items, 0) > 0 AND 
+                                         COALESCE(additional_item_counts.packed_items, 0) < COALESCE(additional_item_counts.total_items, 0) THEN 'Opened'
                                     WHEN COALESCE(additional_item_counts.packed_items, 0) = COALESCE(additional_item_counts.total_items, 0) THEN 'Completed'
                                     ELSE 'Pending'
                                 END
-                            -- If only package items exist
-                            WHEN COALESCE(additional_item_counts.total_items, 0) = 0 AND COALESCE(package_item_counts.total_items, 0) > 0 THEN
+                            
+                            -- When only package items exist
+                            WHEN COALESCE(package_item_counts.total_items, 0) > 0 THEN
                                 CASE 
                                     WHEN COALESCE(package_item_counts.packed_items, 0) = 0 THEN 'Pending'
-                                    WHEN COALESCE(package_item_counts.packed_items, 0) > 0 AND COALESCE(package_item_counts.packed_items, 0) < COALESCE(package_item_counts.total_items, 0) THEN 'Opened'
+                                    WHEN COALESCE(package_item_counts.packed_items, 0) > 0 AND 
+                                         COALESCE(package_item_counts.packed_items, 0) < COALESCE(package_item_counts.total_items, 0) THEN 'Opened'
                                     WHEN COALESCE(package_item_counts.packed_items, 0) = COALESCE(package_item_counts.total_items, 0) THEN 'Completed'
                                     ELSE 'Pending'
                                 END
+                            
+                            -- When no items exist (shouldn't happen for package orders)
                             ELSE 'Pending'
                         END
                     ELSE 'Pending'
@@ -346,7 +354,7 @@ exports.getTargetForOfficerDao = (officerId) => {
             INNER JOIN 
                 market_place.orders o ON po.orderId = o.id
             LEFT JOIN (
-                -- Subquery to get additional item counts for each order
+                -- Additional items subquery
                 SELECT 
                     orderId,
                     COUNT(*) as total_items,
@@ -356,23 +364,24 @@ exports.getTargetForOfficerDao = (officerId) => {
                     market_place.orderadditionalitems
                 GROUP BY 
                     orderId
-            ) additional_item_counts ON po.orderId = additional_item_counts.orderId
+            ) additional_item_counts ON o.id = additional_item_counts.orderId
             LEFT JOIN (
-                -- Subquery to get package item counts for each order (only for isPackage = 1)
-                -- NOW INCLUDING isLock column
+                -- Package items subquery - correctly joined to processorders.id
                 SELECT 
-                    op.orderId,
+                    op.orderId,  -- This references processorders.id
                     op.isLock,
+                    op.packingStatus,
+                    op.packageId,
                     COUNT(opi.id) as total_items,
                     SUM(CASE WHEN opi.isPacked = 1 THEN 1 ELSE 0 END) as packed_items,
                     SUM(CASE WHEN opi.isPacked = 0 THEN 1 ELSE 0 END) as pending_items
                 FROM 
                     market_place.orderpackage op
-                INNER JOIN 
+                LEFT JOIN 
                     market_place.orderpackageitems opi ON op.id = opi.orderPackageId
                 GROUP BY 
-                    op.orderId, op.isLock
-            ) package_item_counts ON po.orderId = package_item_counts.orderId AND o.isPackage = 1
+                    op.orderId, op.isLock, op.packingStatus, op.packageId
+            ) package_item_counts ON po.id = package_item_counts.orderId  -- Correct join to processorders
             WHERE 
                 dt.userId = ?
                 AND DATE(dt.createdAt) = CURDATE()
@@ -393,55 +402,49 @@ exports.getTargetForOfficerDao = (officerId) => {
 
             console.log("Targets found:", results.length);
             if (results.length > 0) {
-                console.log("Sample result:", results[0]); // Log first result for debugging
-                console.log("Status breakdown:");
+                console.log("=== DEBUGGING DATA ===");
 
-                // Log status summary
+                // Log first 3 records for debugging
+                results.slice(0, 3).forEach((row, index) => {
+                    console.log(`Record ${index + 1}:`, {
+                        distributedTargetId: row.distributedTargetId,
+                        processOrderId: row.processOrderId,
+                        orderId: row.orderId,
+                        isPackage: row.isPackage,
+                        packageData: {
+                            packageId: row.packageId,
+                            isLock: row.packageIsLock,
+                            items: {
+                                total: row.totalPackageItems,
+                                packed: row.packedPackageItems,
+                                pending: row.pendingPackageItems,
+                                status: row.packageItemStatus
+                            }
+                        },
+                        additionalItems: {
+                            total: row.totalAdditionalItems,
+                            packed: row.packedAdditionalItems,
+                            pending: row.pendingAdditionalItems,
+                            status: row.additionalItemStatus
+                        },
+                        overallStatus: row.selectedStatus
+                    });
+                });
+
+                // Status summary
                 const statusCounts = results.reduce((acc, row) => {
                     acc[row.selectedStatus] = (acc[row.selectedStatus] || 0) + 1;
                     return acc;
                 }, {});
+                console.log("Status Distribution:", statusCounts);
 
-                console.log("Selected Status Counts:", statusCounts);
-
-                // Log additional item status breakdown
-                const additionalStatusCounts = results.reduce((acc, row) => {
-                    if (row.additionalItemStatus) {
-                        acc[row.additionalItemStatus] = (acc[row.additionalItemStatus] || 0) + 1;
-                    }
-                    return acc;
-                }, {});
-
-                console.log("Additional Item Status Counts:", additionalStatusCounts);
-
-                // Log package item status breakdown for isPackage = 1
-                const packageStatusCounts = results.reduce((acc, row) => {
-                    if (row.packageItemStatus) {
-                        acc[row.packageItemStatus] = (acc[row.packageItemStatus] || 0) + 1;
-                    }
-                    return acc;
-                }, {});
-
-                console.log("Package Item Status Counts:", packageStatusCounts);
-
-                // Log package isLock status breakdown
-                const packageLockCounts = results.reduce((acc, row) => {
-                    if (row.packageIsLock !== null) {
-                        const lockStatus = row.packageIsLock ? 'Locked' : 'Unlocked';
-                        acc[lockStatus] = (acc[lockStatus] || 0) + 1;
-                    }
-                    return acc;
-                }, {});
-
-                console.log("Package Lock Status Counts:", packageLockCounts);
+                console.log("=== END DEBUGGING ===");
             }
 
             resolve(results);
         });
     });
 };
-
-
 
 //////////////////////////////////////////////////////////////////
 
@@ -653,6 +656,9 @@ exports.getTargetForOfficerDao = (officerId) => {
 
 //////////////////////////////
 
+// Corrected version with proper table relationships
+// orders -> processorders -> orderpackage -> orderpackageitems
+
 exports.getOrderDataDao = (orderId) => {
     console.log("Getting order data for order ID:", orderId);
 
@@ -673,6 +679,9 @@ exports.getOrderDataDao = (orderId) => {
                 o.sheduleTime,
                 o.createdAt AS orderCreatedAt,
 
+                -- Process Order Information
+                po.id AS processOrderId,
+
                 -- Additional Items (for all orders)
                 oai.id AS additionalItemId,
                 oai.productId AS additionalProductId,
@@ -685,36 +694,40 @@ exports.getOrderDataDao = (orderId) => {
                 mi_additional.category AS additionalProductCategory,
                 mi_additional.normalPrice AS additionalNormalPrice,
 
-                -- Package Details (only for isPackage = 1)
+                -- Package Details (linked through processorders)
                 op.id AS orderPackageId,
                 op.packageId,
                 op.packingStatus,
                 op.createdAt AS packageCreatedAt,
 
-                -- Package Information (only for isPackage = 1)
+                -- Package Information
                 mp.displayName AS packageName,
                 mp.description AS packageDescription,
                 mp.status AS packageStatus,
                 mp.productPrice AS packagePrice,
                 mp.packingFee AS packagePackingFee,
 
-                -- Package Items (only for isPackage = 1)
+                -- Package Items
                 opi.id AS packageItemId,
                 opi.productType AS packageProductType,
                 opi.productId AS packageProductId,
                 opi.qty AS packageQty,
-                opi.price AS packagePrice,
+                opi.price AS packageItemPrice,
                 opi.isPacked AS packageIsPacked,
                 mi_package.displayName AS packageProductName,
                 mi_package.category AS packageProductCategory,
                 mi_package.normalPrice AS packageNormalPrice,
 
-                -- Product Type Information (only for isPackage = 1)
+                -- Product Type Information
                 pt.id AS productTypeId,
                 pt.typeName AS productTypeName
 
             FROM 
                 market_place.orders o
+            
+            -- Join to get process order (required for package orders)
+            LEFT JOIN 
+                market_place.processorders po ON o.id = po.orderId
             
             -- Left join for additional items (all orders have these)
             LEFT JOIN 
@@ -722,22 +735,23 @@ exports.getOrderDataDao = (orderId) => {
             LEFT JOIN 
                 market_place.marketplaceitems mi_additional ON oai.productId = mi_additional.id
 
-            -- Left join for package data (only for isPackage = 1)
+            -- Left join for package data (through processorders)
             LEFT JOIN 
-                market_place.orderpackage op ON o.id = op.orderId AND o.isPackage = 1
+                market_place.orderpackage op ON po.id = op.orderId
             
-            -- Left join for package information from marketplacepackages table
+            -- Left join for package information
             LEFT JOIN 
-                market_place.marketplacepackages mp ON op.packageId = mp.id AND o.isPackage = 1
+                market_place.marketplacepackages mp ON op.packageId = mp.id
             
+            -- Left join for package items
             LEFT JOIN 
                 market_place.orderpackageitems opi ON op.id = opi.orderPackageId
             LEFT JOIN 
                 market_place.marketplaceitems mi_package ON opi.productId = mi_package.id
 
-            -- Left join for product types (only for package items when isPackage = 1)
+            -- Left join for product types
             LEFT JOIN 
-                market_place.producttypes pt ON opi.productType = pt.id AND o.isPackage = 1
+                market_place.producttypes pt ON opi.productType = pt.id
 
             WHERE 
                 o.id = ?
@@ -762,11 +776,12 @@ exports.getOrderDataDao = (orderId) => {
                 return resolve({
                     orderInfo: null,
                     additionalItems: [],
-                    packageData: null
+                    packageData: null,
+                    warnings: []
                 });
             }
 
-            // Process the results to structure the data properly
+            // Process the results
             const orderInfo = {
                 orderId: results[0].orderId,
                 isPackage: results[0].isPackage,
@@ -776,13 +791,14 @@ exports.getOrderDataDao = (orderId) => {
                 sheduleType: results[0].sheduleType,
                 sheduleDate: results[0].sheduleDate,
                 sheduleTime: results[0].sheduleTime,
-                orderCreatedAt: results[0].orderCreatedAt
+                orderCreatedAt: results[0].orderCreatedAt,
+                processOrderId: results[0].processOrderId
             };
 
-            // Process additional items
             const additionalItemsMap = new Map();
             const packageItemsMap = new Map();
             let packageInfo = null;
+            const warnings = [];
 
             results.forEach(row => {
                 // Process additional items
@@ -801,16 +817,14 @@ exports.getOrderDataDao = (orderId) => {
                     });
                 }
 
-                // Process package data (only for isPackage = 1)
-                if (orderInfo.isPackage === 1) {
-                    // Set package info once
-                    if (row.orderPackageId && !packageInfo) {
+                // Process package data (only if we have processOrder and orderPackage)
+                if (orderInfo.isPackage === 1 && orderInfo.processOrderId && row.orderPackageId) {
+                    if (!packageInfo) {
                         packageInfo = {
                             id: row.orderPackageId,
                             packageId: row.packageId,
                             packingStatus: row.packingStatus,
                             createdAt: row.packageCreatedAt,
-                            // Add package details from marketplacepackages table
                             packageName: row.packageName,
                             packageDescription: row.packageDescription,
                             packageStatus: row.packageStatus,
@@ -827,12 +841,11 @@ exports.getOrderDataDao = (orderId) => {
                             productType: row.packageProductType,
                             productId: row.packageProductId,
                             qty: row.packageQty,
-                            price: row.packagePrice,
+                            price: row.packageItemPrice,
                             isPacked: row.packageIsPacked,
                             productName: row.packageProductName,
                             category: row.packageProductCategory,
                             normalPrice: row.packageNormalPrice,
-                            // Add product type information
                             productTypeId: row.productTypeId,
                             productTypeName: row.productTypeName
                         });
@@ -840,28 +853,51 @@ exports.getOrderDataDao = (orderId) => {
                 }
             });
 
+            // Data validation and warnings
+            if (orderInfo.isPackage === 1 && !orderInfo.processOrderId) {
+                warnings.push({
+                    type: 'MISSING_PROCESS_ORDER',
+                    message: `Order ${orderId} is marked as package but missing processorders record`
+                });
+            }
+
+            if (orderInfo.isPackage === 1 && orderInfo.processOrderId && !packageInfo) {
+                warnings.push({
+                    type: 'MISSING_PACKAGE_RECORD',
+                    message: `Order ${orderId} has processorder but missing orderpackage record`
+                });
+            }
+
             // Convert maps to arrays
             const additionalItems = Array.from(additionalItemsMap.values());
             const packageItems = Array.from(packageItemsMap.values());
 
-            // Add package items to package info if it exists
-            if (packageInfo) {
+            // Add package items to package info
+            if (packageInfo && packageItems.length > 0) {
                 packageInfo.items = packageItems;
             }
 
             const structuredData = {
                 orderInfo: orderInfo,
                 additionalItems: additionalItems,
-                packageData: packageInfo
+                packageData: packageInfo,
+                warnings: warnings,
+                meta: {
+                    hasDataInconsistency: warnings.length > 0,
+                    hasProcessOrder: !!orderInfo.processOrderId,
+                    hasPackageData: !!packageInfo
+                }
             };
 
             console.log("Structured order data:", {
                 orderId: orderInfo.orderId,
                 isPackage: orderInfo.isPackage,
+                hasProcessOrder: !!orderInfo.processOrderId,
                 additionalItemsCount: additionalItems.length,
                 packageItemsCount: packageItems.length,
                 hasPackageData: !!packageInfo,
-                packageName: packageInfo ? packageInfo.packageName : null
+                packageName: packageInfo ? packageInfo.packageName : null,
+                warningsCount: warnings.length
             });
 
             resolve(structuredData);
@@ -869,7 +905,110 @@ exports.getOrderDataDao = (orderId) => {
     });
 };
 
+// Function to check and fix missing process orders
+exports.validateOrderStructure = async (orderId) => {
+    console.log("Validating order structure for order ID:", orderId);
 
+    try {
+        // Check if order exists and needs processorder
+        const checkSql = `
+            SELECT 
+                o.id,
+                o.isPackage,
+                po.id as processOrderId
+            FROM market_place.orders o
+            LEFT JOIN market_place.processorders po ON o.id = po.orderId
+            WHERE o.id = ?
+        `;
+
+        const result = await new Promise((resolve, reject) => {
+            db.collectionofficer.query(checkSql, [orderId], (err, results) => {
+                if (err) return reject(err);
+                resolve(results);
+            });
+        });
+
+        if (result.length === 0) {
+            throw new Error(`Order ${orderId} not found`);
+        }
+
+        const order = result[0];
+        const fixes = [];
+
+        // If it's a package order but missing processorder, create it
+        if (order.isPackage === 1 && !order.processOrderId) {
+            const createProcessOrderSql = `
+                INSERT INTO market_place.processorders (orderId, createdAt)
+                VALUES (?, NOW())
+            `;
+
+            await new Promise((resolve, reject) => {
+                db.collectionofficer.query(createProcessOrderSql, [orderId], (err, result) => {
+                    if (err) return reject(err);
+                    fixes.push({
+                        type: 'CREATED_PROCESS_ORDER',
+                        message: `Created processorders record for order ${orderId}`,
+                        processOrderId: result.insertId
+                    });
+                    resolve(result);
+                });
+            });
+        }
+
+        return {
+            orderId: orderId,
+            fixes: fixes,
+            fixesApplied: fixes.length > 0
+        };
+
+    } catch (error) {
+        console.error("Error in validateOrderStructure:", error);
+        throw error;
+    }
+};
+
+// Debug function to check table relationships
+exports.debugOrderRelationships = async (orderId) => {
+    console.log("Debugging order relationships for order ID:", orderId);
+
+    const queries = [
+        {
+            name: 'orders',
+            sql: 'SELECT * FROM market_place.orders WHERE id = ?'
+        },
+        {
+            name: 'processorders',
+            sql: 'SELECT * FROM market_place.processorders WHERE orderId = ?'
+        },
+        {
+            name: 'orderpackage',
+            sql: `SELECT op.* FROM market_place.orderpackage op 
+                  JOIN market_place.processorders po ON op.orderId = po.id 
+                  WHERE po.orderId = ?`
+        },
+        {
+            name: 'orderadditionalitems',
+            sql: 'SELECT * FROM market_place.orderadditionalitems WHERE orderId = ?'
+        }
+    ];
+
+    const results = {};
+
+    for (const query of queries) {
+        try {
+            results[query.name] = await new Promise((resolve, reject) => {
+                db.collectionofficer.query(query.sql, [orderId], (err, result) => {
+                    if (err) return reject(err);
+                    resolve(result);
+                });
+            });
+        } catch (error) {
+            results[query.name] = { error: error.message };
+        }
+    }
+
+    return results;
+};
 
 // Update package items - MySQL2 compatible version
 // Update package items
