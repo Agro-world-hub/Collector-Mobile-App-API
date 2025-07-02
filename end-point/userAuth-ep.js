@@ -159,6 +159,8 @@ exports.loginUser = async (req, res) => {
 
     const collectionOfficerId = collectionOfficerResult[0]?.id;
     const jobRole = collectionOfficerResult[0]?.jobRole;
+    const centerId = collectionOfficerResult[0]?.centerId;
+    const distributionCenterId = collectionOfficerResult[0]?.distributionCenterId;
 
     if (!collectionOfficerId) {
       return res.status(404).json({
@@ -195,6 +197,12 @@ exports.loginUser = async (req, res) => {
       });
     }
 
+        let center;
+    if (jobRole === "Collection Officer" || jobRole === "Collection Manager") {
+      center = centerId;
+    } else if (jobRole === "Distribution Manager" || jobRole === "Distribution Officer") {
+      center = distributionCenterId;
+    }
     // If password is valid, generate a JWT token
     const payload = {
       id: officer.id,
@@ -202,7 +210,7 @@ exports.loginUser = async (req, res) => {
       firstNameEnglish: officer.firstNameEnglish,
       lastNameEnglish: officer.lastNameEnglish,
       phoneNumber01: officer.phoneNumber01,
-      centerId: officer.centerId,
+      centerId: center,
       companyId: officer.companyId,
       empId: officer.empId,
       role: officer.jobRole,
