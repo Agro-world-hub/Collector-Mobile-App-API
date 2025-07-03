@@ -157,8 +157,10 @@ exports.loginUser = async (req, res) => {
       });
     }
 
+
     const collectionOfficerId = collectionOfficerResult[0]?.id;
     const jobRole = collectionOfficerResult[0]?.jobRole;
+
 
     if (!collectionOfficerId) {
       return res.status(404).json({
@@ -183,7 +185,8 @@ exports.loginUser = async (req, res) => {
     //     message: `Access denied.No collection center found. Please contact the admin for assistance.`,
     //   });
     // }
-
+    const centerId = officer.centerId;
+    const distributionCenterId = officer.distributedCenterId;
     // Compare the provided password with the hashed password in the database
     const isPasswordValid = await bcrypt.compare(password, officer.password);
     console.log("Password Match Result:", isPasswordValid);
@@ -195,6 +198,15 @@ exports.loginUser = async (req, res) => {
       });
     }
 
+        let center;
+    if (jobRole === "Collection Officer" || jobRole === "Collection Manager") {
+      center = centerId;
+    } else if (jobRole === "Distribution Manager" || jobRole === "Distribution Officer") {
+      center = distributionCenterId;
+
+    }
+                console.log("distributedCenterId", center)
+
     // If password is valid, generate a JWT token
     const payload = {
       id: officer.id,
@@ -202,7 +214,7 @@ exports.loginUser = async (req, res) => {
       firstNameEnglish: officer.firstNameEnglish,
       lastNameEnglish: officer.lastNameEnglish,
       phoneNumber01: officer.phoneNumber01,
-      centerId: officer.centerId,
+      centerId: center,
       companyId: officer.companyId,
       empId: officer.empId,
       role: officer.jobRole,
@@ -363,6 +375,7 @@ exports.getProfile = async (req, res) => {
       status: "success",
       data: officerDetails,
     });
+    
   } catch (error) {
     console.error("Error fetching officer details:", error.message);
 
