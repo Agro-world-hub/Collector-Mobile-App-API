@@ -4,7 +4,7 @@ const bcrypt = require("bcrypt");
 const { loginSchema } = require('../Validations/Auth-validations');
 const { Socket } = require("socket.io");
 const uploadFileToS3 = require('../Middlewares/s3upload');
-const delectfilesOnS3  = require('../Middlewares/s3delete')
+const delectfilesOnS3 = require('../Middlewares/s3delete')
 
 
 
@@ -104,7 +104,7 @@ const delectfilesOnS3  = require('../Middlewares/s3delete')
 //       jobRole: jobRole,
 //       empId: officer.empId,
 //     };
-    
+
 //     const status = 1
 
 //     console.log(collectionOfficerId)
@@ -265,19 +265,19 @@ exports.updatePassword = async (req, res) => {
     collectionOfficerId
   );
   const officer = users[0];
-    console.log("Stored Hashed Password (from DB):", officer.password);
+  console.log("Stored Hashed Password (from DB):", officer.password);
 
-    const isPasswordValid = await bcrypt.compare(currentPassword, officer.password);
-    console.log("Password Match Result:", isPasswordValid);
-    if (!isPasswordValid) {
-      return res.status(401).json({
-        status: "error",
-        message: "Invalid password",
-      });
-    }
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
-    console.log("Plain Password:", hashedPassword );
+  const isPasswordValid = await bcrypt.compare(currentPassword, officer.password);
+  console.log("Password Match Result:", isPasswordValid);
+  if (!isPasswordValid) {
+    return res.status(401).json({
+      status: "error",
+      message: "Invalid password",
+    });
+  }
+  const saltRounds = 10;
+  const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+  console.log("Plain Password:", hashedPassword);
   try {
     try {
       await userAuthDao.updatePasswordInDatabase(
@@ -475,20 +475,20 @@ exports.GetClaimStatus = async (req, res) => {
   const { id: userId } = req.user; // Extract userId from the authenticated user
 
   try {
-      if (!userId) {
-          return res.status(400).json({ error: 'User ID is missing.' });
-      }
+    if (!userId) {
+      return res.status(400).json({ error: 'User ID is missing.' });
+    }
 
-      const claimStatus = await userAuthDao.getClaimStatusByUserId(userId);
+    const claimStatus = await userAuthDao.getClaimStatusByUserId(userId);
 
-      if (claimStatus === null) {
-          return res.status(404).json({ error: 'User not found or claim status unavailable.' });
-      }
+    if (claimStatus === null) {
+      return res.status(404).json({ error: 'User not found or claim status unavailable.' });
+    }
 
-      res.status(200).json({ userId, claimStatus });
+    res.status(200).json({ userId, claimStatus });
   } catch (error) {
-      console.error('Error fetching claim status:', error);
-      res.status(500).json({ error: 'An error occurred while fetching claim status.' });
+    console.error('Error fetching claim status:', error);
+    res.status(500).json({ error: 'An error occurred while fetching claim status.' });
   }
 };
 
@@ -498,7 +498,7 @@ exports.updateOnlineStatus = async (req, res) => {
     const result = await userAuthDao.updateOnlineStatusWithSocket(empId, status);
 
     // Check if the update was successful
-    if (result===null) {
+    if (result === null) {
       return res.status(404).json({ error: 'User not found.' });
     }
 
@@ -513,7 +513,7 @@ exports.updateOnlineStatus = async (req, res) => {
 
 // exports.updateOnlineStatusTest = async (req, res) => {
 //   const { status } = req.body;  // Get the status from the request body
-  
+
 //   console.log('Status:', status);
 
 //   if (typeof status !== 'boolean') {
@@ -559,7 +559,7 @@ exports.uploadProfileImage = async (req, res) => {
       const imageBuffer = req.file.buffer;
 
       const uploadedImage = await uploadFileToS3(imageBuffer, fileName, "collectionofficer/image");
-      profileImageUrl = uploadedImage; 
+      profileImageUrl = uploadedImage;
     } else {
     }
     await userAuthDao.updateUserProfileImage(userId, profileImageUrl);
