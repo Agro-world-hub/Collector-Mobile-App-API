@@ -85,10 +85,11 @@ exports.createCollectionOfficer = async (req, res) => {
     }
 
 
-    const { id: irmId } = req.user;
+    const { id: irmId, role:jobRole } = req.user;
+    console.log("hiiiiiiiiiiiiiiiiiiiii", jobRole)
 
     // Get IRM details
-    const irmDetails = await collectionofficerDao.getIrmDetails(irmId);
+    const irmDetails = await collectionofficerDao.getIrmDetails(irmId, jobRole);
     if (!irmDetails) {
       return res.status(404).json({ error: "IRM details not found" });
     }
@@ -180,7 +181,8 @@ exports.createCollectionOfficer = async (req, res) => {
       officerData,
       centerId,
       companyId,
-      irmId
+      irmId,
+      jobRole
     );
 
     console.log("Collection Officer created successfully:", resultsPersonal);
@@ -291,7 +293,7 @@ exports.getClaimOfficer = async (req, res) => {
 }
 
 exports.createClaimOfficer = async (req, res) => {
-  const { officerId } = req.body;
+  const { officerId} = req.body;
   const token = req.headers.authorization?.split(' ')[1];
   if (!token) {
     return res.status(401).json({ message: "Authorization token is missing" });
@@ -300,9 +302,10 @@ exports.createClaimOfficer = async (req, res) => {
   const decoded = jwt.verify(token, process.env.JWT_SECRET);
   const irmId = decoded.id;
   const centerId = decoded.centerId;
+  const mangerJobRole = decoded.role
 
   try {
-    const results = await collectionofficerDao.createClaimOfficer(officerId, irmId, centerId);
+    const results = await collectionofficerDao.createClaimOfficer(officerId, irmId, centerId, mangerJobRole);
     res.status(200).json({ result: results, status: true });
   } catch (err) {
     console.error("Error executing query:", err);
@@ -311,14 +314,14 @@ exports.createClaimOfficer = async (req, res) => {
 }
 
 exports.disclaimOfficer = async (req, res) => {
-  const { collectionOfficerId } = req.body;
-
+const { collectionOfficerId, jobRole } = req.body;
+  console.log("Request Body in Middleware:", req.body);
   if (!collectionOfficerId) {
     return res.status(400).json({ status: 'error', message: 'Missing collectionOfficerId in request body.' });
   }
 
   try {
-    const results = await collectionofficerDao.disclaimOfficer(collectionOfficerId);
+    const results = await collectionofficerDao.disclaimOfficer(collectionOfficerId, jobRole);
     if (results.affectedRows > 0) {
       res.status(200).json({
         status: 'success',
