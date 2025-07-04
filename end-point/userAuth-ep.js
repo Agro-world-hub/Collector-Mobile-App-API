@@ -199,13 +199,13 @@ exports.loginUser = async (req, res) => {
     }
 
         let center;
-    if (jobRole === "Collection Officer" || jobRole === "Collection Manager") {
+    if (jobRole === "Collection Officer" || jobRole === "Collection Center Manager") {
       center = centerId;
     } else if (jobRole === "Distribution Manager" || jobRole === "Distribution Officer") {
       center = distributionCenterId;
 
     }
-                console.log("distributedCenterId", center)
+                console.log("Centre Id", center)
 
     // If password is valid, generate a JWT token
     const payload = {
