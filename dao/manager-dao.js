@@ -635,6 +635,7 @@ exports.getClaimOfficer = (empID, jobRole) => {
 };
 
 exports.createClaimOfficer = (officerId, irmId, centerId, mangerJobRole) => {
+  console.log("center id ", centerId)
   return new Promise((resolve, reject) => {
     let sql = `
       UPDATE collectionofficer 
