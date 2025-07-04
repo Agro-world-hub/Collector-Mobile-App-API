@@ -9,6 +9,8 @@ const auth = require('../Middlewares/auth.middleware');
 // Get distribution center targets (nested structure)
 router.get("/get-dcenter-target", authenticate, dmanagerEp.getDCenterTarget);
 
+router.get('/get-replacerequest', auth, dmanagerEp.getAllReplaceRequests);
+
 // // Alternative endpoint - Get distribution center targets (separate arrays)
 // router.get("/get-dcenter-target-separate", authenticate, dmanagerEp.getDCenterTargetSeparate);
 // Route to get collection officers under a specific manager
