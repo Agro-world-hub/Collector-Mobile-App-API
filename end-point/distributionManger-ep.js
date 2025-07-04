@@ -5,39 +5,39 @@ const distributionofficerDao = require('../dao/distributionManager-dao')
 
 
 exports.getDCenterTarget = async (req, res) => {
-    console.log("getOfficerTarget called");
-    try {
-        // Get officerId from the decoded token (set by auth middleware)
-        const officerId = req.user.id; // Assuming your auth middleware sets req.user
+  console.log("getOfficerTarget called");
+  try {
+    // Get officerId from the decoded token (set by auth middleware)
+    const officerId = req.user.id; // Assuming your auth middleware sets req.user
 
-        console.log("Officer ID from token:", officerId);
+    console.log("Officer ID from token:", officerId);
 
-        // Validate officerId
-        if (!officerId || isNaN(officerId)) {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid officer ID provided'
-            });
-        }
-
-        // Get targets from DAO
-        const targets = await targetDDao.getDCenterTarget(officerId);
-
-        console.log("nwxsjklowcd", targets)
-
-        res.status(200).json({
-            success: true,
-            message: 'Officer targets retrieved successfully',
-            data: targets
-        });
-    } catch (error) {
-        console.error('Error getting officer targets:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to retrieve officer targets',
-            error: error.message
-        });
+    // Validate officerId
+    if (!officerId || isNaN(officerId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid officer ID provided'
+      });
     }
+
+    // Get targets from DAO
+    const targets = await targetDDao.getDCenterTarget(officerId);
+
+    console.log("nwxsjklowcd", targets)
+
+    res.status(200).json({
+      success: true,
+      message: 'Officer targets retrieved successfully',
+      data: targets
+    });
+  } catch (error) {
+    console.error('Error getting officer targets:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve officer targets',
+      error: error.message
+    });
+  }
 };
 
 
@@ -107,7 +107,7 @@ exports.getProfile = async (req, res) => {
       status: "success",
       data: officerDetails,
     });
-    
+
   } catch (error) {
     console.error("Error fetching officer details:", error.message);
 
@@ -121,3 +121,29 @@ exports.getProfile = async (req, res) => {
     });
   }
 };
+
+
+// In your controller file (e.g., replaceRequestController.js)
+exports.getAllReplaceRequests = async (req, res) => {
+  console.log("getAllReplaceRequests called");
+  try {
+    // Get all replace requests from DAO
+    const replaceRequests = await targetDDao.getAllReplaceRequests();
+
+    console.log("Replace requests data:", replaceRequests);
+
+    res.status(200).json({
+      success: true,
+      message: 'All replace requests retrieved successfully',
+      data: replaceRequests
+    });
+  } catch (error) {
+    console.error('Error getting replace requests:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve replace requests',
+      error: error.message
+    });
+  }
+};
+
