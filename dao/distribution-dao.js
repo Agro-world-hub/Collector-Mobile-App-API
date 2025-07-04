@@ -1308,8 +1308,8 @@ exports.createReplaceRequestDao = (replaceData) => {
                         });
                     }
 
-                    // Check if already locked (only relevant for DBO operations)
-                    if (replaceData.isDBO && checkResult[0].isLock === 1) {
+                    // Check if already locked (only relevant for DIO operations)
+                    if (replaceData.isDIO && checkResult[0].isLock === 1) {
                         console.warn("Record is already locked:", replaceData.orderPackageId);
                         return connection.rollback(() => {
                             connection.release();
@@ -1342,9 +1342,9 @@ exports.createReplaceRequestDao = (replaceData) => {
                         if (replaceData.isDBM) {
                             // DBM: Only update orderpackageitems table
                             handleDBMUpdates(connection, replaceData, resolve, reject);
-                        } else if (replaceData.isDBO) {
-                            // DBO: Update orderpackage (set isLock=1) and insert into replacerequest
-                            handleDBOUpdates(connection, replaceData, resolve, reject);
+                        } else if (replaceData.isDIO) {
+                            // DIO: Update orderpackage (set isLock=1) and insert into replacerequest
+                            handleDIOUpdates(connection, replaceData, resolve, reject);
                         } else {
                             // Unknown role
                             console.error("Unknown user role");
@@ -1418,16 +1418,16 @@ function handleDBMUpdates(connection, replaceData, resolve, reject) {
                 orderPackageId: replaceData.orderPackageId,
                 replaceItemId: replaceData.replaceId,
                 message: "Order package item updated successfully by DBM",
-                updatedBy: replaceData.empId,
+                updatedBy: replaceData.userId,
                 permissions: 'DBM - Limited access (orderpackageitems only)'
             });
         });
     });
 }
 
-// Handle DBO updates - update orderpackage (set isLock=1) and insert into replacerequest
-function handleDBOUpdates(connection, replaceData, resolve, reject) {
-    console.log("Processing DBO updates");
+// Handle DIO updates - update orderpackage (set isLock=1) and insert into replacerequest
+function handleDIOUpdates(connection, replaceData, resolve, reject) {
+    console.log("Processing DIO updates");
 
     // Step 1: Update orderpackage table to set isLock = 1
     const updateOrderPackageSql = `
@@ -1436,7 +1436,7 @@ function handleDBOUpdates(connection, replaceData, resolve, reject) {
         WHERE id = ? AND isLock = 0
     `;
 
-    console.log("DBO updating orderpackage isLock:", [replaceData.orderPackageId]);
+    console.log("DIO updating orderpackage isLock:", [replaceData.orderPackageId]);
 
     connection.query(updateOrderPackageSql, [replaceData.orderPackageId], (err, updateResult) => {
         if (err) {
@@ -1447,7 +1447,7 @@ function handleDBOUpdates(connection, replaceData, resolve, reject) {
             });
         }
 
-        console.log("OrderPackage updated (DBO):", updateResult.affectedRows);
+        console.log("OrderPackage updated (DIO):", updateResult.affectedRows);
 
         if (updateResult.affectedRows === 0) {
             console.error("No rows were updated in orderpackage");
@@ -1457,11 +1457,11 @@ function handleDBOUpdates(connection, replaceData, resolve, reject) {
             });
         }
 
-        // Step 2: Insert into replacerequest table
+        // Step 2: Insert into replacerequest table (now includes userId)
         const insertReplaceSql = `
             INSERT INTO market_place.replacerequest 
-            (orderPackageId, replceId, productType, productId, qty, price, status, createdAt) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
+            (orderPackageId, replceId, productType, productId, qty, price, status, userId, createdAt) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
         `;
 
         const insertValues = [
@@ -1471,10 +1471,11 @@ function handleDBOUpdates(connection, replaceData, resolve, reject) {
             replaceData.productId,
             replaceData.qty,
             replaceData.price,
-            replaceData.status
+            replaceData.status,
+            replaceData.userId  // Added userId to the insert
         ];
 
-        console.log("DBO inserting replace request with values:", insertValues);
+        console.log("DIO inserting replace request with values:", insertValues);
 
         connection.query(insertReplaceSql, insertValues, (err, insertResult) => {
             if (err) {
@@ -1485,11 +1486,11 @@ function handleDBOUpdates(connection, replaceData, resolve, reject) {
                 });
             }
 
-            console.log("Replace request inserted (DBO), ID:", insertResult.insertId);
+            console.log("Replace request inserted (DIO), ID:", insertResult.insertId);
 
-            // Step 3: Optionally update orderpackageitems if DBO wants to update items too
+            // Step 3: Optionally update orderpackageitems if DIO wants to update items too
             if (replaceData.updateItems) {
-                // DBO can update all fields including isPacked
+                // DIO can update all fields including isPacked
                 const updateItemsSql = `
                     UPDATE market_place.orderpackageitems 
                     SET productType = ?, productId = ?, qty = ?, price = ?, isPacked = ?
@@ -1506,7 +1507,7 @@ function handleDBOUpdates(connection, replaceData, resolve, reject) {
                     replaceData.orderPackageId
                 ];
 
-                console.log("DBO updating specific orderpackageitem (all fields):", updateItemsValues);
+                console.log("DIO updating specific orderpackageitem (all fields):", updateItemsValues);
 
                 connection.query(updateItemsSql, updateItemsValues, (err, itemsResult) => {
                     if (err) {
@@ -1517,38 +1518,38 @@ function handleDBOUpdates(connection, replaceData, resolve, reject) {
                         });
                     }
 
-                    console.log("OrderPackageItems updated (DBO):", itemsResult.affectedRows);
-                    commitDBOTransaction(connection, resolve, reject, replaceData, insertResult.insertId);
+                    console.log("OrderPackageItems updated (DIO):", itemsResult.affectedRows);
+                    commitDIOTransaction(connection, resolve, reject, replaceData, insertResult.insertId);
                 });
             } else {
                 // Just commit without updating items
-                commitDBOTransaction(connection, resolve, reject, replaceData, insertResult.insertId);
+                commitDIOTransaction(connection, resolve, reject, replaceData, insertResult.insertId);
             }
         });
     });
 }
 
-// Helper function to commit DBO transaction
-function commitDBOTransaction(connection, resolve, reject, replaceData, insertId) {
+// Helper function to commit DIO transaction
+function commitDIOTransaction(connection, resolve, reject, replaceData, insertId) {
     connection.commit((err) => {
         if (err) {
-            console.error("Error committing DBO transaction:", err);
+            console.error("Error committing DIO transaction:", err);
             return connection.rollback(() => {
                 connection.release();
                 reject(err);
             });
         }
 
-        console.log("DBO transaction completed successfully");
+        console.log("DIO transaction completed successfully");
         connection.release();
 
         resolve({
             replaceRequestId: insertId,
             orderPackageId: replaceData.orderPackageId,
             replaceItemId: replaceData.replaceId,
-            message: "Replacement request created and order package locked successfully by DBO",
-            updatedBy: replaceData.empId,
-            permissions: 'DBO - Full access (orderpackage + replacerequest)'
+            message: "Replacement request created and order package locked successfully by DIO",
+            updatedBy: replaceData.userId,
+            permissions: 'DIO - Full access (orderpackage + replacerequest)'
         });
     });
 }
