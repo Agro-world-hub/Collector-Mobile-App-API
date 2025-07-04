@@ -193,14 +193,22 @@ exports.updateOrderItems = async (req, res) => {
 exports.getAllRetailItems = asyncHandler(async (req, res) => {
     console.log("Fetching Retail Items...");
     try {
-        const items = await distributionDao.getAllRetailItems();
+        const { orderId } = req.params;
+
+        if (!orderId) {
+            return res.status(400).json({ message: "Order ID is required" });
+        }
+
+        const items = await distributionDao.getAllRetailItems(orderId);
+
         if (!items || items.length === 0) {
             return res.status(404).json({ message: "No Retail Items found" });
         }
+
         res.status(200).json(items);
         console.log("Retail Items fetched successfully", items.length, "items");
+        console.log("Filtered retail items:", items);
 
-        console.log("icbdwhlksj", items)
     } catch (error) {
         console.error("Error fetching Retail Items:", error);
         res.status(500).json({ message: "Failed to fetch Retail Items" });

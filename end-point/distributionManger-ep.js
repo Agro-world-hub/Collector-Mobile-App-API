@@ -185,3 +185,122 @@ exports.getRetailItemWithOutEclist = async (req, res) => {
   }
 };
 
+
+
+// Controller Function
+exports.getOrdreReplace = async (req, res) => {
+  console.log("getOrdreReplace called");
+  try {
+    const { id } = req.params;
+    console.log("Order Package ID:", id);
+
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Order Package ID is required'
+      });
+    }
+
+    // Get replace request data for the order package
+    const replaceRequests = await targetDDao.getOrdreReplace(id);
+    console.log("Replace request data:", replaceRequests);
+
+    res.status(200).json({
+      success: true,
+      message: 'Replace request data retrieved successfully',
+      data: replaceRequests,
+      count: replaceRequests.length
+    });
+  } catch (error) {
+    console.error('Error getting replace request data:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve replace request data',
+      error: error.message
+    });
+  }
+};
+
+exports.getReplaceReuset = async (req, res) => {
+  console.log("getOrdreReplace called");
+  try {
+    const { id } = req.params;
+    console.log("Order Package ID:", id);
+
+
+    // Get replace request data for the order package
+    const replaceRequests = await targetDDao.getReplaceReuset();
+    console.log("Replace request data:", replaceRequests);
+
+    res.status(200).json({
+      success: true,
+      message: 'Replace request data retrieved successfully',
+      data: replaceRequests,
+      count: replaceRequests.length
+    });
+  } catch (error) {
+    console.error('Error getting replace request data:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve replace request data',
+      error: error.message
+    });
+  }
+};
+
+
+exports.approveReplaceRequest = async (req, res) => {
+  console.log("approveReplaceRequest called");
+
+  try {
+    const {
+      replaceRequestId,
+      newProductId,
+      quantity,
+      price,
+      orderId,
+      newProduct
+    } = req.body;
+
+    console.log("Request body:", req.body);
+
+    // Validate required fields
+    if (!replaceRequestId || !newProductId || !quantity || !price) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields: replaceRequestId, newProductId, quantity, price'
+      });
+    }
+
+    // Update the replace request with new product details
+    const updateResult = await targetDDao.approveReplaceRequest({
+      replaceRequestId,
+      newProductId,
+      quantity: parseFloat(quantity),
+      price: parseFloat(price)
+    });
+
+    console.log("Update result:", updateResult);
+
+    if (updateResult.success) {
+      res.status(200).json({
+        success: true,
+        message: 'Replace request approved successfully',
+        data: updateResult.data
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: updateResult.message || 'Failed to approve replace request'
+      });
+    }
+
+  } catch (error) {
+    console.error('Error approving replace request:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to approve replace request',
+      error: error.message
+    });
+  }
+};

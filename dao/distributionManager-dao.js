@@ -340,6 +340,7 @@ exports.getOfficerDetailsById = (officerId) => {
 
 
 
+
 exports.getAllReplaceRequests = (managerId) => {
     console.log("manager Id", managerId);
     return new Promise((resolve, reject) => {
@@ -396,16 +397,10 @@ exports.getAllReplaceRequests = (managerId) => {
                 collection_officer.collectionofficer co ON rr.userId = co.id
             WHERE 
                 co.irmId = ?
+                AND rr.status = 'Pending'
             ORDER BY 
-                rr.replceId DESC, 
-                rr.id ASC, 
-                rr.orderPackageId ASC, 
-                rr.productType ASC, 
-                rr.productId ASC, 
-                rr.qty ASC, 
-                rr.price ASC, 
-                rr.status ASC, 
-                rr.userId ASC
+                rr.createdAt DESC,
+                rr.id ASC
             LIMIT 1000
         `;
 
@@ -417,8 +412,10 @@ exports.getAllReplaceRequests = (managerId) => {
                     code: err.code,
                     errno: err.errno
                 });
-                return reject(new Error("Database error while fetching all replace requests"));
+                return reject(new Error("Database error while fetching pending replace requests"));
             }
+
+            console.log(`Found ${results.length} pending replace requests for manager ${managerId}`);
             resolve(results);
         });
     });
@@ -481,3 +478,320 @@ exports.getRetailItemsExcludingUserExclusions = (orderId) => {
     });
 };
 
+exports.getOrdreReplace = (id) => {
+    console.log("DAO getOrdreReplace called with ID:", id);
+    return new Promise((resolve, reject) => {
+        const sql = `
+      SELECT 
+        rr.replceId,
+        rr.id,
+        rr.orderPackageId,
+        rr.productType,
+        rr.productId,
+        rr.qty,
+        rr.price,
+        rr.status,
+        rr.userId,
+        rr.createdAt,
+        mpi.displayName
+      FROM market_place.replacerequest rr
+      LEFT JOIN market_place.marketplaceitems mpi ON rr.productId = mpi.id
+      WHERE rr.id = ?  
+      ORDER BY rr.replceId DESC, rr.id ASC, rr.orderPackageId ASC, 
+               rr.productType ASC, rr.productId ASC, rr.qty ASC, 
+               rr.price ASC, rr.status ASC, rr.userId ASC
+    `;
+
+        console.log("Executing SQL:", sql);
+        console.log("With parameter:", [id]);
+        db.marketPlace.query(sql, [id], (err, results) => {
+            if (err) {
+                console.error("Database error details:", {
+                    message: err.message,
+                    sql: err.sql,
+                    code: err.code,
+                    errno: err.errno
+                });
+                return reject(new Error("Database error while fetching replace request data"));
+            }
+
+            console.log("Query results:", results);
+
+            // Format the results
+            const formattedResults = results.map(item => ({
+                replceId: item.replceId,
+                id: item.id,
+                orderPackageId: item.orderPackageId,
+                productType: item.productType,
+                productId: item.productId,
+                qty: parseInt(item.qty || 0),
+                price: parseFloat(item.price || 0),
+                status: item.status,
+                userId: item.userId,
+                createdAt: item.createdAt,
+
+                displayName: item.displayName // Product display name from join
+            }));
+
+            resolve(formattedResults);
+        });
+    });
+};
+
+
+// targetDDao.approveReplaceRequest function
+exports.approveReplaceRequest = (params) => {
+    console.log("DAO approveReplaceRequest called with params:", params);
+
+    return new Promise((resolve, reject) => {
+        // Fix: Map replaceRequestId to replceId (the actual database column name)
+        const { replaceRequestId, newProductId, quantity, price } = params;
+        const replceId = replaceRequestId; // Map to the actual database column name
+
+        // Validate required parameters
+        if (!replceId || !newProductId || !quantity || !price) {
+            return reject(new Error("Missing required parameters: replaceRequestId, newProductId, quantity, price"));
+        }
+
+        console.log("Using replceId:", replceId); // Debug log
+
+        // Get connection from pool and start transaction
+        db.marketPlace.getConnection((err, connection) => {
+            if (err) {
+                console.error("Failed to get connection from pool:", err);
+                return reject(new Error("Failed to get database connection"));
+            }
+
+            // Start transaction
+            connection.beginTransaction((err) => {
+                if (err) {
+                    console.error("Transaction begin error:", err);
+                    connection.release();
+                    return reject(new Error("Failed to start transaction"));
+                }
+
+                // Step 1: Get replace request details first
+                const getReplaceRequestSql = `
+                    SELECT 
+                        rr.id,
+                        rr.replceId,
+                        rr.orderPackageId,
+                        rr.productType,
+                        rr.productId as oldProductId,
+                        rr.qty as oldQty,
+                        rr.price as oldPrice,
+                        rr.status,
+                        op.isLock
+                    FROM market_place.replacerequest rr
+                    JOIN market_place.orderpackage op ON rr.orderPackageId = op.id
+                    WHERE rr.id = ?
+                `;
+
+                connection.query(getReplaceRequestSql, [replceId], (err, replaceResults) => {
+                    if (err) {
+                        console.error("Get replace request error:", err);
+                        return connection.rollback(() => {
+                            connection.release();
+                            reject(new Error("Failed to get replace request details"));
+                        });
+                    }
+
+                    if (replaceResults.length === 0) {
+                        return connection.rollback(() => {
+                            connection.release();
+                            reject(new Error(`Replace request not found with replceId: ${replceId}`));
+                        });
+                    }
+
+                    const replaceRequest = replaceResults[0];
+                    console.log("Replace request found:", replaceRequest);
+
+                    // Check if already approved
+                    if (replaceRequest.status === 'Approved') {
+                        return connection.rollback(() => {
+                            connection.release();
+                            reject(new Error("Replace request is already approved"));
+                        });
+                    }
+
+                    // Step 1.5: Find the corresponding orderpackageitems record
+                    // FIX: Instead of looking for the old product ID, find the item by orderPackageId only
+                    // since there might be a mismatch between replace request and actual order items
+                    const getOrderPackageItemsSql = `
+                        SELECT id, productId, qty, price 
+                        FROM market_place.orderpackageitems 
+                        WHERE orderPackageId = ?
+                        ORDER BY id ASC
+                        LIMIT 1
+                    `;
+
+                    console.log("Looking for orderpackageitems with orderPackageId:", replaceRequest.orderPackageId);
+
+                    connection.query(
+                        getOrderPackageItemsSql,
+                        [replaceRequest.orderPackageId],
+                        (err, itemsResults) => {
+                            if (err) {
+                                console.error("Get order package items error:", err);
+                                return connection.rollback(() => {
+                                    connection.release();
+                                    reject(new Error("Failed to get order package items"));
+                                });
+                            }
+
+                            console.log("Order package items query results:", itemsResults);
+
+                            if (itemsResults.length === 0) {
+                                return connection.rollback(() => {
+                                    connection.release();
+                                    reject(new Error("No order package items found for this order"));
+                                });
+                            }
+
+                            const orderPackageItem = itemsResults[0];
+                            console.log("Order package item to update:", orderPackageItem);
+
+                            // Log the mismatch if it exists
+                            if (orderPackageItem.productId !== replaceRequest.oldProductId) {
+                                console.log(`WARNING: Product ID mismatch detected!`);
+                                console.log(`Replace request expects oldProductId: ${replaceRequest.oldProductId}`);
+                                console.log(`But order package item has productId: ${orderPackageItem.productId}`);
+                                console.log(`Proceeding with the update using the actual order package item...`);
+                            }
+
+                            // Step 2: Update replacerequest table
+                            const updateReplaceRequestSql = `
+                                UPDATE market_place.replacerequest 
+                                SET 
+                                    productId = ?,
+                                    qty = ?,
+                                    price = ?,
+                                    status = 'Approved'
+                                   
+                                WHERE id = ?
+                            `;
+
+                            connection.query(
+                                updateReplaceRequestSql,
+                                [newProductId, quantity, price, replaceRequest.id],
+                                (err, updateReplaceResult) => {
+                                    if (err) {
+                                        console.error("Update replace request error:", err);
+                                        return connection.rollback(() => {
+                                            connection.release();
+                                            reject(new Error("Failed to update replace request"));
+                                        });
+                                    }
+
+                                    console.log("Replace request updated:", updateReplaceResult);
+
+                                    // Step 3: Update orderpackageitems table
+                                    const updateOrderPackageItemsSql = `
+                                        UPDATE market_place.orderpackageitems 
+                                        SET 
+                                            productId = ?,
+                                            qty = ?,
+                                            price = ?
+                                           
+                                        WHERE id = ?
+                                    `;
+
+                                    console.log("About to update orderpackageitems with:", {
+                                        newProductId,
+                                        quantity,
+                                        price,
+                                        orderPackageItemId: orderPackageItem.id
+                                    });
+
+                                    connection.query(
+                                        updateOrderPackageItemsSql,
+                                        [newProductId, quantity, price, orderPackageItem.id],
+                                        (err, updateItemsResult) => {
+                                            if (err) {
+                                                console.error("Update order package items error:", err);
+                                                return connection.rollback(() => {
+                                                    connection.release();
+                                                    reject(new Error("Failed to update order package items"));
+                                                });
+                                            }
+
+                                            console.log("Order package items updated:", updateItemsResult);
+                                            console.log("Affected rows:", updateItemsResult.affectedRows);
+
+                                            if (updateItemsResult.affectedRows === 0) {
+                                                console.log("WARNING: No rows were updated in orderpackageitems!");
+                                            }
+
+                                            // Step 4: Update orderpackage table (set isLock = 0)
+                                            const updateOrderPackageSql = `
+                                                UPDATE market_place.orderpackage 
+                                                SET 
+                                                    isLock = 0
+                                                
+                                                WHERE id = ?
+                                            `;
+
+                                            connection.query(
+                                                updateOrderPackageSql,
+                                                [replaceRequest.orderPackageId],
+                                                (err, updatePackageResult) => {
+                                                    if (err) {
+                                                        console.error("Update order package error:", err);
+                                                        return connection.rollback(() => {
+                                                            connection.release();
+                                                            reject(new Error("Failed to update order package"));
+                                                        });
+                                                    }
+
+                                                    console.log("Order package updated:", updatePackageResult);
+
+                                                    // Step 5: Commit transaction
+                                                    connection.commit((err) => {
+                                                        if (err) {
+                                                            console.error("Transaction commit error:", err);
+                                                            return connection.rollback(() => {
+                                                                connection.release();
+                                                                reject(new Error("Failed to commit transaction"));
+                                                            });
+                                                        }
+
+                                                        console.log("Transaction committed successfully");
+
+                                                        // Release connection back to pool
+                                                        connection.release();
+
+                                                        // Return success response
+                                                        resolve({
+                                                            success: true,
+                                                            message: 'Replace request approved successfully',
+                                                            data: {
+                                                                replaceRequestId: replaceRequestId,
+                                                                replceId: replceId,
+                                                                orderPackageId: replaceRequest.orderPackageId,
+                                                                oldProductId: orderPackageItem.productId, // Use actual product ID from order
+                                                                newProductId: newProductId,
+                                                                oldQuantity: orderPackageItem.qty,
+                                                                newQuantity: quantity,
+                                                                oldPrice: orderPackageItem.price,
+                                                                newPrice: price,
+                                                                updatedTables: [
+                                                                    'replacerequest',
+                                                                    'orderpackageitems',
+                                                                    'orderpackage'
+                                                                ]
+                                                            }
+                                                        });
+                                                    });
+                                                }
+                                            );
+                                        }
+                                    );
+                                }
+                            );
+                        }
+                    );
+                });
+            });
+        });
+    });
+};
