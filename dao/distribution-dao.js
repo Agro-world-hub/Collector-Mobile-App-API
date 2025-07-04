@@ -1755,10 +1755,43 @@ exports.updateDistributedTargetItems = async (targetItemIds, orderId) => {
 /////////////get terget 
 
 // distributionDao.js
+// exports.getDistributionTargets = async (officerId) => {
+//     return new Promise((resolve, reject) => {
+//         db.collectionofficer.getConnection((err, connection) => {
+//             if (err) return reject(err);
+
+//             connection.query(
+//                 `SELECT 
+//                     id,
+//                     companycenterId,
+//                     userId,
+//                     target,
+//                     complete,
+//                     (complete/target * 100) AS completionPercentage,
+//                     createdAt
+                  
+//                 FROM distributedtarget 
+//                 WHERE userId = ?
+//                 ORDER BY companycenterId ASC, userId DESC, target ASC, complete ASC, createdAt ASC
+//                 LIMIT 1000`,
+//                 [officerId],
+//                 (err, results) => {
+//                     connection.release();
+//                     if (err) return reject(err);
+//                     resolve(results);
+//                 }
+//             );
+//         });
+//     });
+// };
 exports.getDistributionTargets = async (officerId) => {
     return new Promise((resolve, reject) => {
         db.collectionofficer.getConnection((err, connection) => {
             if (err) return reject(err);
+
+            const today = new Date().toISOString().split('T')[0]; // Get today's date in YYYY-MM-DD format
+
+            console.log('Today:', today);  // Log today's date
 
             connection.query(
                 `SELECT 
@@ -1767,15 +1800,16 @@ exports.getDistributionTargets = async (officerId) => {
                     userId,
                     target,
                     complete,
-                    (complete/target * 100) AS completionPercentage,
+                    (complete / target * 100) AS completionPercentage,
                     createdAt
-                  
                 FROM distributedtarget 
-                WHERE userId = ?
+                WHERE userId = ? 
+                AND DATE(createdAt) = ?
                 ORDER BY companycenterId ASC, userId DESC, target ASC, complete ASC, createdAt ASC
                 LIMIT 1000`,
-                [officerId],
+                [officerId, today],
                 (err, results) => {
+                    console.log('Query Result:', results);  // Log the query result to check the createdAt date
                     connection.release();
                     if (err) return reject(err);
                     resolve(results);
@@ -1784,3 +1818,4 @@ exports.getDistributionTargets = async (officerId) => {
         });
     });
 };
+
