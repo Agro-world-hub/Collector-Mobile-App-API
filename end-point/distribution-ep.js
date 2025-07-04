@@ -381,15 +381,16 @@ exports.replaceOrderPackage = async (req, res) => {
     console.log("User info:", req.user);
 
     try {
-        // Get user role information
+        // Get user information
+        const userId = req.user.id;  // Changed from empId to id
         const empId = req.user.empId;
         const userRole = req.user.role;
 
         // Determine user permissions based on empId
-        const isDBO = empId && empId.startsWith('DBO');
+        const isDIO = empId && empId.startsWith('DIO');
         const isDBM = empId && empId.startsWith('DBM');
 
-        if (!isDBO && !isDBM) {
+        if (!isDIO && !isDBM) {
             return res.status(403).json({
                 success: false,
                 message: 'Unauthorized: Invalid employee role'
@@ -409,7 +410,6 @@ exports.replaceOrderPackage = async (req, res) => {
         }
 
         const { orderPackageId, productType, replaceId, productId, qty, price, status } = value;
-        const officerId = req.user.id;
 
         console.log("Validated replace request data:", {
             orderPackageId,
@@ -419,9 +419,9 @@ exports.replaceOrderPackage = async (req, res) => {
             qty,
             price,
             status,
-            requestedBy: officerId,
+            requestedBy: userId,  // Changed from officerId to userId
             userRole: userRole,
-            permissions: isDBO ? 'Full access' : 'Limited access'
+            permissions: isDIO ? 'Full access' : 'Limited access'
         });
 
         // Call DAO to handle the replacement request with role information
@@ -433,9 +433,10 @@ exports.replaceOrderPackage = async (req, res) => {
             qty,
             price: parseFloat(price),
             status: status || 'Pending',
-            requestedBy: officerId,
+            requestedBy: userId,  // Changed from officerId to userId
+            userId: userId,       // Added userId field
             empId: empId,
-            isDBO: isDBO,
+            isDIO: isDIO,
             isDBM: isDBM
         });
 
@@ -446,9 +447,10 @@ exports.replaceOrderPackage = async (req, res) => {
             message: 'Replacement request created successfully',
             data: result,
             requestedBy: {
+                userId: userId,   // Added userId to response
                 empId: empId,
                 role: userRole,
-                permissions: isDBO ? 'Full access' : 'Limited access'
+                permissions: isDIO ? 'Full access' : 'Limited access'
             }
         });
     } catch (error) {
@@ -460,7 +462,6 @@ exports.replaceOrderPackage = async (req, res) => {
         });
     }
 };
-
 
 
 

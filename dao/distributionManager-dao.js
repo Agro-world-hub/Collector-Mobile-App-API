@@ -340,28 +340,44 @@ exports.getOfficerDetailsById = (officerId) => {
 
 
 
-exports.getAllReplaceRequests = () => {
+exports.getAllReplaceRequests = (managerId) => {
+    console.log("manager Id", managerId);
     return new Promise((resolve, reject) => {
         const sql = `
             SELECT 
                 rr.id,
                 rr.orderPackageId,
                 rr.productType,
+                rr.replceId,
                 rr.productId,
                 rr.qty,
                 rr.price,
                 rr.status,
                 rr.createdAt,
+                rr.userId,
                 op.orderId,
                 op.packageId,
                 op.packingStatus,
+                opi.id AS replaceItemId,
+                opi.productType AS replaceProductType,
+                opi.productId AS replaceProductId,
+                opi.qty AS replaceQty,
+                opi.price AS replacePrice,
+                opi.isPacked AS replaceItemPacked,
                 pt.typeName AS productTypeName,
                 mi.displayName AS productDisplayName,
                 mi.normalPrice AS productNormalPrice,
                 mi.discountedPrice AS productDiscountedPrice,
-                po.id,
-                po.orderId,
-                po.invNo
+                rmi.displayName AS replaceProductDisplayName,
+                rmi.normalPrice AS replaceProductNormalPrice,
+                rmi.discountedPrice AS replaceProductDiscountedPrice,
+                po.id AS processOrderId,
+                po.orderId AS processOrderOrderId,
+                po.invNo,
+                co.id AS collectionOfficerId,
+                co.centerId,
+                co.distributedCenterId,
+                co.companyId
             FROM 
                 market_place.replacerequest rr
             LEFT JOIN 
@@ -371,12 +387,29 @@ exports.getAllReplaceRequests = () => {
             LEFT JOIN 
                 market_place.marketplaceitems mi ON rr.productId = mi.id
             LEFT JOIN 
-                market_place.processorders mi ON op.orderId = po.id
+                market_place.processorders po ON op.orderId = po.id
+            LEFT JOIN 
+                market_place.orderpackageitems opi ON rr.replceId = opi.id
+            LEFT JOIN 
+                market_place.marketplaceitems rmi ON opi.productId = rmi.id
+            INNER JOIN 
+                collection_officer.collectionofficer co ON rr.userId = co.id
+            WHERE 
+                co.irmId = ?
             ORDER BY 
-                rr.id DESC
+                rr.replceId DESC, 
+                rr.id ASC, 
+                rr.orderPackageId ASC, 
+                rr.productType ASC, 
+                rr.productId ASC, 
+                rr.qty ASC, 
+                rr.price ASC, 
+                rr.status ASC, 
+                rr.userId ASC
+            LIMIT 1000
         `;
 
-        db.marketPlace.query(sql, [], (err, results) => {
+        db.marketPlace.query(sql, [managerId], (err, results) => {
             if (err) {
                 console.error("Database error details:", {
                     message: err.message,
@@ -386,8 +419,65 @@ exports.getAllReplaceRequests = () => {
                 });
                 return reject(new Error("Database error while fetching all replace requests"));
             }
-
             resolve(results);
         });
     });
 };
+
+exports.getRetailItemsExcludingUserExclusions = (orderId) => {
+    return new Promise((resolve, reject) => {
+        const sql = `
+            SELECT 
+                mi.id,
+                mi.varietyId,
+                mi.displayName,
+                mi.category,
+                mi.normalPrice,
+                mi.discountedPrice,
+                mi.unitType
+            FROM 
+                market_place.marketplaceitems mi
+            WHERE 
+                mi.category = 'Retail'
+                AND mi.id NOT IN (
+                    SELECT DISTINCT el.mpItemId 
+                    FROM market_place.excludelist el
+                    WHERE el.userId = (
+                        SELECT o.userId 
+                        FROM market_place.processorders po
+                        INNER JOIN market_place.orders o ON o.id = po.orderId
+                        WHERE po.id = ?
+                    )
+                    AND el.mpItemId IS NOT NULL
+                )
+            ORDER BY 
+                mi.displayName ASC
+        `;
+
+        db.marketPlace.query(sql, [orderId], (err, results) => {
+            if (err) {
+                console.error("Database error details:", {
+                    message: err.message,
+                    sql: err.sql,
+                    code: err.code,
+                    errno: err.errno
+                });
+                return reject(new Error("Database error while fetching retail items"));
+            }
+
+            // Format the results
+            const formattedResults = results.map(item => ({
+                id: item.id,
+                varietyId: item.varietyId,
+                displayName: item.displayName,
+                category: item.category,
+                normalPrice: parseFloat(item.normalPrice || 0),
+                discountedPrice: item.discountedPrice ? parseFloat(item.discountedPrice) : null,
+                unitType: item.unitType
+            }));
+
+            resolve(formattedResults);
+        });
+    });
+};
+
