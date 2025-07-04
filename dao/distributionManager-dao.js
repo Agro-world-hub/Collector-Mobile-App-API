@@ -1,14 +1,9 @@
 const db = require("../startup/database");
 
-exports.getDCenterTarget = (officerId = null) => {
-    console.log("Getting targets for officer ID:", officerId || "ALL OFFICERS");
+exports.getDCenterTarget = (irmId = null) => {
+    console.log("Getting targets for IRM ID:", irmId || "ALL OFFICERS");
 
     return new Promise((resolve, reject) => {
-        // Remove the officerId validation since we want to support getting all officers
-        if (!officerId) {
-            return reject(new Error("Officer ID is missing or invalid"));
-        }
-
         const sql = `
             SELECT 
                 co.id,
@@ -175,8 +170,8 @@ exports.getDCenterTarget = (officerId = null) => {
                     op.orderId, op.isLock, op.packingStatus, op.packageId
             ) package_item_counts ON po.id = package_item_counts.orderId
             WHERE 
-                ${officerId ? 'dt.userId = ? AND' : ''} 
                 DATE(dt.createdAt) = CURDATE()
+                ${irmId ? 'AND (co.irmId = ? OR dt.userId = ?)' : ''}
             ORDER BY 
                 dt.companycenterId ASC,
                 dt.userId DESC,
@@ -186,7 +181,7 @@ exports.getDCenterTarget = (officerId = null) => {
         `;
 
         // Execute the query with conditional parameters
-        const queryParams = officerId ? [officerId] : [];
+        const queryParams = irmId ? [irmId, irmId] : [];
         db.collectionofficer.query(sql, queryParams, (err, results) => {
             if (err) {
                 console.error("Error executing query:", err);
@@ -200,6 +195,8 @@ exports.getDCenterTarget = (officerId = null) => {
                 // Log first 3 records for debugging
                 results.slice(0, 3).forEach((row, index) => {
                     console.log(`Record ${index + 1}:`, {
+                        collectionOfficerId: row.id,
+                        irmId: row.irmId,
                         distributedTargetId: row.distributedTargetId,
                         processOrderId: row.processOrderId,
                         orderId: row.orderId,
@@ -238,8 +235,6 @@ exports.getDCenterTarget = (officerId = null) => {
         });
     });
 };
-
-
 // /**
 //  * Alternative method if you want separate data instead of nested structure
 //  */
@@ -299,8 +294,8 @@ exports.getDCenterTarget = (officerId = null) => {
 //     }
 // };
 exports.getOfficerDetailsById = (officerId) => {
-  return new Promise((resolve, reject) => {
-    const sql = `
+    return new Promise((resolve, reject) => {
+        const sql = `
       SELECT 
         co.*, 
         co.empId,
@@ -326,17 +321,73 @@ exports.getOfficerDetailsById = (officerId) => {
         co.id = ?;
     `;
 
-    db.collectionofficer.query(sql, [officerId], (err, results) => {
-      if (err) {
-        console.error("Database error:", err.message);
-        return reject(new Error("Database error"));
-      }
+        db.collectionofficer.query(sql, [officerId], (err, results) => {
+            if (err) {
+                console.error("Database error:", err.message);
+                return reject(new Error("Database error"));
+            }
 
-      if (results.length === 0) {
-        return reject(new Error("Officer not found"));
-      }
+            if (results.length === 0) {
+                return reject(new Error("Officer not found"));
+            }
 
-      resolve(results[0]); // Return the first result as the officer details
+            resolve(results[0]); // Return the first result as the officer details
+        });
     });
-  });
+};
+
+
+
+
+
+exports.getAllReplaceRequests = () => {
+    return new Promise((resolve, reject) => {
+        const sql = `
+            SELECT 
+                rr.id,
+                rr.orderPackageId,
+                rr.productType,
+                rr.productId,
+                rr.qty,
+                rr.price,
+                rr.status,
+                rr.createdAt,
+                op.orderId,
+                op.packageId,
+                op.packingStatus,
+                pt.typeName AS productTypeName,
+                mi.displayName AS productDisplayName,
+                mi.normalPrice AS productNormalPrice,
+                mi.discountedPrice AS productDiscountedPrice,
+                po.id,
+                po.orderId,
+                po.invNo
+            FROM 
+                market_place.replacerequest rr
+            LEFT JOIN 
+                market_place.orderpackage op ON rr.orderPackageId = op.id
+            LEFT JOIN 
+                market_place.producttypes pt ON rr.productType = pt.id
+            LEFT JOIN 
+                market_place.marketplaceitems mi ON rr.productId = mi.id
+            LEFT JOIN 
+                market_place.processorders mi ON op.orderId = po.id
+            ORDER BY 
+                rr.id DESC
+        `;
+
+        db.marketPlace.query(sql, [], (err, results) => {
+            if (err) {
+                console.error("Database error details:", {
+                    message: err.message,
+                    sql: err.sql,
+                    code: err.code,
+                    errno: err.errno
+                });
+                return reject(new Error("Database error while fetching all replace requests"));
+            }
+
+            resolve(results);
+        });
+    });
 };
