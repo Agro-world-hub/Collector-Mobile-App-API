@@ -10,6 +10,7 @@ const auth = require('../Middlewares/auth.middleware');
 router.get("/get-dcenter-target", authenticate, dmanagerEp.getDCenterTarget);
 
 router.get('/get-replacerequest', auth, dmanagerEp.getAllReplaceRequests);
+router.get('/retail-items/:ordreId', auth, dmanagerEp.getRetailItemWithOutEclist)
 
 // // Alternative endpoint - Get distribution center targets (separate arrays)
 // router.get("/get-dcenter-target-separate", authenticate, dmanagerEp.getDCenterTargetSeparate);

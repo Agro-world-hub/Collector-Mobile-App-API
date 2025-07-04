@@ -128,7 +128,12 @@ exports.getAllReplaceRequests = async (req, res) => {
   console.log("getAllReplaceRequests called");
   try {
     // Get all replace requests from DAO
-    const replaceRequests = await targetDDao.getAllReplaceRequests();
+
+    const managerId = req.user.id
+
+    console.log("endpointt manager idd", managerId)
+
+    const replaceRequests = await targetDDao.getAllReplaceRequests(managerId);
 
     console.log("Replace requests data:", replaceRequests);
 
@@ -142,6 +147,39 @@ exports.getAllReplaceRequests = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to retrieve replace requests',
+      error: error.message
+    });
+  }
+};
+
+
+exports.getRetailItemWithOutEclist = async (req, res) => {
+  console.log("getRetailItemWithOutEclist called");
+  try {
+    const { ordreId } = req.params;
+    console.log("Order ID:", ordreId);
+
+    if (!ordreId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Order ID is required'
+      });
+    }
+
+    // Get retail items excluding user's excluded items
+    const retailItems = await targetDDao.getRetailItemsExcludingUserExclusions(ordreId);
+    console.log("Retail items data:", retailItems);
+
+    res.status(200).json({
+      success: true,
+      message: 'Retail items retrieved successfully',
+      data: retailItems
+    });
+  } catch (error) {
+    console.error('Error getting retail items:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve retail items',
       error: error.message
     });
   }
