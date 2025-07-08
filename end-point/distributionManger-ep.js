@@ -304,3 +304,147 @@ exports.approveReplaceRequest = async (req, res) => {
     });
   }
 };
+
+exports.getDistributionOfficerTarget = async (req, res) => {
+  console.log("getOfficerTarget called");
+  try {
+    // Get officerId from the route parameter (named 'id' in the route)
+    const { id: officerId } = req.params; // Extract 'id' and rename it to 'officerId'
+    // OR simply use: const officerId = req.params.id;
+
+    console.log("Officer ID from params:", officerId);
+
+    // Validate officerId
+    if (!officerId || isNaN(officerId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid officer ID provided'
+      });
+    }
+
+    // Get targets from DAO
+    const targets = await targetDDao.getDistributionOfficerTarget(officerId);
+
+    console.log("nwxsjklowcd", targets)
+
+    res.status(200).json({
+      success: true,
+      message: 'Officer targets retrieved successfully',
+      data: targets
+    });
+  } catch (error) {
+    console.error('Error getting officer targets:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve officer targets',
+      error: error.message
+    });
+  }
+};
+
+
+exports.getAllDistributionOfficer = async (req, res) => {
+  console.log("getAllDistributionOfficer called");
+  try {
+    // Get manager ID from query parameter if provided, otherwise use authenticated user's ID
+    const managerId = req.query.managerId || req.user.id;
+    console.log("Manager ID:", managerId);
+
+    // Get both distribution officers and manager details as single array
+    const allData = await targetDDao.getAllDistributionOfficer(managerId);
+    console.log("All data:", allData);
+
+    res.status(200).json({
+      success: true,
+      message: 'Distribution officers and manager details retrieved successfully',
+      data: allData
+    });
+  } catch (error) {
+    console.error('Error getting distribution officers:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve distribution officers and manager details',
+      error: error.message
+    });
+  }
+};
+
+
+
+
+exports.targetPass = async (req, res) => {
+  console.log("targetPass called");
+
+  try {
+    const { assigneeOfficerId, targetItems, invoiceNumbers, processOrderId } = req.body;
+    const { officerId } = req.params; // Get officerId from URL parameters
+
+    console.log("Request body:", req.body);
+    console.log("Route params:", req.params);
+
+    // Validate required fields
+    if (!assigneeOfficerId || !invoiceNumbers || !targetItems || !officerId || !processOrderId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields: assigneeOfficerId, invoiceNumbers, targetItems, officerId, processOrderId'
+      });
+    }
+
+    // Validate that invoiceNumbers is an array
+    if (!Array.isArray(invoiceNumbers) || invoiceNumbers.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'invoiceNumbers must be a non-empty array'
+      });
+    }
+
+    // Validate that targetItems is an array
+    if (!Array.isArray(targetItems) || targetItems.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'targetItems must be a non-empty array'
+      });
+    }
+
+    // Validate that processOrderId is an array
+    if (!Array.isArray(processOrderId) || processOrderId.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'processOrderId must be a non-empty array'
+      });
+    }
+
+    // Call the DAO function - NOW INCLUDING processOrderId
+    const result = await targetDDao.targetPass({
+      assigneeOfficerId,
+      targetItems,
+      invoiceNumbers,
+      processOrderId, // <-- This was missing!
+      officerId
+    });
+
+    console.log("DAO result:", result);
+
+    if (result.success) {
+      res.status(200).json({
+        success: true,
+        message: result.message || 'Target passed successfully',
+        data: result.data
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: result.message || 'Failed to pass target',
+        errors: result.errors || []
+      });
+    }
+
+  } catch (error) {
+    console.error('Error in targetPass endpoint:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to pass target',
+      error: error.message
+    });
+  }
+};

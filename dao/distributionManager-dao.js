@@ -795,3 +795,462 @@ exports.approveReplaceRequest = (params) => {
         });
     });
 };
+
+
+
+
+exports.getDistributionOfficerTarget = (officerId) => {
+    console.log("Getting targets for officer ID:", officerId);
+
+    return new Promise((resolve, reject) => {
+        if (!officerId) {
+            return reject(new Error("Officer ID is missing or invalid"));
+        }
+
+        const sql = `
+            SELECT 
+                dt.id AS distributedTargetId,
+                dt.companycenterId,
+                dt.userId,
+                dt.target,
+                dt.complete,
+                dt.createdAt AS targetCreatedAt,
+
+                dti.id AS distributedTargetItemId,
+                dti.orderId,
+                dti.isComplete,
+                dti.completeTime,
+                dti.createdAt AS itemCreatedAt,
+
+                po.id AS processOrderId,
+                po.invNo,
+                po.transactionId,
+                po.paymentMethod,
+                po.isPaid,
+                po.amount,
+                po.status,
+                po.createdAt AS orderCreatedAt,
+                po.reportStatus,
+
+                o.id AS orderId,
+                o.isPackage,
+                o.userId AS orderUserId,
+                o.orderApp,
+                o.buildingType,
+                o.sheduleType,
+                o.sheduleDate,
+                o.sheduleTime,
+
+                -- Additional item counts
+                COALESCE(additional_item_counts.total_items, 0) AS totalAdditionalItems,
+                COALESCE(additional_item_counts.packed_items, 0) AS packedAdditionalItems,
+                COALESCE(additional_item_counts.pending_items, 0) AS pendingAdditionalItems,
+
+                -- Additional item status
+                CASE 
+                    WHEN COALESCE(additional_item_counts.total_items, 0) = 0 THEN NULL
+                    WHEN COALESCE(additional_item_counts.packed_items, 0) = 0 THEN 'Pending'
+                    WHEN COALESCE(additional_item_counts.packed_items, 0) > 0 AND 
+                         COALESCE(additional_item_counts.packed_items, 0) < COALESCE(additional_item_counts.total_items, 0) THEN 'Opened'
+                    WHEN COALESCE(additional_item_counts.packed_items, 0) = COALESCE(additional_item_counts.total_items, 0) THEN 'Completed'
+                    ELSE NULL
+                END AS additionalItemStatus,
+
+                -- Package item counts (only for packages)
+                COALESCE(package_item_counts.total_items, 0) AS totalPackageItems,
+                COALESCE(package_item_counts.packed_items, 0) AS packedPackageItems,
+                COALESCE(package_item_counts.pending_items, 0) AS pendingPackageItems,
+
+                -- Package details
+                package_item_counts.isLock AS packageIsLock,
+                package_item_counts.packingStatus AS packagePackingStatus,
+                package_item_counts.packageId AS packageId,
+
+                -- Package item status
+                CASE 
+                    WHEN o.isPackage = 0 THEN NULL
+                    WHEN COALESCE(package_item_counts.total_items, 0) = 0 THEN 'Pending'
+                    WHEN COALESCE(package_item_counts.packed_items, 0) = 0 THEN 'Pending'
+                    WHEN COALESCE(package_item_counts.packed_items, 0) > 0 AND 
+                         COALESCE(package_item_counts.packed_items, 0) < COALESCE(package_item_counts.total_items, 0) THEN 'Opened'
+                    WHEN COALESCE(package_item_counts.packed_items, 0) = COALESCE(package_item_counts.total_items, 0) THEN 'Completed'
+                    ELSE NULL
+                END AS packageItemStatus,
+
+                -- Overall status - FIXED to require BOTH additional and package items to be completed when they exist
+                CASE 
+                    -- For non-package orders (only check additional items)
+                    WHEN o.isPackage = 0 THEN
+                        CASE 
+                            WHEN COALESCE(additional_item_counts.total_items, 0) = 0 THEN 'Pending'
+                            WHEN COALESCE(additional_item_counts.packed_items, 0) = 0 THEN 'Pending'
+                            WHEN COALESCE(additional_item_counts.packed_items, 0) > 0 AND 
+                                 COALESCE(additional_item_counts.packed_items, 0) < COALESCE(additional_item_counts.total_items, 0) THEN 'Opened'
+                            WHEN COALESCE(additional_item_counts.packed_items, 0) = COALESCE(additional_item_counts.total_items, 0) THEN 'Completed'
+                            ELSE 'Pending'
+                        END
+                    
+                    -- For package orders (check both additional and package items)
+                    WHEN o.isPackage = 1 THEN
+                        CASE 
+                            -- When both additional and package items exist
+                            WHEN COALESCE(additional_item_counts.total_items, 0) > 0 AND 
+                                 COALESCE(package_item_counts.total_items, 0) > 0 THEN
+                                CASE 
+                                    WHEN COALESCE(additional_item_counts.packed_items, 0) = COALESCE(additional_item_counts.total_items, 0) AND
+                                         COALESCE(package_item_counts.packed_items, 0) = COALESCE(package_item_counts.total_items, 0) THEN 'Completed'
+                                    WHEN COALESCE(additional_item_counts.packed_items, 0) > 0 OR 
+                                         COALESCE(package_item_counts.packed_items, 0) > 0 THEN 'Opened'
+                                    ELSE 'Pending'
+                                END
+                            
+                            -- When only additional items exist
+                            WHEN COALESCE(additional_item_counts.total_items, 0) > 0 THEN
+                                CASE 
+                                    WHEN COALESCE(additional_item_counts.packed_items, 0) = 0 THEN 'Pending'
+                                    WHEN COALESCE(additional_item_counts.packed_items, 0) > 0 AND 
+                                         COALESCE(additional_item_counts.packed_items, 0) < COALESCE(additional_item_counts.total_items, 0) THEN 'Opened'
+                                    WHEN COALESCE(additional_item_counts.packed_items, 0) = COALESCE(additional_item_counts.total_items, 0) THEN 'Completed'
+                                    ELSE 'Pending'
+                                END
+                            
+                            -- When only package items exist
+                            WHEN COALESCE(package_item_counts.total_items, 0) > 0 THEN
+                                CASE 
+                                    WHEN COALESCE(package_item_counts.packed_items, 0) = 0 THEN 'Pending'
+                                    WHEN COALESCE(package_item_counts.packed_items, 0) > 0 AND 
+                                         COALESCE(package_item_counts.packed_items, 0) < COALESCE(package_item_counts.total_items, 0) THEN 'Opened'
+                                    WHEN COALESCE(package_item_counts.packed_items, 0) = COALESCE(package_item_counts.total_items, 0) THEN 'Completed'
+                                    ELSE 'Pending'
+                                END
+                            
+                            -- When no items exist (shouldn't happen for package orders)
+                            ELSE 'Pending'
+                        END
+                    ELSE 'Pending'
+                END AS selectedStatus
+
+            FROM 
+                distributedtarget dt
+            INNER JOIN 
+                distributedtargetitems dti ON dt.id = dti.targetId
+            INNER JOIN 
+                market_place.processorders po ON dti.orderId = po.id
+            INNER JOIN 
+                market_place.orders o ON po.orderId = o.id
+            LEFT JOIN (
+                -- Additional items subquery
+                SELECT 
+                    orderId,
+                    COUNT(*) as total_items,
+                    SUM(CASE WHEN isPacked = 1 THEN 1 ELSE 0 END) as packed_items,
+                    SUM(CASE WHEN isPacked = 0 THEN 1 ELSE 0 END) as pending_items
+                FROM 
+                    market_place.orderadditionalitems
+                GROUP BY 
+                    orderId
+            ) additional_item_counts ON o.id = additional_item_counts.orderId
+            LEFT JOIN (
+                -- Package items subquery - correctly joined to processorders.id
+                SELECT 
+                    op.orderId,  -- This references processorders.id
+                    op.isLock,
+                    op.packingStatus,
+                    op.packageId,
+                    COUNT(opi.id) as total_items,
+                    SUM(CASE WHEN opi.isPacked = 1 THEN 1 ELSE 0 END) as packed_items,
+                    SUM(CASE WHEN opi.isPacked = 0 THEN 1 ELSE 0 END) as pending_items
+                FROM 
+                    market_place.orderpackage op
+                LEFT JOIN 
+                    market_place.orderpackageitems opi ON op.id = opi.orderPackageId
+                GROUP BY 
+                    op.orderId, op.isLock, op.packingStatus, op.packageId
+            ) package_item_counts ON po.id = package_item_counts.orderId  -- Correct join to processorders
+            WHERE 
+                dt.userId = ?
+                AND DATE(dt.createdAt) = CURDATE()
+            ORDER BY 
+                dt.companycenterId ASC,
+                dt.userId DESC,
+                dt.target ASC,
+                dt.complete ASC,
+                o.id ASC
+        `;
+
+        // Execute the query
+        db.collectionofficer.query(sql, [officerId], (err, results) => {
+            if (err) {
+                console.error("Error executing query:", err);
+                return reject(err);
+            }
+
+            console.log("Targets found:", results.length);
+            if (results.length > 0) {
+                console.log("=== DEBUGGING DATA ===");
+
+                // Log first 3 records for debugging
+                results.slice(0, 3).forEach((row, index) => {
+                    console.log(`Record ${index + 1}:`, {
+                        distributedTargetId: row.distributedTargetId,
+                        processOrderId: row.processOrderId,
+                        orderId: row.orderId,
+                        isPackage: row.isPackage,
+                        packageData: {
+                            packageId: row.packageId,
+                            isLock: row.packageIsLock,
+                            items: {
+                                total: row.totalPackageItems,
+                                packed: row.packedPackageItems,
+                                pending: row.pendingPackageItems,
+                                status: row.packageItemStatus
+                            }
+                        },
+                        additionalItems: {
+                            total: row.totalAdditionalItems,
+                            packed: row.packedAdditionalItems,
+                            pending: row.pendingAdditionalItems,
+                            status: row.additionalItemStatus
+                        },
+                        overallStatus: row.selectedStatus
+                    });
+                });
+
+                // Status summary
+                const statusCounts = results.reduce((acc, row) => {
+                    acc[row.selectedStatus] = (acc[row.selectedStatus] || 0) + 1;
+                    return acc;
+                }, {});
+                console.log("Status Distribution:", statusCounts);
+
+                console.log("=== END DEBUGGING ===");
+            }
+
+            resolve(results);
+        });
+    });
+};
+
+
+
+exports.getAllDistributionOfficer = async (managerId) => {
+    try {
+        // Query to get manager details
+        const managerQuery = `
+      SELECT 
+        id,
+        centerId,
+        distributedCenterId,
+        companyId,
+        irmId,
+        firstNameEnglish,
+        firstNameSinhala,
+        firstNameTamil,
+        lastNameEnglish,
+        lastNameSinhala,
+        lastNameTamil,
+        jobRole,
+        empId
+      FROM collectionofficer 
+      WHERE id = ?
+    `;
+
+        // Query to get distribution officers under this manager
+        const officersQuery = `
+      SELECT 
+        id,
+        centerId,
+        distributedCenterId,
+        companyId,
+        irmId,
+        firstNameEnglish,
+        firstNameSinhala,
+        firstNameTamil,
+        lastNameEnglish,
+        lastNameSinhala,
+        lastNameTamil,
+        jobRole,
+        empId
+      FROM collectionofficer 
+      WHERE irmId = ? AND status = 'Approved'
+    `;
+
+        // Execute both queries
+        const [managerRows] = await db.collectionofficer.promise().query(managerQuery, [managerId]);
+        const [officerRows] = await db.collectionofficer.promise().query(officersQuery, [managerId]);
+
+        // Combine both arrays into single array
+        const allData = [];
+
+        // Add manager first if exists
+        if (managerRows.length > 0) {
+            allData.push(managerRows[0]);
+        }
+
+        // Add all distribution officers
+        allData.push(...officerRows);
+
+        return allData;
+    } catch (error) {
+        console.error('Error in getAllDistributionOfficer DAO:', error);
+        throw error;
+    }
+};
+
+
+
+// Updated targetPass function
+exports.targetPass = async (params) => {
+    console.log("targetPass DAO called with params:", params);
+
+    try {
+        const { assigneeOfficerId, targetItems, invoiceNumbers, processOrderId, officerId } = params;
+
+        // Validate that processOrderId is an array
+        if (!Array.isArray(processOrderId) || processOrderId.length === 0) {
+            return {
+                success: false,
+                message: 'processOrderId must be a non-empty array'
+            };
+        }
+
+        // Step 1: Get the id from distributedtarget table using assigneeOfficerId as userId
+        // This id will be used as the new targetId in distributedtargetitems table
+        const distributedTargetQuery = `
+            SELECT id, userId FROM collection_officer.distributedtarget 
+            WHERE userId = ? 
+            ORDER BY companycenterId ASC, userId DESC, target ASC, complete ASC 
+            LIMIT 1
+        `;
+
+        const distributedTargetResult = await db.collectionofficer.promise().query(distributedTargetQuery, [parseInt(assigneeOfficerId)]);
+
+        console.log(`Query result for assigneeOfficerId ${assigneeOfficerId}:`, distributedTargetResult);
+
+        // MySQL2 returns [rows, fields] - we need the first element (rows)
+        const rows = distributedTargetResult[0];
+
+        if (!rows || rows.length === 0) {
+            return {
+                success: false,
+                message: `Assignee officer not found in distributed targets: ${assigneeOfficerId}`
+            };
+        }
+
+        const newTargetId = parseInt(rows[0].id); // Ensure it's an integer
+        const userId = rows[0].userId;
+        console.log(`New Target ID (from distributedtarget.id): ${newTargetId}, User ID: ${userId}`);
+
+        // Step 2: Process each processOrderId
+        const results = [];
+        const errors = [];
+
+        for (const orderId of processOrderId) {
+            try {
+                const orderIdInt = parseInt(orderId); // Ensure it's an integer
+                console.log(`Processing order ID: ${orderIdInt}`);
+
+                // Check if orderId exists in distributedtargetitems table
+                const checkOrderQuery = `
+                    SELECT id, targetId, orderId FROM collection_officer.distributedtargetitems 
+                    WHERE orderId = ?
+                `;
+
+                const existingRecords = await db.collectionofficer.promise().query(checkOrderQuery, [orderIdInt]);
+
+                // MySQL2 returns [rows, fields] - we need the first element (rows)
+                const existingRows = existingRecords[0];
+
+                if (!existingRows || existingRows.length === 0) {
+                    errors.push(`No records found for order ID: ${orderIdInt}`);
+                    continue;
+                }
+
+                console.log(`Found ${existingRows.length} records for order ID: ${orderIdInt}`);
+                console.log(`Current targetId for order ${orderIdInt}:`, existingRows[0].targetId);
+
+                // Update distributedtargetitems table - change targetId for matching orderId
+                const updateQuery = `
+                    UPDATE collection_officer.distributedtargetitems 
+                    SET targetId = ? 
+                    WHERE orderId = ?
+                `;
+
+                console.log(`Executing update query: UPDATE distributedtargetitems SET targetId = ${newTargetId} WHERE orderId = ${orderIdInt}`);
+
+                const updateResult = await db.collectionofficer.promise().query(updateQuery, [newTargetId, orderIdInt]);
+
+                console.log(`Update result:`, updateResult);
+
+                if (updateResult.affectedRows === 0) {
+                    errors.push(`No records updated for order ID: ${orderIdInt}`);
+                    continue;
+                }
+
+                console.log(`Updated ${updateResult.affectedRows} records for order ID: ${orderIdInt}`);
+
+                // Get updated records for response - let's check what was actually updated
+                const updatedRecordsQuery = `
+                    SELECT id, targetId, orderId FROM collection_officer.distributedtargetitems 
+                    WHERE orderId = ?
+                    ORDER BY id ASC
+                `;
+
+                const updatedRecords = await db.collectionofficer.promise().query(updatedRecordsQuery, [orderIdInt]);
+
+                // MySQL2 returns [rows, fields] - we need the first element (rows)
+                const updatedRows = updatedRecords[0];
+                console.log(`Updated records for order ID ${orderIdInt}:`, updatedRows);
+
+                // Add successful result
+                results.push({
+                    orderId: orderIdInt,
+                    previousTargetId: existingRows[0].targetId || 'NULL',
+                    newTargetId: newTargetId,
+                    assigneeOfficerId: assigneeOfficerId,
+                    assigneeUserId: userId,
+                    updatedRecords: updatedRows,
+                    affectedRows: updateResult.affectedRows
+                });
+
+                console.log(`Successfully processed order ID ${orderIdInt}: ${existingRows[0].targetId || 'NULL'} -> ${newTargetId}`);
+
+            } catch (orderError) {
+                console.error(`Error processing order ID ${orderId}:`, orderError);
+                errors.push(`Failed to process order ID ${orderId}: ${orderError.message}`);
+            }
+        }
+
+        // Prepare response
+        const response = {
+            success: results.length > 0,
+            message: results.length > 0 ? 'Target passed successfully' : 'No targets were passed',
+            data: {
+                officerId: officerId,
+                assigneeOfficerId: assigneeOfficerId,
+                newTargetId: newTargetId,
+                processedOrders: results.length,
+                totalOrders: processOrderId.length,
+                targetItems: targetItems,
+                invoiceNumbers: invoiceNumbers,
+                results: results
+            }
+        };
+
+        if (errors.length > 0) {
+            response.errors = errors;
+            response.message += ` (${errors.length} error(s) occurred)`;
+        }
+
+        console.log("DAO returning:", response);
+        return response;
+
+    } catch (error) {
+        console.error('Error in targetPass DAO:', error);
+        return {
+            success: false,
+            message: 'Database operation failed',
+            error: error.message
+        };
+    }
+};
