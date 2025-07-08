@@ -448,3 +448,258 @@ exports.targetPass = async (req, res) => {
     });
   }
 };
+
+
+
+exports.getOfficerDetailsForReport = async (req, res) => {
+  const { empId } = req.params;
+
+  console.log("nkdjzvi")
+
+  if (!empId) {
+    return res.status(400).json({
+      status: 'error',
+      message: 'Employee ID is required.',
+    });
+  }
+
+  try {
+    const [rows] = await targetDDao.getOfficerDetails(empId);
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'No employee found with the provided empId.',
+      });
+    }
+
+    res.status(200).json({
+      status: 'success',
+      data: rows[0],
+    });
+  } catch (error) {
+    console.error('Error fetching employee details:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'An error occurred while fetching employee details.',
+    });
+  }
+};
+
+
+// exports.getDistributionPaymentsSummary = async (req, res) => {
+//   const schema = Joi.object({
+//     collectionOfficerId: Joi.number().integer().required(),
+//     fromDate: Joi.date().iso().required(),
+//     toDate: Joi.date().iso().required().min(Joi.ref('fromDate')).messages({
+//       'date.min': '"toDate" must be the same as or after "fromDate".',
+//     }),
+//   });
+
+//   try {
+//     const { collectionOfficerId, fromDate, toDate } = req.query;
+//     const { error } = schema.validate({ collectionOfficerId, fromDate, toDate });
+
+//     if (error) {
+//       return res.status(400).json({
+//         status: 'error',
+//         message: error.details[0].message,
+//       });
+//     }
+
+//     const [rows] = await targetDDao.getDistributionPaymentsSummary({
+//       collectionOfficerId,
+//       fromDate,
+//       toDate,
+//     });
+
+//     console.log("//////////////", rows)
+
+//     const reportData = rows.map(row => ({
+//       date: new Date(row.date).toLocaleDateString('en-US', { timeZone: 'Asia/Colombo' }),
+//       completedOrders: row.completedOrders,
+//       totalAmount: row.totalAmount ? parseFloat(row.totalAmount) : 0,
+//       orderDetails: row.orderDetails || [],
+//       invNo: row.invNo,
+//       orderId: row.orderId,
+//       sheduleDate: new Date(row.sheduleDate).toLocaleDateString('en-US', { timeZone: 'Asia/Colombo' }),
+//       sheduleTime: row.sheduleTime
+//     }));
+
+//     console.log('Distribution Officer Payment Summary:', reportData);
+
+//     res.status(200).json({
+//       status: 'success',
+//       data: reportData,
+//     });
+//   } catch (error) {
+//     console.error('Error fetching distribution officer payment summary:', error);
+//     res.status(500).json({
+//       status: 'error',
+//       message: 'An error occurred while fetching the report.',
+//     });
+//   }
+// };
+
+exports.getDistributionPaymentsSummary = async (req, res) => {
+  const schema = Joi.object({
+    collectionOfficerId: Joi.number().integer().required(),
+    fromDate: Joi.date().iso().required(),
+    toDate: Joi.date().iso().required().min(Joi.ref('fromDate')).messages({
+      'date.min': '"toDate" must be the same as or after "fromDate".',
+    }),
+  });
+
+  try {
+    const { collectionOfficerId, fromDate, toDate } = req.query;
+    const { error } = schema.validate({ collectionOfficerId, fromDate, toDate });
+
+    if (error) {
+      return res.status(400).json({
+        status: 'error',
+        message: error.details[0].message,
+      });
+    }
+
+    const [rows] = await targetDDao.getDistributionPaymentsSummary({
+      collectionOfficerId,
+      fromDate,
+      toDate,
+    });
+
+    console.log("//////////////", rows)
+
+    const reportData = rows.map(row => {
+      // Format sheduleTime to remove "Within" text
+      const formattedSheduleTime = row.sheduleTime ?
+        row.sheduleTime.replace('Within ', '') :
+        row.sheduleTime;
+
+      return {
+        date: new Date(row.date).toLocaleDateString('en-US', { timeZone: 'Asia/Colombo' }),
+        completedOrders: row.completedOrders,
+        totalAmount: row.totalAmount ? parseFloat(row.totalAmount) : 0,
+        orderDetails: row.orderDetails || [],
+        invNo: row.invNo,
+        orderId: row.orderId,
+        sheduleDate: new Date(row.sheduleDate).toLocaleDateString('en-US', { timeZone: 'Asia/Colombo' }),
+        sheduleTime: formattedSheduleTime
+      };
+    });
+
+    console.log('Distribution Officer Payment Summary:', reportData);
+
+    res.status(200).json({
+      status: 'success',
+      data: reportData,
+    });
+  } catch (error) {
+    console.error('Error fetching distribution officer payment summary:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'An error occurred while fetching the report.',
+    });
+  }
+};
+
+// exports.getOfficerTaskSummaryManagerView = async (req, res) => {
+//   try {
+//     const { collectionOfficerId } = req.params; // Extract officer ID from authenticated session
+//     console.log('officerId', collectionOfficerId);
+
+//     if (!collectionOfficerId) {
+//       return res.status(400).json({ error: "Officer ID is required" });
+//     }
+
+//     console.log("Fetching task summary for Officer ID:", collectionOfficerId);
+
+//     // Fetch summary data from DAO
+//     const taskSummary = await targetDDao.getOfficerSummaryDaoManager(collectionOfficerId);
+
+//     if (!taskSummary) {
+//       return res.status(404).json({ message: "No tasks found for this officer." });
+//     }
+
+//     const { totalTasks, completedTasks } = taskSummary;
+//     const percentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+//     res.status(200).json({
+//       success: true,
+//       collectionOfficerId,
+//       totalTasks,
+//       completedTasks,
+//       completionPercentage: `${percentage}%`
+//     });
+//   } catch (error) {
+//     console.error("Error fetching task summary:", error);
+//     res.status(500).json({ error: "Failed to fetch task summary." });
+//   }
+// };
+
+exports.getOfficerTaskSummaryManagerView = async (req, res) => {
+  try {
+    const { collectionOfficerId } = req.params;
+
+    console.log('Fetching task summary for Officer ID:', collectionOfficerId);
+
+    // Validate officer ID
+    if (!collectionOfficerId || isNaN(collectionOfficerId)) {
+      return res.status(400).json({
+        success: false,
+        error: "Valid Officer ID is required"
+      });
+    }
+
+    // Fetch summary data from DAO
+    const taskSummary = await targetDDao.getOfficerSummaryDaoManager(collectionOfficerId);
+
+    // Check if any tasks exist
+    if (!taskSummary || taskSummary.totalTasks === 0) {
+      return res.status(200).json({
+        success: true,
+        collectionOfficerId: parseInt(collectionOfficerId),
+        totalTasks: 0,
+        completedTasks: 0,
+        completionPercentage: 0,
+        message: "No tasks found for this officer."
+      });
+    }
+
+    const { totalTasks, completedTasks, totalComplete, totalTarget } = taskSummary;
+
+    // Calculate completion percentage
+    const completionPercentage = totalTasks > 0
+      ? Math.round((completedTasks / totalTasks) * 100)
+      : 0;
+
+    // Calculate overall progress percentage
+    const overallProgressPercentage = totalTarget > 0
+      ? Math.round((totalComplete / totalTarget) * 100)
+      : 0;
+
+    res.status(200).json({
+      success: true,
+      collectionOfficerId: parseInt(collectionOfficerId),
+      totalTasks,
+      completedTasks,
+      completionPercentage,
+      overallProgressPercentage,
+      totalComplete,
+      totalTarget,
+      summary: {
+        tasksCompleted: `${completedTasks}/${totalTasks}`,
+        overallProgress: `${totalComplete}/${totalTarget}`,
+        completionRate: `${completionPercentage}%`,
+        progressRate: `${overallProgressPercentage}%`
+      }
+    });
+
+  } catch (error) {
+    console.error("Error fetching task summary:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch task summary",
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};

@@ -22,6 +22,16 @@ router.get('/distribution-officer/:id', auth, dmanagerEp.getDistributionOfficerT
 router.get('/get-all-distributionOfficer', auth, dmanagerEp.getAllDistributionOfficer);
 
 router.post('/target-pass/:officerId', auth, dmanagerEp.targetPass);
+
+
+router.get('/employee/:empId', dmanagerEp.getOfficerDetailsForReport);
+
+router.get(
+    '/distributionOfficer-payments-summary',
+    dmanagerEp.getDistributionPaymentsSummary
+);
+
+router.get("/officer-task-summary/:collectionOfficerId", dmanagerEp.getOfficerTaskSummaryManagerView);
 // // Alternative endpoint - Get distribution center targets (separate arrays)
 // router.get("/get-dcenter-target-separate", authenticate, dmanagerEp.getDCenterTargetSeparate);
 // Route to get collection officers under a specific manager

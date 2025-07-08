@@ -1254,3 +1254,136 @@ exports.targetPass = async (params) => {
         };
     }
 };
+
+
+exports.getOfficerDetails = async (empId) => {
+    const sql = `
+    SELECT 
+      firstNameEnglish AS firstName, 
+      lastNameEnglish AS lastName, 
+      jobRole 
+    FROM 
+      collectionofficer
+    WHERE 
+      empId = ?;
+  `;
+    return db.collectionofficer.promise().query(sql, [empId]);
+};
+
+
+// exports.getDistributionPaymentsSummary = async ({ collectionOfficerId, fromDate, toDate }) => {
+//     const sql = `
+//     SELECT 
+//         DATE(CONVERT_TZ(dti.completeTime, '+00:00', '+05:30')) AS date,
+//         COUNT(dti.id) AS completedOrders,
+//         SUM(COALESCE(po.amount, 0)) AS totalAmount,
+//         po.invNo AS invNo
+//     FROM 
+//         collection_officer.distributedtarget dt
+//     JOIN 
+//         collection_officer.distributedtargetitems dti ON dt.id = dti.targetId
+//     JOIN 
+//         market_place.processorders po ON po.id = dti.orderId
+//     WHERE 
+//         dt.userId = ?
+//         AND dti.isComplete = 1
+//         AND dti.completeTime IS NOT NULL
+//         AND DATE(CONVERT_TZ(dti.completeTime, '+00:00', '+05:30')) BETWEEN ? AND ?
+//     GROUP BY 
+//         DATE(CONVERT_TZ(dti.completeTime, '+00:00', '+05:30'))
+//     ORDER BY 
+//         DATE(CONVERT_TZ(dti.completeTime, '+00:00', '+05:30'));
+//     `;
+//     return db.collectionofficer.promise().query(sql, [collectionOfficerId, fromDate, toDate]);
+// };
+
+exports.getDistributionPaymentsSummary = async ({ collectionOfficerId, fromDate, toDate }) => {
+    const sql = `
+    SELECT 
+        DATE(CONVERT_TZ(dti.completeTime, '+00:00', '+05:30')) AS date,
+        COUNT(dti.id) AS completedOrders,
+        SUM(COALESCE(po.amount, 0)) AS totalAmount,
+        MIN(po.invNo) AS invNo,
+        po.orderId AS orderId,
+        o.sheduleDate AS sheduleDate,
+        o.sheduleTime AS sheduleTime
+    FROM 
+        collection_officer.distributedtarget dt
+    JOIN 
+        collection_officer.distributedtargetitems dti ON dt.id = dti.targetId
+    JOIN 
+        market_place.processorders po ON po.id = dti.orderId
+    JOIN 
+        market_place.orders o ON o.id = po.orderId
+    WHERE 
+        dt.userId = ?
+        AND dti.isComplete = 1
+        AND dti.completeTime IS NOT NULL
+        AND DATE(CONVERT_TZ(dti.completeTime, '+00:00', '+05:30')) BETWEEN ? AND ?
+    GROUP BY 
+        DATE(CONVERT_TZ(dti.completeTime, '+00:00', '+05:30')),
+        po.orderId,
+        o.sheduleDate,
+        o.sheduleTime
+    ORDER BY 
+        DATE(CONVERT_TZ(dti.completeTime, '+00:00', '+05:30'));
+    `;
+    return db.collectionofficer.promise().query(sql, [collectionOfficerId, fromDate, toDate]);
+};
+
+
+// exports.getOfficerSummaryDaoManager = async (collectionOfficerId) => {
+//     try {
+//         const query = `
+//             SELECT 
+//                 COUNT(*) AS totalTasks,
+//                 SUM(CASE WHEN complete >= target THEN 1 ELSE 0 END) AS completedTasks
+//             FROM distributedtarget
+//             WHERE userId = ?;
+//         `;
+
+//         const [results] = await db.collectionofficer.promise().query(query, [collectionOfficerId]);
+//         return results[0];
+
+//     } catch (error) {
+//         console.error("Database error in getOfficerSummaryDao:", error);
+//         throw error;
+//     }
+// };
+
+exports.getOfficerSummaryDaoManager = async (collectionOfficerId) => {
+    try {
+        const query = `
+            SELECT 
+                COUNT(*) AS totalTasks,
+                SUM(CASE WHEN complete >= target THEN 1 ELSE 0 END) AS completedTasks,
+                COALESCE(SUM(complete), 0) AS totalComplete,
+                COALESCE(SUM(target), 0) AS totalTarget
+            FROM distributedtarget 
+            WHERE userId = ? AND target > 0;
+        `;
+
+        const [results] = await db.collectionofficer.promise().query(query, [collectionOfficerId]);
+
+        // Handle case where no results found
+        if (!results || results.length === 0) {
+            return {
+                totalTasks: 0,
+                completedTasks: 0,
+                totalComplete: 0,
+                totalTarget: 0
+            };
+        }
+
+        return {
+            totalTasks: parseInt(results[0].totalTasks) || 0,
+            completedTasks: parseInt(results[0].completedTasks) || 0,
+            totalComplete: parseInt(results[0].totalComplete) || 0,
+            totalTarget: parseInt(results[0].totalTarget) || 0
+        };
+
+    } catch (error) {
+        console.error("Database error in getOfficerSummaryDao:", error);
+        throw new Error(`Database operation failed: ${error.message}`);
+    }
+};
