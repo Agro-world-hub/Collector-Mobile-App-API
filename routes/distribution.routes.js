@@ -11,7 +11,7 @@ router.get('/order-data/:orderId', auth, DistributionEp.getOrderData);
 // In your distribution routes file (distribution-rt.js)
 router.put('/update-order/:orderId', auth, DistributionEp.updateOrderItems);
 
-router.get('/all-retail-items', auth, DistributionEp.getAllRetailItems);
+router.get('/all-retail-items/:orderId', auth, DistributionEp.getAllRetailItems);
 
 router.post('/replace-order-package', auth, DistributionEp.replaceOrderPackage);
 

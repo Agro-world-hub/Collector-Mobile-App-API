@@ -11,7 +11,27 @@ router.get("/get-dcenter-target", authenticate, dmanagerEp.getDCenterTarget);
 
 router.get('/get-replacerequest', auth, dmanagerEp.getAllReplaceRequests);
 router.get('/retail-items/:ordreId', auth, dmanagerEp.getRetailItemWithOutEclist)
+router.get('/ordre-replace/:id', auth, dmanagerEp.getOrdreReplace)
 
+router.post('/approve', auth, dmanagerEp.approveReplaceRequest);
+
+router.get('/distribution-officer/:id', auth, dmanagerEp.getDistributionOfficerTarget);
+
+
+
+router.get('/get-all-distributionOfficer', auth, dmanagerEp.getAllDistributionOfficer);
+
+router.post('/target-pass/:officerId', auth, dmanagerEp.targetPass);
+
+
+router.get('/employee/:empId', dmanagerEp.getOfficerDetailsForReport);
+
+router.get(
+    '/distributionOfficer-payments-summary',
+    dmanagerEp.getDistributionPaymentsSummary
+);
+
+router.get("/officer-task-summary/:collectionOfficerId", dmanagerEp.getOfficerTaskSummaryManagerView);
 // // Alternative endpoint - Get distribution center targets (separate arrays)
 // router.get("/get-dcenter-target-separate", authenticate, dmanagerEp.getDCenterTargetSeparate);
 // Route to get collection officers under a specific manager

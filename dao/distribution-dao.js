@@ -2,216 +2,6 @@ const db = require("../startup/database");
 
 
 
-// exports.getTargetForOfficerDao = (officerId) => {
-//     console.log("Getting targets for officer ID:", officerId);
-
-//     return new Promise((resolve, reject) => {
-//         if (!officerId) {
-//             return reject(new Error("Officer ID is missing or invalid"));
-//         }
-
-//         const sql = `
-//             SELECT 
-//                 dt.id AS distributedTargetId,
-//                 dt.companycenterId,
-//                 dt.userId,
-//                 dt.target,
-//                 dt.complete,
-//                 dt.createdAt AS targetCreatedAt,
-
-//                 dti.id AS distributedTargetItemId,
-//                 dti.orderId,
-//                 dti.isComplete,
-//                 dti.completeTime,
-//                 dti.createdAt AS itemCreatedAt,
-
-//                 po.id AS processOrderId,
-//                 po.invNo,
-//                 po.transactionId,
-//                 po.paymentMethod,
-//                 po.isPaid,
-//                 po.amount,
-//                 po.status,
-//                 po.createdAt AS orderCreatedAt,
-//                 po.reportStatus,
-
-//                 o.id AS orderId,
-//                 o.isPackage,
-//                 o.userId AS orderUserId,
-//                 o.orderApp,
-//                 o.buildingType,
-//                 o.sheduleType,
-//                 o.sheduleDate,
-//                 o.sheduleTime,
-
-//                 -- Count total additional items for this order
-//                 COALESCE(additional_item_counts.total_items, 0) AS totalAdditionalItems,
-
-//                 -- Count packed additional items
-//                 COALESCE(additional_item_counts.packed_items, 0) AS packedAdditionalItems,
-
-//                 -- Count pending additional items
-//                 COALESCE(additional_item_counts.pending_items, 0) AS pendingAdditionalItems,
-
-//                 -- Additional item status
-//                 CASE 
-//                     WHEN COALESCE(additional_item_counts.total_items, 0) = 0 THEN NULL
-//                     WHEN COALESCE(additional_item_counts.packed_items, 0) = 0 THEN 'Pending'
-//                     WHEN COALESCE(additional_item_counts.packed_items, 0) > 0 AND COALESCE(additional_item_counts.packed_items, 0) < COALESCE(additional_item_counts.total_items, 0) THEN 'Opened'
-//                     WHEN COALESCE(additional_item_counts.packed_items, 0) = COALESCE(additional_item_counts.total_items, 0) THEN 'Completed'
-//                     ELSE NULL
-//                 END AS additionalItemStatus,
-
-//                 -- Package item counts (only for isPackage = 1)
-//                 CASE WHEN o.isPackage = 1 THEN COALESCE(package_item_counts.total_items, 0) ELSE NULL END AS totalPackageItems,
-//                 CASE WHEN o.isPackage = 1 THEN COALESCE(package_item_counts.packed_items, 0) ELSE NULL END AS packedPackageItems,
-//                 CASE WHEN o.isPackage = 1 THEN COALESCE(package_item_counts.pending_items, 0) ELSE NULL END AS pendingPackageItems,
-
-//                 -- Package item status (only for isPackage = 1)
-//                 CASE 
-//                     WHEN o.isPackage = 0 THEN NULL
-//                     WHEN o.isPackage = 1 AND COALESCE(package_item_counts.total_items, 0) = 0 THEN 'Pending'
-//                     WHEN o.isPackage = 1 AND COALESCE(package_item_counts.packed_items, 0) = 0 THEN 'Pending'
-//                     WHEN o.isPackage = 1 AND COALESCE(package_item_counts.packed_items, 0) > 0 AND COALESCE(package_item_counts.packed_items, 0) < COALESCE(package_item_counts.total_items, 0) THEN 'Opened'
-//                     WHEN o.isPackage = 1 AND COALESCE(package_item_counts.packed_items, 0) = COALESCE(package_item_counts.total_items, 0) THEN 'Completed'
-//                     ELSE NULL
-//                 END AS packageItemStatus,
-
-//                 -- Overall status logic based on isPackage
-//                 CASE 
-//                     -- For isPackage = 0: Only check additional items
-//                     WHEN o.isPackage = 0 THEN
-//                         CASE 
-//                             WHEN COALESCE(additional_item_counts.total_items, 0) = 0 THEN 'Pending'
-//                             WHEN COALESCE(additional_item_counts.packed_items, 0) = 0 THEN 'Pending'
-//                             WHEN COALESCE(additional_item_counts.packed_items, 0) > 0 AND COALESCE(additional_item_counts.packed_items, 0) < COALESCE(additional_item_counts.total_items, 0) THEN 'Opened'
-//                             WHEN COALESCE(additional_item_counts.packed_items, 0) = COALESCE(additional_item_counts.total_items, 0) THEN 'Completed'
-//                             ELSE 'Pending'
-//                         END
-//                     -- For isPackage = 1: Check both additional items and package items
-//                     WHEN o.isPackage = 1 THEN
-//                         CASE 
-//                             -- If no additional items and no package items
-//                             WHEN COALESCE(additional_item_counts.total_items, 0) = 0 AND COALESCE(package_item_counts.total_items, 0) = 0 THEN 'Pending'
-//                             -- If both have items, both must be completed for overall completion
-//                             WHEN COALESCE(additional_item_counts.total_items, 0) > 0 AND COALESCE(package_item_counts.total_items, 0) > 0 THEN
-//                                 CASE 
-//                                     WHEN COALESCE(additional_item_counts.packed_items, 0) = COALESCE(additional_item_counts.total_items, 0) 
-//                                          AND COALESCE(package_item_counts.packed_items, 0) = COALESCE(package_item_counts.total_items, 0) THEN 'Completed'
-//                                     WHEN COALESCE(additional_item_counts.packed_items, 0) > 0 OR COALESCE(package_item_counts.packed_items, 0) > 0 THEN 'Opened'
-//                                     ELSE 'Pending'
-//                                 END
-//                             -- If only additional items exist
-//                             WHEN COALESCE(additional_item_counts.total_items, 0) > 0 AND COALESCE(package_item_counts.total_items, 0) = 0 THEN
-//                                 CASE 
-//                                     WHEN COALESCE(additional_item_counts.packed_items, 0) = 0 THEN 'Pending'
-//                                     WHEN COALESCE(additional_item_counts.packed_items, 0) > 0 AND COALESCE(additional_item_counts.packed_items, 0) < COALESCE(additional_item_counts.total_items, 0) THEN 'Opened'
-//                                     WHEN COALESCE(additional_item_counts.packed_items, 0) = COALESCE(additional_item_counts.total_items, 0) THEN 'Completed'
-//                                     ELSE 'Pending'
-//                                 END
-//                             -- If only package items exist
-//                             WHEN COALESCE(additional_item_counts.total_items, 0) = 0 AND COALESCE(package_item_counts.total_items, 0) > 0 THEN
-//                                 CASE 
-//                                     WHEN COALESCE(package_item_counts.packed_items, 0) = 0 THEN 'Pending'
-//                                     WHEN COALESCE(package_item_counts.packed_items, 0) > 0 AND COALESCE(package_item_counts.packed_items, 0) < COALESCE(package_item_counts.total_items, 0) THEN 'Opened'
-//                                     WHEN COALESCE(package_item_counts.packed_items, 0) = COALESCE(package_item_counts.total_items, 0) THEN 'Completed'
-//                                     ELSE 'Pending'
-//                                 END
-//                             ELSE 'Pending'
-//                         END
-//                     ELSE 'Pending'
-//                 END AS selectedStatus
-
-//             FROM 
-//                 distributedtarget dt
-//             INNER JOIN 
-//                 distributedtargetitems dti ON dt.id = dti.targetId
-//             INNER JOIN 
-//                 market_place.processorders po ON dti.orderId = po.id
-//             INNER JOIN 
-//                 market_place.orders o ON po.orderId = o.id
-//             LEFT JOIN (
-//                 -- Subquery to get additional item counts for each order
-//                 SELECT 
-//                     orderId,
-//                     COUNT(*) as total_items,
-//                     SUM(CASE WHEN isPacked = 1 THEN 1 ELSE 0 END) as packed_items,
-//                     SUM(CASE WHEN isPacked = 0 THEN 1 ELSE 0 END) as pending_items
-//                 FROM 
-//                     market_place.orderadditionalitems
-//                 GROUP BY 
-//                     orderId
-//             ) additional_item_counts ON po.orderId = additional_item_counts.orderId
-//             LEFT JOIN (
-//                 -- Subquery to get package item counts for each order (only for isPackage = 1)
-//                 SELECT 
-//                     op.orderId,
-//                     COUNT(opi.id) as total_items,
-//                     SUM(CASE WHEN opi.isPacked = 1 THEN 1 ELSE 0 END) as packed_items,
-//                     SUM(CASE WHEN opi.isPacked = 0 THEN 1 ELSE 0 END) as pending_items
-//                 FROM 
-//                     market_place.orderpackage op
-//                 INNER JOIN 
-//                     market_place.orderpackageitems opi ON op.id = opi.orderPackageId
-//                 GROUP BY 
-//                     op.orderId
-//             ) package_item_counts ON po.orderId = package_item_counts.orderId AND o.isPackage = 1
-//             WHERE 
-//                 dt.userId = ?
-//                 AND DATE(dt.createdAt) = CURDATE()
-//             ORDER BY 
-//                 dt.companycenterId ASC,
-//                 dt.userId DESC,
-//                 dt.target ASC,
-//                 dt.complete ASC,
-//                 o.id ASC
-//         `;
-
-//         // Execute the query
-//         db.collectionofficer.query(sql, [officerId], (err, results) => {
-//             if (err) {
-//                 console.error("Error executing query:", err);
-//                 return reject(err);
-//             }
-
-//             console.log("Targets found:", results.length);
-//             if (results.length > 0) {
-//                 console.log("Sample result:", results[0]); // Log first result for debugging
-//                 console.log("Status breakdown:");
-
-//                 // Log status summary
-//                 const statusCounts = results.reduce((acc, row) => {
-//                     acc[row.selectedStatus] = (acc[row.selectedStatus] || 0) + 1;
-//                     return acc;
-//                 }, {});
-
-//                 console.log("Selected Status Counts:", statusCounts);
-
-//                 // Log additional item status breakdown
-//                 const additionalStatusCounts = results.reduce((acc, row) => {
-//                     if (row.additionalItemStatus) {
-//                         acc[row.additionalItemStatus] = (acc[row.additionalItemStatus] || 0) + 1;
-//                     }
-//                     return acc;
-//                 }, {});
-
-//                 console.log("Additional Item Status Counts:", additionalStatusCounts);
-
-//                 // Log package item status breakdown for isPackage = 1
-//                 const packageStatusCounts = results.reduce((acc, row) => {
-//                     if (row.packageItemStatus) {
-//                         acc[row.packageItemStatus] = (acc[row.packageItemStatus] || 0) + 1;
-//                     }
-//                     return acc;
-//                 }, {});
-
-//                 console.log("Package Item Status Counts:", packageStatusCounts);
-//             }
-
-//             resolve(results);
-//         });
-//     });
-// };
 
 
 exports.getTargetForOfficerDao = (officerId) => {
@@ -448,210 +238,7 @@ exports.getTargetForOfficerDao = (officerId) => {
 
 //////////////////////////////////////////////////////////////////
 
-// exports.getOrderDataDao = (orderId) => {
-//     console.log("Getting order data for order ID:", orderId);
 
-//     return new Promise((resolve, reject) => {
-//         if (!orderId) {
-//             return reject(new Error("Order ID is missing or invalid"));
-//         }
-
-//         const sql = `
-//             SELECT 
-//                 o.id AS orderId,
-//                 o.isPackage,
-//                 o.userId AS orderUserId,
-//                 o.orderApp,
-//                 o.buildingType,
-//                 o.sheduleType,
-//                 o.sheduleDate,
-//                 o.sheduleTime,
-//                 o.createdAt AS orderCreatedAt,
-
-//                 -- Additional Items (for all orders)
-//                 oai.id AS additionalItemId,
-//                 oai.productId AS additionalProductId,
-//                 oai.qty AS additionalQty,
-//                 oai.unit AS additionalUnit,
-//                 oai.price AS additionalPrice,
-//                 oai.discount AS additionalDiscount,
-//                 oai.isPacked AS additionalIsPacked,
-//                 mi_additional.displayName AS additionalProductName,
-//                 mi_additional.category AS additionalProductCategory,
-//                 mi_additional.normalPrice AS additionalNormalPrice,
-
-//                 -- Package Details (only for isPackage = 1)
-//                 op.id AS orderPackageId,
-//                 op.packageId,
-//                 op.packingStatus,
-//                 op.createdAt AS packageCreatedAt,
-
-//                 -- Package Information (only for isPackage = 1)
-//                 mp.displayName AS packageName,
-//                 mp.description AS packageDescription,
-//                 mp.status AS packageStatus,
-//                 mp.productPrice AS packagePrice,
-//                 mp.packingFee AS packagePackingFee,
-
-//                 -- Package Items (only for isPackage = 1)
-//                 opi.id AS packageItemId,
-//                 opi.productType AS packageProductType,
-//                 opi.productId AS packageProductId,
-//                 opi.qty AS packageQty,
-//                 opi.price AS packagePrice,
-//                 opi.isPacked AS packageIsPacked,
-//                 mi_package.displayName AS packageProductName,
-//                 mi_package.category AS packageProductCategory,
-//                 mi_package.normalPrice AS packageNormalPrice
-
-//             FROM 
-//                 market_place.orders o
-
-//             -- Left join for additional items (all orders have these)
-//             LEFT JOIN 
-//                 market_place.orderadditionalitems oai ON o.id = oai.orderId
-//             LEFT JOIN 
-//                 market_place.marketplaceitems mi_additional ON oai.productId = mi_additional.id
-
-//             -- Left join for package data (only for isPackage = 1)
-//             LEFT JOIN 
-//                 market_place.orderpackage op ON o.id = op.orderId AND o.isPackage = 1
-
-//             -- Left join for package information from marketplacepackages table
-//             LEFT JOIN 
-//                 market_place.marketplacepackages mp ON op.packageId = mp.id AND o.isPackage = 1
-
-//             LEFT JOIN 
-//                 market_place.orderpackageitems opi ON op.id = opi.orderPackageId
-//             LEFT JOIN 
-//                 market_place.marketplaceitems mi_package ON opi.productId = mi_package.id
-
-//             WHERE 
-//                 o.id = ?
-
-//             ORDER BY 
-//                 o.id ASC,
-//                 oai.id ASC,
-//                 op.id ASC,
-//                 opi.id ASC
-//         `;
-
-//         // Execute the query
-//         db.collectionofficer.query(sql, [orderId], (err, results) => {
-//             if (err) {
-//                 console.error("Error executing query:", err);
-//                 return reject(err);
-//             }
-
-//             console.log("Raw results found:", results.length);
-
-//             if (results.length === 0) {
-//                 return resolve({
-//                     orderInfo: null,
-//                     additionalItems: [],
-//                     packageData: null
-//                 });
-//             }
-
-//             // Process the results to structure the data properly
-//             const orderInfo = {
-//                 orderId: results[0].orderId,
-//                 isPackage: results[0].isPackage,
-//                 orderUserId: results[0].orderUserId,
-//                 orderApp: results[0].orderApp,
-//                 buildingType: results[0].buildingType,
-//                 sheduleType: results[0].sheduleType,
-//                 sheduleDate: results[0].sheduleDate,
-//                 sheduleTime: results[0].sheduleTime,
-//                 orderCreatedAt: results[0].orderCreatedAt
-//             };
-
-//             // Process additional items
-//             const additionalItemsMap = new Map();
-//             const packageItemsMap = new Map();
-//             let packageInfo = null;
-
-//             results.forEach(row => {
-//                 // Process additional items
-//                 if (row.additionalItemId && !additionalItemsMap.has(row.additionalItemId)) {
-//                     additionalItemsMap.set(row.additionalItemId, {
-//                         id: row.additionalItemId,
-//                         productId: row.additionalProductId,
-//                         qty: row.additionalQty,
-//                         unit: row.additionalUnit,
-//                         price: row.additionalPrice,
-//                         discount: row.additionalDiscount,
-//                         isPacked: row.additionalIsPacked,
-//                         productName: row.additionalProductName,
-//                         category: row.additionalProductCategory,
-//                         normalPrice: row.additionalNormalPrice
-//                     });
-//                 }
-
-//                 // Process package data (only for isPackage = 1)
-//                 if (orderInfo.isPackage === 1) {
-//                     // Set package info once
-//                     if (row.orderPackageId && !packageInfo) {
-//                         packageInfo = {
-//                             id: row.orderPackageId,
-//                             packageId: row.packageId,
-//                             packingStatus: row.packingStatus,
-//                             createdAt: row.packageCreatedAt,
-//                             // Add package details from marketplacepackages table
-//                             packageName: row.packageName,
-//                             packageDescription: row.packageDescription,
-//                             packageStatus: row.packageStatus,
-//                             packagePrice: row.packagePrice,
-//                             packagePackingFee: row.packagePackingFee,
-//                             items: []
-//                         };
-//                     }
-
-//                     // Process package items
-//                     if (row.packageItemId && !packageItemsMap.has(row.packageItemId)) {
-//                         packageItemsMap.set(row.packageItemId, {
-//                             id: row.packageItemId,
-//                             productType: row.packageProductType,
-//                             productId: row.packageProductId,
-//                             qty: row.packageQty,
-//                             price: row.packagePrice,
-//                             isPacked: row.packageIsPacked,
-//                             productName: row.packageProductName,
-//                             category: row.packageProductCategory,
-//                             normalPrice: row.packageNormalPrice
-//                         });
-//                     }
-//                 }
-//             });
-
-//             // Convert maps to arrays
-//             const additionalItems = Array.from(additionalItemsMap.values());
-//             const packageItems = Array.from(packageItemsMap.values());
-
-//             // Add package items to package info if it exists
-//             if (packageInfo) {
-//                 packageInfo.items = packageItems;
-//             }
-
-//             const structuredData = {
-//                 orderInfo: orderInfo,
-//                 additionalItems: additionalItems,
-//                 packageData: packageInfo
-//             };
-
-//             console.log("Structured order data:", {
-//                 orderId: orderInfo.orderId,
-//                 isPackage: orderInfo.isPackage,
-//                 additionalItemsCount: additionalItems.length,
-//                 packageItemsCount: packageItems.length,
-//                 hasPackageData: !!packageInfo,
-//                 packageName: packageInfo ? packageInfo.packageName : null
-//             });
-
-//             resolve(structuredData);
-//         });
-//     });
-// };
 
 
 //////////////////////////////
@@ -1084,43 +671,92 @@ exports.updateAdditionalItems = (items) => {
 };
 
 ////get markte place itemssss
-exports.getAllRetailItems = async () => {
+// exports.getAllRetailItems = async () => {
+//     return new Promise((resolve, reject) => {
+//         const query = `
+//             SELECT 
+//                 id,
+//                 varietyId,
+//                 displayName,
+//                 category,
+//                 normalPrice,
+//                 discountedPrice,
+//                 discount,
+//                 promo,
+//                 unitType,
+//                 startValue,
+//                 changeby,
+//                 displayType,
+//                 LEFT(tags, 256) as tags,
+//                 createdAt,
+//                 maxQuantity
+//             FROM market_place.marketplaceitems 
+//             WHERE category = ?
+//             ORDER BY changeby DESC, varietyId ASC
+//             LIMIT 1000
+//         `;
+
+//         db.admin.query(query, ['Retail'], (error, results) => {
+//             if (error) {
+//                 console.error("Error fetching retail marketplace items:", error);
+//                 reject(error);
+//             } else {
+//                 resolve(results);
+//                 console.log("Fetched", results.length, "retail items");
+//             }
+//         });
+//     });
+// };
+
+
+
+// Route handler
+
+
+// DAO function
+exports.getAllRetailItems = async (orderId) => {
     return new Promise((resolve, reject) => {
         const query = `
             SELECT 
-                id,
-                varietyId,
-                displayName,
-                category,
-                normalPrice,
-                discountedPrice,
-                discount,
-                promo,
-                unitType,
-                startValue,
-                changeby,
-                displayType,
-                LEFT(tags, 256) as tags,
-                createdAt,
-                maxQuantity
-            FROM market_place.marketplaceitems 
-            WHERE category = ?
-            ORDER BY changeby DESC, varietyId ASC
+                mi.id,
+                mi.varietyId,
+                mi.displayName,
+                mi.category,
+                mi.normalPrice,
+                mi.discountedPrice,
+                mi.discount,
+                mi.promo,
+                mi.unitType,
+                mi.startValue,
+                mi.changeby,
+                mi.displayType,
+                LEFT(mi.tags, 256) as tags,
+                mi.createdAt,
+                mi.maxQuantity
+            FROM market_place.marketplaceitems mi
+            WHERE mi.category = 'Retail'
+            AND mi.id NOT IN (
+                SELECT DISTINCT el.mpItemId 
+                FROM market_place.excludelist el
+                INNER JOIN market_place.orders o ON el.userId = o.userId
+                INNER JOIN market_place.processorders po ON o.id = po.orderId
+                WHERE po.orderId = ?
+            )
+            ORDER BY mi.changeby DESC, mi.varietyId ASC
             LIMIT 1000
         `;
 
-        db.admin.query(query, ['Retail'], (error, results) => {
+        db.admin.query(query, [orderId], (error, results) => {
             if (error) {
                 console.error("Error fetching retail marketplace items:", error);
                 reject(error);
             } else {
                 resolve(results);
-                console.log("Fetched", results.length, "retail items");
+                console.log("Fetched", results.length, "retail items for order", orderId);
             }
         });
     });
 };
-
 
 ////////////replace modal data upa=date 
 
@@ -1756,43 +1392,10 @@ exports.updateDistributedTargetItems = async (targetItemIds, orderId) => {
 /////////////get terget 
 
 // distributionDao.js
-// exports.getDistributionTargets = async (officerId) => {
-//     return new Promise((resolve, reject) => {
-//         db.collectionofficer.getConnection((err, connection) => {
-//             if (err) return reject(err);
-
-//             connection.query(
-//                 `SELECT 
-//                     id,
-//                     companycenterId,
-//                     userId,
-//                     target,
-//                     complete,
-//                     (complete/target * 100) AS completionPercentage,
-//                     createdAt
-                  
-//                 FROM distributedtarget 
-//                 WHERE userId = ?
-//                 ORDER BY companycenterId ASC, userId DESC, target ASC, complete ASC, createdAt ASC
-//                 LIMIT 1000`,
-//                 [officerId],
-//                 (err, results) => {
-//                     connection.release();
-//                     if (err) return reject(err);
-//                     resolve(results);
-//                 }
-//             );
-//         });
-//     });
-// };
 exports.getDistributionTargets = async (officerId) => {
     return new Promise((resolve, reject) => {
         db.collectionofficer.getConnection((err, connection) => {
             if (err) return reject(err);
-
-            const today = new Date().toISOString().split('T')[0]; // Get today's date in YYYY-MM-DD format
-
-            console.log('Today:', today);  // Log today's date
 
             connection.query(
                 `SELECT 
@@ -1801,16 +1404,15 @@ exports.getDistributionTargets = async (officerId) => {
                     userId,
                     target,
                     complete,
-                    (complete / target * 100) AS completionPercentage,
+                    (complete/target * 100) AS completionPercentage,
                     createdAt
+                  
                 FROM distributedtarget 
-                WHERE userId = ? 
-                AND DATE(createdAt) = ?
+                WHERE userId = ?
                 ORDER BY companycenterId ASC, userId DESC, target ASC, complete ASC, createdAt ASC
                 LIMIT 1000`,
-                [officerId, today],
+                [officerId],
                 (err, results) => {
-                    console.log('Query Result:', results);  // Log the query result to check the createdAt date
                     connection.release();
                     if (err) return reject(err);
                     resolve(results);
@@ -1819,4 +1421,3 @@ exports.getDistributionTargets = async (officerId) => {
         });
     });
 };
-
