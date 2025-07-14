@@ -312,13 +312,13 @@ exports.checkEmailExist = (email) => {
 // };
 
 
-exports.createCollectionOfficerPersonal = (officerData, centerId, companyId, irmId) => {
+exports.createCollectionOfficerPersonal = (officerData, centerId, companyId, irmId, jobRole) => {
   return new Promise((resolve, reject) => {
     try {
       console.log("Center ID:", centerId, "Company ID:", companyId, "IRM ID:", irmId);
 
       // SQL query for inserting the officer data
-      const sql = `
+      let sql  = `
         INSERT INTO collectionofficer (
           centerId, companyId, irmId, firstNameEnglish, firstNameSinhala, firstNameTamil, lastNameEnglish,
           lastNameSinhala, lastNameTamil, jobRole, empId, empType, phoneCode01, phoneNumber01, phoneCode02, phoneNumber02,
@@ -328,7 +328,18 @@ exports.createCollectionOfficerPersonal = (officerData, centerId, companyId, irm
                  ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                  ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Not Approved', 0)
       `;
-
+    if (jobRole === "Distribution Manager" || jobRole === "Distribution Officer") {
+      sql = `
+          INSERT INTO collectionofficer (
+          distributedCenterId, companyId, irmId, firstNameEnglish, firstNameSinhala, firstNameTamil, lastNameEnglish,
+          lastNameSinhala, lastNameTamil, jobRole, empId, empType, phoneCode01, phoneNumber01, phoneCode02, phoneNumber02,
+          nic, email, houseNumber, streetName, city, district, province, country,
+          languages, accHolderName, accNumber, bankName, branchName, image, status, passwordUpdated
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                 ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                 ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Not Approved', 0)
+      `;
+    }
       // Use profileImageUrl instead of officerData.image
       db.collectionofficer.query(
         sql,
@@ -381,13 +392,39 @@ exports.createCollectionOfficerPersonal = (officerData, centerId, companyId, irm
 
 
 
-exports.getIrmDetails = async (irmId) => {
+// exports.getIrmDetails = async (irmId, jobRole) => {
+//   return new Promise((resolve, reject) => {
+//     const sql = `
+//       SELECT companyId, centerId 
+//       FROM collectionofficer
+//             WHERE id = ?;
+//     `;
+//     db.collectionofficer.query(sql, [irmId, jobRole], (err, results) => {
+//       if (err) {
+//         console.error("Error fetching IRM details:", err);
+//         return reject(err);
+//       }
+//       resolve(results[0]); // Return the first result (expected to be unique)
+//     });
+//   });
+// };
+
+exports.getIrmDetails = async (irmId, jobRole) => {
   return new Promise((resolve, reject) => {
-    const sql = `
-      SELECT companyId, centerId 
+    let sql = `
+      SELECT companyId, centerId
       FROM collectionofficer
-            WHERE id = ?;
+      WHERE id = ?;
     `;
+
+    if (jobRole === "Distribution Manager" || jobRole === "Distribution Officer") {
+      sql = `
+        SELECT companyId, distributedCenterId AS centerId
+        FROM collectionofficer
+        WHERE id = ?;
+      `;
+    }
+
     db.collectionofficer.query(sql, [irmId], (err, results) => {
       if (err) {
         console.error("Error fetching IRM details:", err);
@@ -397,6 +434,7 @@ exports.getIrmDetails = async (irmId) => {
     });
   });
 };
+
 
 
 exports.getForCreateId = (role) => {
@@ -596,9 +634,10 @@ exports.getClaimOfficer = (empID, jobRole) => {
   });
 };
 
-exports.createClaimOfficer = (officerId, irmId, centerId) => {
+exports.createClaimOfficer = (officerId, irmId, centerId, mangerJobRole) => {
+  console.log("center id ", centerId)
   return new Promise((resolve, reject) => {
-    const sql = `
+    let sql = `
       UPDATE collectionofficer 
       SET 
         irmId = ?,
@@ -606,6 +645,17 @@ exports.createClaimOfficer = (officerId, irmId, centerId) => {
       WHERE 
         id = ?
     `;
+
+    if(mangerJobRole === "Distribution Manager"){
+        sql = `
+      UPDATE collectionofficer 
+      SET 
+        irmId = ?,
+        distributedCenterId = ?
+      WHERE 
+        id = ?
+    `;
+    }
 
     db.collectionofficer.query(sql, [irmId, centerId, officerId], (err, results) => {
       if (err) {
@@ -616,10 +666,10 @@ exports.createClaimOfficer = (officerId, irmId, centerId) => {
   });
 }
 
-exports.disclaimOfficer = (collectionOfficerId) => {
-  console.log("DAO: disclaimOfficer", collectionOfficerId);
+exports.disclaimOfficer = (collectionOfficerId, jobRole) => {
+  console.log("DAO: disclaimOfficer", collectionOfficerId, jobRole);
   return new Promise((resolve, reject) => {
-    const sql = `
+    let sql = `
       UPDATE collectionofficer 
       SET 
         irmId = NULL,
@@ -627,7 +677,16 @@ exports.disclaimOfficer = (collectionOfficerId) => {
       WHERE 
         id = ?
     `;
-
+    if (jobRole === "Distribution Officer") {
+      sql = `
+        UPDATE collectionofficer 
+      SET 
+        irmId = NULL,
+        distributedCenterId = NULL
+      WHERE 
+        id = ?
+      `;
+    }
     db.collectionofficer.query(sql, [collectionOfficerId], (err, results) => {
       if (err) {
         return reject(err);
@@ -823,6 +882,7 @@ exports.GetFarmerReportDetailsDao = async (userId, createdAtDate, registeredFarm
 
 //get the collection officer list for the manager and the daos for the monthly report of a collection officer
 exports.getCollectionOfficers = async (managerId) => {
+  console.log("manager id", managerId)
   const sql = `
     SELECT 
       empId, 
@@ -836,7 +896,7 @@ exports.getCollectionOfficers = async (managerId) => {
       status,
       image
     FROM collectionofficer
-    WHERE jobRole IN ('Collection Officer', 'Driver') AND irmId = ?
+    WHERE jobRole IN ('Collection Officer', 'Driver', 'Distribution Officer') AND irmId = ?
   `;
   return db.collectionofficer.promise().query(sql, [managerId]);
 };

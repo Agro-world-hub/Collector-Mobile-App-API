@@ -253,8 +253,11 @@ const complainRoutes = require('./routes/complains.routes');
 const priceUpdatesRoutes = require('./routes/price.routes');
 const managerRoutes = require('./routes/manager.routes');
 const collectionrequest = require('./routes/collection.routes')
-const { plantcare, collectionofficer, marketPlace, dash, admin } = require('./startup/database');
+const { plantcare, collectionofficer, marketPlace,  admin } = require('./startup/database');
 const heathRoutes = require("./routes/heathRoutes");
+const distribution = require('./routes/distribution.routes')
+const distributionManager = require('./routes/distibutionManager.routes')
+
 
 const socketIo = require('socket.io');
 require('dotenv').config();
@@ -330,7 +333,6 @@ const checkConnections = async () => {
     await testConnection(plantcare, 'PlantCare');
     await testConnection(collectionofficer, 'CollectionOfficer');
     await testConnection(marketPlace, 'MarketPlace');
-    await testConnection(dash, 'Dash');
     await testConnection(admin, 'Admin');
     console.log('\n🎉 All databases connected successfully!\n');
   } catch (error) {
@@ -357,6 +359,8 @@ const targetRoutes = require('./routes/TargetNew-routes');
 mainApp.use(`${basePathMain}/api/target`, targetRoutes);
 mainApp.use(`${basePathMain}`, heathRoutes);
 mainApp.use(`${basePathMain}/api/collectionrequest`, collectionrequest);
+mainApp.use(`${basePathMain}/api/distribution`, distribution);
+mainApp.use(`${basePathMain}/api/distribution-manager`, distributionManager);
 
 // Routes for status API (PORT 3005)
 const basePathStatus = '/agro-api/collection-status';
