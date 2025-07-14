@@ -596,3 +596,22 @@ exports.uploadProfileImage = async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
+
+exports.getPassword = async (req, res) => {
+  const id = req.user.id;
+
+  try {
+    const user = await userAuthDao.getPassword(id);
+    return res.status(200).json({
+      success: true,
+      message: "Profile fetched successfully",
+      data: user,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};

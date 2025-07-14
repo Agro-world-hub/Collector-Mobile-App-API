@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getOfficerQRCode  } = require('../Controllers/users.controller');
+const { getOfficerQRCode } = require('../Controllers/users.controller');
 const auth = require('../Middlewares/auth.middleware');
 const upload = require('../Middlewares/multer.middleware');
 
@@ -22,6 +22,8 @@ router.get('/get-claim-status', auth, userAuthEp.GetClaimStatus);
 
 // router.post("/update-officer-status", auth, userAuthEp.updateOnlineStatus);
 router.post('/upload-profile-image', auth, upload.single('profileImage'), userAuthEp.uploadProfileImage);
+
+router.get('/user/password-update', auth, userAuthEp.getPassword);
 
 
 module.exports = router;
