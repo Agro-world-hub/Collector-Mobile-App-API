@@ -199,13 +199,13 @@ exports.loginUser = async (req, res) => {
     }
 
         let center;
-    if (jobRole === "Collection Officer" || jobRole === "Collection Manager") {
+    if (jobRole === "Collection Officer" || jobRole === "Collection Center Manager") {
       center = centerId;
     } else if (jobRole === "Distribution Manager" || jobRole === "Distribution Officer") {
       center = distributionCenterId;
 
     }
-                console.log("distributedCenterId", center)
+                console.log("Centre Id", center)
 
     // If password is valid, generate a JWT token
     const payload = {
@@ -363,13 +363,14 @@ exports.updatePassword = async (req, res) => {
 exports.getProfile = async (req, res) => {
   try {
     const officerId = req.user.id; // Assuming req.user.id is set after authentication
-    console.log("Fetching details for Officer ID:", officerId);
+    const jobRole = req.user.role;
+    console.log("Fetching details for Officer ID:", officerId, jobRole);
 
     if (!officerId) {
       return res.status(400).json({ status: "error", message: "Officer ID is required" });
     }
 
-    const officerDetails = await userAuthDao.getOfficerDetailsById(officerId);
+    const officerDetails = await userAuthDao.getOfficerDetailsById(officerId, jobRole);
 
     res.status(200).json({
       status: "success",
