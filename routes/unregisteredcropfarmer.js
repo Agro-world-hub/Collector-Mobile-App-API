@@ -12,7 +12,7 @@ router.get('/get-crop-names/for-collection', auth, unRegisterdcropfamerEp.getAll
 router.get('/crops/varieties/:id', auth, unRegisterdcropfamerEp.getVarietiesByCropId);
 
 // Route to get unit prices by crop ID
-router.get('/unitPrices/:cropId', unRegisterdcropfamerEp.getUnitPricesByCropId);
+router.get('/unitPrices/:cropId',auth, unRegisterdcropfamerEp.getUnitPricesByCropId);
 
 // Route to get today's crop details by userId
 router.get('/user-crops/today/:userId/:registeredFarmerId', unRegisterdcropfamerEp.getCropDetailsByUserId);
