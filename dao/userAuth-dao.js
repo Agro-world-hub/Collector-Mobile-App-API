@@ -58,11 +58,13 @@ exports.getOfficerByEmpId = (empId) => {
 // };
 exports.getOfficerPasswordById = (id) => {
   return new Promise((resolve, reject) => {
-    const sql = `SELECT co.*, cod.companyNameEnglish AS companyNameEnglish, cod.companyNameSinhala AS companyNameSinhala, cod.companyNameTamil AS companyNameTamil
+    const sql = `SELECT co.*, cod.companyNameEnglish AS companyNameEnglish, cod.companyNameSinhala AS companyNameSinhala, cod.companyNameTamil AS companyNameTamil,  ccen.id AS companycenterId
      FROM 
         collectionofficer co
       JOIN 
         company cod ON co.companyId = cod.id
+      JOIN
+        companycenter ccen ON co.centerId = ccen.centerId 
      WHERE co.id = ?`;
     db.collectionofficer.query(sql, [id], (err, results) => {
       if (err) {
@@ -347,6 +349,41 @@ exports.updateUserProfileImage = async (userId, profileImageUrl) => {
         resolve(result);
         console.log(result);
       }
+    });
+  });
+};
+
+
+
+exports.getPassword = (id) => {
+  return new Promise((resolve, reject) => {
+    const sql = `       
+      SELECT 
+        id,         
+       
+        empId,          
+       passwordUpdated,
+        createdAt
+      FROM salesagent        
+      WHERE id = ?     
+    `;
+
+    db.marketPlace.query(sql, [id], (err, results) => {
+      if (err) {
+        console.error("Database error:", err);
+        return reject(new Error('Database error'));
+      }
+
+      if (results.length === 0) {
+        return reject(new Error('User not found'));
+      }
+
+
+      console.log("Raw DB result:", JSON.stringify(results[0]).substring(0, 200) + "...");
+      console.log("Image exists:", results[0].image ? "Yes" : "No");
+
+
+      resolve(results[0]);
     });
   });
 };
