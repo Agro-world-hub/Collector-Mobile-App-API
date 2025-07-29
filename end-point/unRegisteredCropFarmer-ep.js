@@ -556,12 +556,14 @@ exports.getVarietiesByCropId = async (req, res) => {
 
 exports.getUnitPricesByCropId = async (req, res) => {
   const { cropId } = req.params; // Extract cropId from the URL parameters
+  const companycenterId = req.user.companycenterId
+  console.log("company center id", companycenterId)
 
   try {
     console.log("Received cropId:", cropId); // Log for debugging, consider replacing in production with a proper logger
 
     // Fetch market prices by varietyId (cropId)
-    const prices = await cropDetailsDao.getMarketPricesByVarietyId(cropId);
+    const prices = await cropDetailsDao.getMarketPricesByVarietyId(cropId, companycenterId);
 
     if (prices.length === 0) {
       return res.status(404).json({ message: 'No market prices found for the specified cropId' });

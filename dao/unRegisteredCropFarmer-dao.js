@@ -1002,10 +1002,29 @@ exports.getVarietiesByCropId = (officerId, cropId) => {
 
 
 
-exports.getMarketPricesByVarietyId = (varietyId) => {
+// exports.getMarketPricesByVarietyId = (varietyId, companycenterId) => {
+//   return new Promise((resolve, reject) => {
+//     const query = 'SELECT grade, price FROM marketprice WHERE varietyId = ?';
+//     db.collectionofficer.query(query, [varietyId], (error, results) => {
+//       if (error) {
+//         return reject(error);  // Reject with error to be handled in the controller
+//       }
+//       resolve(results);  // Resolve with results
+//     });
+//   });
+// };
+exports.getMarketPricesByVarietyId = (varietyId, companycenterId) => {
   return new Promise((resolve, reject) => {
-    const query = 'SELECT grade, price FROM marketprice WHERE varietyId = ?';
-    db.collectionofficer.query(query, [varietyId], (error, results) => {
+    const query = `
+          SELECT 
+        mp.grade, 
+        mps.updatedPrice AS price 
+      FROM marketprice mp
+      JOIN marketpriceserve mps ON mp.id = mps.marketPriceId  
+      WHERE mp.varietyId = ? 
+      AND mps.companyCenterId = ?;
+    `;
+    db.collectionofficer.query(query, [varietyId, companycenterId], (error, results) => {
       if (error) {
         return reject(error);  // Reject with error to be handled in the controller
       }
@@ -1013,7 +1032,6 @@ exports.getMarketPricesByVarietyId = (varietyId) => {
     });
   });
 };
-
 
 exports.getLatestInvoiceNumberDao = (empId, currentDate) => {
   return new Promise((resolve, reject) => {
