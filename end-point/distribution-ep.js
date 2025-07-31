@@ -519,6 +519,8 @@ exports.getDistributionTarget = async (req, res) => {
         // Get distribution targets with completion percentage
         const targets = await distributionDao.getDistributionTargets(officerId);
 
+        console.log("distribution target", targets)
+
         // Format the response
         const formattedTargets = targets.map(target => ({
             id: target.id,

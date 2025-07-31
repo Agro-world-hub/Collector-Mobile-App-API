@@ -169,7 +169,7 @@ exports.loginUser = async (req, res) => {
       });
     }
 
-    const users = await userAuthDao.getOfficerPasswordById(collectionOfficerId);
+    const users = await userAuthDao.getOfficerPasswordById(collectionOfficerId, jobRole);
 
     if (!users || users.length === 0) {
       return res.status(404).json({ status: "error", message: "User not found" });
@@ -198,14 +198,14 @@ exports.loginUser = async (req, res) => {
       });
     }
 
-        let center;
+    let center;
     if (jobRole === "Collection Officer" || jobRole === "Collection Center Manager") {
       center = centerId;
-    } else if (jobRole === "Distribution Manager" || jobRole === "Distribution Officer") {
+    } else if (jobRole === "Distribution Center Manager" || jobRole === "Distribution Officer") {
       center = distributionCenterId;
 
     }
-                console.log("Centre Id", center)
+    console.log("Centre Id", center)
 
     // If password is valid, generate a JWT token
     const payload = {
@@ -378,7 +378,7 @@ exports.getProfile = async (req, res) => {
       status: "success",
       data: officerDetails,
     });
-    
+
   } catch (error) {
     console.error("Error fetching officer details:", error.message);
 

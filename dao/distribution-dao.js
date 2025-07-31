@@ -1392,11 +1392,40 @@ exports.updateDistributedTargetItems = async (targetItemIds, orderId) => {
 /////////////get terget 
 
 // distributionDao.js
+// exports.getDistributionTargets = async (officerId) => {
+//     return new Promise((resolve, reject) => {
+//         db.collectionofficer.getConnection((err, connection) => {
+//             if (err) return reject(err);
+
+//             connection.query(
+//                 `SELECT 
+//                     id,
+//                     companycenterId,
+//                     userId,
+//                     target,
+//                     complete,
+//                     (complete/target * 100) AS completionPercentage,
+//                     createdAt
+
+//                 FROM distributedtarget 
+//                 WHERE userId = ?
+//                 ORDER BY companycenterId ASC, userId DESC, target ASC, complete ASC, createdAt ASC
+//                 LIMIT 1000`,
+//                 [officerId],
+//                 (err, results) => {
+//                     connection.release();
+//                     if (err) return reject(err);
+//                     resolve(results);
+//                 }
+//             );
+//         });
+//     });
+// };
+
 exports.getDistributionTargets = async (officerId) => {
     return new Promise((resolve, reject) => {
         db.collectionofficer.getConnection((err, connection) => {
             if (err) return reject(err);
-
             connection.query(
                 `SELECT 
                     id,
@@ -1406,9 +1435,9 @@ exports.getDistributionTargets = async (officerId) => {
                     complete,
                     (complete/target * 100) AS completionPercentage,
                     createdAt
-                  
                 FROM distributedtarget 
-                WHERE userId = ?
+                WHERE userId = ? 
+                AND DATE(createdAt) = CURDATE()
                 ORDER BY companycenterId ASC, userId DESC, target ASC, complete ASC, createdAt ASC
                 LIMIT 1000`,
                 [officerId],
