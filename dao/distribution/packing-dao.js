@@ -896,7 +896,11 @@ exports.markOrderAsOpened = (orderId, orderpackageId = null, isPackage = null, p
             JOIN packingpositions pp ON tp.positionId = pp.id
             JOIN distributedtarget dt ON (tp.targetId = dt.id OR pp.rowId = dt.rowId)
             JOIN distributedtargetitems dti ON dt.id = dti.targetId
-            WHERE dti.orderId = ? AND pp.pIndex = 1 AND DATE(tp.createdAt) = CURDATE()
+            WHERE dti.orderId = ? 
+              AND (pp.pIndex = 1 OR pp.pType = 'NOR')
+              AND tp.isFinished = 1
+              AND (DATE(tp.createdAt) = CURDATE() OR DATE(tp.createdAt) = DATE(dt.createdAt))
+            ORDER BY pp.pIndex ASC
             LIMIT 1
           `;
 
